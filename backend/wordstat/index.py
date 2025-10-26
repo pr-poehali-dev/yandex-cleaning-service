@@ -113,7 +113,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 total_shows = data.get('totalCount', 0)
-                top_requests = data.get('topRequests', [])[:10]
+                top_requests = data.get('topRequests', [])
                 
                 search_query.append({
                     'Keyword': keyword,
