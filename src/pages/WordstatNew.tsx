@@ -128,7 +128,7 @@ export default function WordstatNew() {
               {loading ? (
                 <>
                   <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
-                  Загрузка...
+                  Загрузка данных (может занять до 30 сек)...
                 </>
               ) : (
                 <>
@@ -137,6 +137,12 @@ export default function WordstatNew() {
                 </>
               )}
             </Button>
+            
+            {loading && (
+              <div className="text-center text-sm text-muted-foreground">
+                ⏳ Загружаю до 2000 запросов с Яндекс.Wordstat...
+              </div>
+            )}
 
             {allRequests.length > 0 && (
               <div className="mt-6">
