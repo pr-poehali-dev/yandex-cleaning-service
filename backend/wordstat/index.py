@@ -25,7 +25,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': ''
         }
     
-    token = os.environ.get('YANDEX_WORDSTAT_TOKEN')
+    token = os.environ.get('YANDEX_WORDSTAT_TOKEN') or os.environ.get('YANDEX_DIRECT_TOKEN')
     if not token:
         return {
             'statusCode': 500,
@@ -34,7 +34,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Origin': '*'
             },
             'isBase64Encoded': False,
-            'body': json.dumps({'error': 'YANDEX_WORDSTAT_TOKEN не настроен. Добавьте OAuth-токен в настройках.'})
+            'body': json.dumps({'error': 'Токен не настроен. Добавьте YANDEX_WORDSTAT_TOKEN или YANDEX_DIRECT_TOKEN.'})
         }
     
     if method == 'POST':
@@ -93,6 +93,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             data = response.json()
             
             if 'error_code' in data:
+                error_msg = data.get('error_str', 'Ошибка API')
+                error_detail = data.get('error_detail', '')
+                error_code = data.get('error_code')
+                
+                print(f'API Error: {error_code} - {error_msg} - {error_detail}')
+                print(f'Token used: {token[:20]}...')
+                
                 return {
                     'statusCode': 500,
                     'headers': {
@@ -101,9 +108,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     },
                     'isBase64Encoded': False,
                     'body': json.dumps({
-                        'error': data.get('error_str', 'Ошибка API'),
-                        'details': data.get('error_detail', ''),
-                        'code': data.get('error_code')
+                        'error': f'{error_msg}: {error_detail}',
+                        'code': error_code,
+                        'hint': 'Проверьте права доступа токена на https://oauth.yandex.ru'
                     })
                 }
             
