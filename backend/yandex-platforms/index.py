@@ -31,12 +31,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'Method not allowed'})
         }
     
-    token = os.environ.get('YANDEX_DIRECT_TOKEN')
+    query_params = event.get('queryStringParameters') or {}
+    token = query_params.get('token') or os.environ.get('YANDEX_DIRECT_TOKEN')
+    
     if not token:
         return {
-            'statusCode': 500,
+            'statusCode': 400,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'YANDEX_DIRECT_TOKEN not configured'})
+            'body': json.dumps({'error': 'Token required. Provide token in query params or environment'})
         }
     
     api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns'

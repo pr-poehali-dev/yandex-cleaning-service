@@ -48,6 +48,8 @@ const Index = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [token, setToken] = useState('');
+  const [showTokenInput, setShowTokenInput] = useState(false);
 
   const filteredPlatforms = platforms.filter(platform => {
     const matchesSearch = platform.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -61,9 +63,27 @@ const Index = () => {
   const avgCTR = ((totalClicks / totalImpressions) * 100).toFixed(2);
 
   const loadPlatforms = async () => {
+    if (!token && !showTokenInput) {
+      setShowTokenInput(true);
+      toast({
+        title: 'Требуется токен',
+        description: 'Введите OAuth-токен Яндекс Директа',
+      });
+      return;
+    }
+
+    if (!token) {
+      toast({
+        title: 'Токен не указан',
+        description: 'Пожалуйста, введите токен',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch('https://functions.poehali.dev/92a3c242-6114-450f-b744-88b7eda19d62');
+      const response = await fetch(`https://functions.poehali.dev/92a3c242-6114-450f-b744-88b7eda19d62?token=${encodeURIComponent(token)}`);
       const data = await response.json();
       
       if (response.ok && data.platforms) {
@@ -118,12 +138,40 @@ const Index = () => {
               <Icon name={loading ? 'Loader2' : 'RefreshCw'} size={16} className={loading ? 'animate-spin' : ''} />
               {loading ? 'Загрузка...' : 'Обновить данные'}
             </Button>
-            <Button variant="outline" className="gap-2">
-              <Icon name="Settings" size={16} />
-              Настройки
+            <Button variant="outline" onClick={() => setShowTokenInput(!showTokenInput)} className="gap-2">
+              <Icon name="Key" size={16} />
+              {token ? 'Токен сохранён' : 'Ввести токен'}
             </Button>
           </div>
         </div>
+
+        {showTokenInput && (
+          <Card className="animate-scale-in">
+            <CardHeader>
+              <CardTitle>OAuth-токен Яндекс Директа</CardTitle>
+              <CardDescription>Вставьте токен для подключения к API</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="y0__xCtvb3CARjmlTsguOGj8xQwgPzDiwg4CJJDEsJa43d1bvT_Rk1a3rCN3Q"
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  className="flex-1 font-mono text-sm"
+                />
+                <Button onClick={() => {
+                  if (token) {
+                    setShowTokenInput(false);
+                    toast({ title: 'Токен сохранён', description: 'Теперь можно загрузить данные' });
+                  }
+                }}>
+                  Сохранить
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in">
           <Card className="hover-scale">
