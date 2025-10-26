@@ -94,6 +94,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 data = response.json()
                 
+                print(f'Full API response: {json.dumps(data, ensure_ascii=False)}')
+                
                 if 'error' in data:
                     error_msg = data.get('error', 'Ошибка API')
                     
