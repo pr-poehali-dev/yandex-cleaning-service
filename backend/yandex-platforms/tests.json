@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Get platforms from Yandex Direct API",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "campaigns": "array",
+        "platforms": "array",
+        "total": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
