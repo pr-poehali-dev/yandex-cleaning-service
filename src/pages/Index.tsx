@@ -78,9 +78,10 @@ const Index = () => {
           description: `Найдено ${data.total} площадок из ${data.campaigns.length} кампаний`,
         });
       } else {
+        console.log('Ответ API:', data);
         toast({
           title: 'Ошибка загрузки',
-          description: data.error || 'Не удалось загрузить данные',
+          description: JSON.stringify(data.details || data.error || data),
           variant: 'destructive'
         });
       }
