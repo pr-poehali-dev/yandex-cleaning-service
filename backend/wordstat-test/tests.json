@@ -1,0 +1,10 @@
+{
+  "tests": [
+    {
+      "name": "Получить сырой ответ API",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}
