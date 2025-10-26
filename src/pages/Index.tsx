@@ -48,8 +48,8 @@ export default function Index() {
       if (data.success && data.data?.SearchQuery) {
         setResults(data.data.SearchQuery);
         toast({
-          title: 'Успех',
-          description: `Найдено ${data.data.SearchQuery.length} запросов`
+          title: 'Данные получены ✅',
+          description: data.note || `Найдено ${data.data.SearchQuery.length} запросов`
         });
       } else {
         toast({
