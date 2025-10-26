@@ -63,7 +63,8 @@ const Index = () => {
   const loadPlatforms = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://functions.poehali.dev/92a3c242-6114-450f-b744-88b7eda19d62');
+      const token = 'y0__xCtvb3CARjmlTsguOGj8xQwgPzDiwg4CJJDEsJa43d1bvT_Rk1a3rCN3Q';
+      const response = await fetch(`https://functions.poehali.dev/92a3c242-6114-450f-b744-88b7eda19d62?token=${encodeURIComponent(token)}`);
       const data = await response.json();
       
       if (response.ok && data.platforms) {
