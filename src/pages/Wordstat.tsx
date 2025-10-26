@@ -133,32 +133,36 @@ export default function Wordstat() {
             {results.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">Результаты:</h3>
-                <div className="space-y-2">
-                  {results.map((result, index) => (
-                    <Card key={index}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="font-medium text-lg">{result.Keyword}</span>
-                          <span className="text-muted-foreground font-semibold">
-                            {result.Shows.toLocaleString()} показов/мес
-                          </span>
-                        </div>
-                        {result.TopRequests && result.TopRequests.length > 0 && (
-                          <div className="mt-3 pt-3 border-t">
-                            <p className="text-sm font-medium mb-2">Похожие запросы:</p>
-                            <div className="space-y-1">
-                              {result.TopRequests.slice(0, 5).map((top, i) => (
-                                <div key={i} className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">{top.phrase}</span>
-                                  <span className="text-muted-foreground">{top.count.toLocaleString()}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="text-left p-3 font-semibold">Ключевое слово</th>
+                        <th className="text-right p-3 font-semibold">Частотность</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.map((result, resultIndex) => (
+                        result.TopRequests && result.TopRequests.length > 0 ? (
+                          result.TopRequests.map((top, topIndex) => (
+                            <tr key={`${resultIndex}-${topIndex}`} className="border-b hover:bg-muted/30">
+                              <td className="p-3">{top.phrase}</td>
+                              <td className="p-3 text-right text-muted-foreground">
+                                {top.count.toLocaleString()}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr key={resultIndex} className="border-b hover:bg-muted/30">
+                            <td className="p-3">{result.Keyword}</td>
+                            <td className="p-3 text-right text-muted-foreground">
+                              {result.Shows.toLocaleString()}
+                            </td>
+                          </tr>
+                        )
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
