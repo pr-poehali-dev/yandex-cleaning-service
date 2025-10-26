@@ -53,11 +53,17 @@ export default function Wordstat() {
 
       const data = await response.json();
 
+      console.log('Полный ответ API:', data);
+      console.log('SearchQuery:', data.data?.SearchQuery);
+
       if (data.success && data.data?.SearchQuery) {
         setResults(data.data.SearchQuery);
+        const totalRequests = data.data.SearchQuery.reduce((sum: number, item: WordstatResult) => {
+          return sum + (item.TopRequests?.length || 0);
+        }, 0);
         toast({
           title: 'Успех',
-          description: `Найдено ${data.data.SearchQuery.length} запросов`
+          description: `Найдено ${totalRequests} похожих запросов`
         });
       } else {
         console.error('Ответ API:', data);
