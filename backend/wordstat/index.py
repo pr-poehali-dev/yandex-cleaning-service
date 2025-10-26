@@ -112,9 +112,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         })
                     }
                 
-                total_shows = 0
-                if 'common' in data and len(data['common']) > 0:
-                    total_shows = data['common'][0].get('frequency', 0)
+                total_shows = data.get('totalCount', 0)
                 
                 search_query.append({
                     'Keyword': keyword,
