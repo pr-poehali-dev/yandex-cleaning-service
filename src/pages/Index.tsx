@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,21 +29,70 @@ const performanceData = [
   { date: '21.10', impressions: 142890, clicks: 3567, conversions: 96 },
 ];
 
+interface Platform {
+  id?: number;
+  campaignId?: string;
+  name: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  conversions: number;
+  cost: number;
+  status: string;
+}
+
 const Index = () => {
+  const { toast } = useToast();
+  const [platforms, setPlatforms] = useState<Platform[]>(mockPlatforms);
+  const [loading, setLoading] = useState(false);
   const [selectedPlatforms, setSelectedPlatforms] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const filteredPlatforms = mockPlatforms.filter(platform => {
+  const filteredPlatforms = platforms.filter(platform => {
     const matchesSearch = platform.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || platform.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
-  const totalImpressions = mockPlatforms.reduce((sum, p) => sum + p.impressions, 0);
-  const totalClicks = mockPlatforms.reduce((sum, p) => sum + p.clicks, 0);
-  const totalConversions = mockPlatforms.reduce((sum, p) => sum + p.conversions, 0);
+  const totalImpressions = platforms.reduce((sum, p) => sum + p.impressions, 0);
+  const totalClicks = platforms.reduce((sum, p) => sum + p.clicks, 0);
+  const totalConversions = platforms.reduce((sum, p) => sum + p.conversions, 0);
   const avgCTR = ((totalClicks / totalImpressions) * 100).toFixed(2);
+
+  const loadPlatforms = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/92a3c242-6114-450f-b744-88b7eda19d62');
+      const data = await response.json();
+      
+      if (response.ok && data.platforms) {
+        const loadedPlatforms = data.platforms.map((p: any, idx: number) => ({
+          id: idx + 1,
+          ...p
+        }));
+        setPlatforms(loadedPlatforms);
+        toast({
+          title: 'Данные загружены',
+          description: `Найдено ${data.total} площадок из ${data.campaigns.length} кампаний`,
+        });
+      } else {
+        toast({
+          title: 'Ошибка загрузки',
+          description: data.error || 'Не удалось загрузить данные',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка подключения',
+        description: 'Проверьте токен Яндекс Директа',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const togglePlatform = (id: number) => {
     setSelectedPlatforms(prev =>
@@ -63,10 +113,16 @@ const Index = () => {
             <h1 className="text-3xl font-bold tracking-tight">Оптимизация площадок РСЯ</h1>
             <p className="text-muted-foreground mt-1">Анализ и управление площадками Яндекс Директ</p>
           </div>
-          <Button variant="outline" className="gap-2">
-            <Icon name="Settings" size={16} />
-            Настройки
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={loadPlatforms} disabled={loading} className="gap-2">
+              <Icon name={loading ? 'Loader2' : 'RefreshCw'} size={16} className={loading ? 'animate-spin' : ''} />
+              {loading ? 'Загрузка...' : 'Обновить данные'}
+            </Button>
+            <Button variant="outline" className="gap-2">
+              <Icon name="Settings" size={16} />
+              Настройки
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 animate-fade-in">
