@@ -39,8 +39,9 @@ export default function Wordstat() {
     }
 
     setLoading(true);
+    console.log('⭐ VERSION 2.0 - Starting request...');
     try {
-      const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8', {
+      const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8?v=2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
