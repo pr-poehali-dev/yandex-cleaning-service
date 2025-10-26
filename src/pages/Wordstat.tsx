@@ -142,25 +142,27 @@ export default function Wordstat() {
                       </tr>
                     </thead>
                     <tbody>
-                      {results.map((result, resultIndex) => (
-                        result.TopRequests && result.TopRequests.length > 0 ? (
-                          result.TopRequests.map((top, topIndex) => (
+                      {results.flatMap((result, resultIndex) => {
+                        if (result.TopRequests && result.TopRequests.length > 0) {
+                          return result.TopRequests.map((top, topIndex) => (
                             <tr key={`${resultIndex}-${topIndex}`} className="border-b hover:bg-muted/30">
                               <td className="p-3">{top.phrase}</td>
                               <td className="p-3 text-right text-muted-foreground">
                                 {top.count.toLocaleString()}
                               </td>
                             </tr>
-                          ))
-                        ) : (
-                          <tr key={resultIndex} className="border-b hover:bg-muted/30">
-                            <td className="p-3">{result.Keyword}</td>
-                            <td className="p-3 text-right text-muted-foreground">
-                              {result.Shows.toLocaleString()}
-                            </td>
-                          </tr>
-                        )
-                      ))}
+                          ));
+                        } else {
+                          return (
+                            <tr key={resultIndex} className="border-b hover:bg-muted/30">
+                              <td className="p-3">{result.Keyword}</td>
+                              <td className="p-3 text-right text-muted-foreground">
+                                {result.Shows.toLocaleString()}
+                              </td>
+                            </tr>
+                          );
+                        }
+                      })}
                     </tbody>
                   </table>
                 </div>
