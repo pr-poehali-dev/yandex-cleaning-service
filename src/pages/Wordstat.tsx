@@ -8,13 +8,25 @@ import Icon from '@/components/ui/icon';
 interface WordstatResult {
   Keyword: string;
   Shows: number;
+  TopRequests?: Array<{ phrase: string; count: number }>;
 }
 
 export default function Wordstat() {
   const [keywords, setKeywords] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<WordstatResult[]>([]);
+  const [region, setRegion] = useState('213');
   const { toast } = useToast();
+
+  const regions = [
+    { id: '213', name: 'Москва' },
+    { id: '2', name: 'Санкт-Петербург' },
+    { id: '225', name: 'Россия' },
+    { id: '11316', name: 'Новосибирск' },
+    { id: '54', name: 'Екатеринбург' },
+    { id: '63', name: 'Казань' },
+    { id: '65', name: 'Нижний Новгород' }
+  ];
 
   const handleSearch = async () => {
     if (!keywords.trim()) {
@@ -35,7 +47,7 @@ export default function Wordstat() {
         },
         body: JSON.stringify({
           keywords: keywords.split('\n').map(k => k.trim()).filter(k => k),
-          regions: [213]
+          regions: [parseInt(region)]
         })
       });
 
@@ -82,6 +94,20 @@ export default function Wordstat() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <label className="block text-sm font-medium mb-2">Регион</label>
+              <select
+                className="w-full p-2 border rounded-md"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+              >
+                {regions.map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Ключевые слова</label>
               <textarea
                 className="w-full min-h-[200px] p-3 border rounded-md resize-y"
                 placeholder="клининг&#10;уборка квартир&#10;мойка окон"
@@ -110,11 +136,26 @@ export default function Wordstat() {
                 <div className="space-y-2">
                   {results.map((result, index) => (
                     <Card key={index}>
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <span className="font-medium">{result.Keyword}</span>
-                        <span className="text-muted-foreground">
-                          {result.Shows.toLocaleString()} показов/месяц
-                        </span>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-lg">{result.Keyword}</span>
+                          <span className="text-muted-foreground font-semibold">
+                            {result.Shows.toLocaleString()} показов/мес
+                          </span>
+                        </div>
+                        {result.TopRequests && result.TopRequests.length > 0 && (
+                          <div className="mt-3 pt-3 border-t">
+                            <p className="text-sm font-medium mb-2">Похожие запросы:</p>
+                            <div className="space-y-1">
+                              {result.TopRequests.slice(0, 5).map((top, i) => (
+                                <div key={i} className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">{top.phrase}</span>
+                                  <span className="text-muted-foreground">{top.count.toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
