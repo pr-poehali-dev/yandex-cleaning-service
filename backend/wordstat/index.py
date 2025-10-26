@@ -6,7 +6,7 @@ import time
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Получение реальных данных из Яндекс.Wordstat API
+    Business: Получение реальных данных из Яндекс.Wordstat API v5
     Args: event - dict с httpMethod, body (keywords: List[str], regions: List[int])
           context - объект с атрибутами request_id, function_name
     Returns: HTTP response с реальными данными о частотности запросов
@@ -25,7 +25,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': ''
         }
     
-    token = os.environ.get('YANDEX_WORDSTAT_TOKEN') or os.environ.get('YANDEX_DIRECT_TOKEN')
+    token = os.environ.get('YANDEX_WORDSTAT_TOKEN')
     if not token:
         return {
             'statusCode': 500,
@@ -34,7 +34,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Origin': '*'
             },
             'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Токен не настроен. Добавьте YANDEX_WORDSTAT_TOKEN или YANDEX_DIRECT_TOKEN.'})
+            'body': json.dumps({'error': 'Токен не настроен. Добавьте YANDEX_WORDSTAT_TOKEN.'})
         }
     
     if method == 'POST':
@@ -56,24 +56,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Необходимо указать ключевые слова'})
             }
         
-        api_url = 'https://api.direct.yandex.ru/v4/json/'
+        api_url = 'https://api.direct.yandex.com/json/v5/keywordsresearch'
         
         headers = {
-            'Content-Type': 'application/json'
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json; charset=utf-8',
+            'Accept-Language': 'ru'
         }
         
         payload = {
-            'method': 'CreateNewWordstatReport',
-            'token': token,
-            'param': {
-                'Phrases': keywords,
-                'GeoID': regions
+            'method': 'get',
+            'params': {
+                'SelectionCriteria': {
+                    'Keywords': keywords,
+                    'RegionIds': regions
+                }
             }
         }
         
         try:
-            payload_json = json.dumps(payload, ensure_ascii=False)
-            response = requests.post(api_url, data=payload_json.encode('utf-8'), headers=headers, timeout=10)
+            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            
+            print(f'Response status: {response.status_code}')
+            print(f'Response body: {response.text[:500]}')
             
             if response.status_code != 200:
                 return {
@@ -84,7 +89,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     },
                     'isBase64Encoded': False,
                     'body': json.dumps({
-                        'error': 'Ошибка создания отчёта',
+                        'error': 'Ошибка API',
                         'details': response.text,
                         'status': response.status_code
                     })
@@ -92,13 +97,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             data = response.json()
             
-            if 'error_code' in data:
-                error_msg = data.get('error_str', 'Ошибка API')
-                error_detail = data.get('error_detail', '')
-                error_code = data.get('error_code')
+            if 'error' in data:
+                error_msg = data['error'].get('error_string', 'Ошибка API')
+                error_code = data['error'].get('error_code', 'unknown')
+                error_detail = data['error'].get('error_detail', '')
                 
                 print(f'API Error: {error_code} - {error_msg} - {error_detail}')
-                print(f'Token used: {token[:20]}...')
                 
                 return {
                     'statusCode': 500,
@@ -114,7 +118,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     })
                 }
             
-            if 'data' not in data:
+            if 'result' not in data:
                 return {
                     'statusCode': 500,
                     'headers': {
@@ -123,66 +127,39 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     },
                     'isBase64Encoded': False,
                     'body': json.dumps({
-                        'error': 'Не удалось создать отчёт',
+                        'error': 'Не удалось получить данные',
                         'details': data
                     })
                 }
             
-            report_id = data['data']
+            search_query = []
+            result_data = data['result']
             
-            time.sleep(2)
-            
-            max_attempts = 5
-            for attempt in range(max_attempts):
-                check_payload = {
-                    'method': 'GetWordstatReport',
-                    'token': token,
-                    'param': report_id
-                }
-                
-                check_json = json.dumps(check_payload, ensure_ascii=False)
-                report_response = requests.post(api_url, data=check_json.encode('utf-8'), headers=headers, timeout=10)
-                
-                if report_response.status_code == 200:
-                    report_data = report_response.json()
-                    
-                    if 'data' in report_data:
-                        search_query = []
-                        for item in report_data['data']:
-                            search_query.append({
-                                'Keyword': item.get('Phrase', ''),
-                                'Shows': item.get('Shows', 0)
-                            })
-                        
-                        return {
-                            'statusCode': 200,
-                            'headers': {
-                                'Content-Type': 'application/json',
-                                'Access-Control-Allow-Origin': '*'
-                            },
-                            'isBase64Encoded': False,
-                            'body': json.dumps({
-                                'success': True,
-                                'data': {'SearchQuery': search_query}
-                            })
-                        }
-                    elif 'error_code' in report_data and report_data['error_code'] == 25:
-                        if attempt < max_attempts - 1:
-                            time.sleep(2)
-                            continue
-                
-                return {
-                    'statusCode': 500,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'isBase64Encoded': False,
-                    'body': json.dumps({
-                        'error': 'Отчёт не готов, повторите попытку',
-                        'details': report_data if 'report_data' in locals() else {}
+            if isinstance(result_data, list):
+                for item in result_data:
+                    search_query.append({
+                        'Keyword': item.get('Keyword', ''),
+                        'Shows': item.get('SearchVolume', 0)
                     })
-                }
+            elif isinstance(result_data, dict) and 'SearchVolume' in result_data:
+                for keyword in keywords:
+                    search_query.append({
+                        'Keyword': keyword,
+                        'Shows': result_data.get('SearchVolume', {}).get(keyword, 0)
+                    })
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({
+                    'success': True,
+                    'data': {'SearchQuery': search_query}
+                })
+            }
                 
         except requests.exceptions.Timeout:
             return {
@@ -195,6 +172,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Превышено время ожидания ответа от API'})
             }
         except Exception as e:
+            print(f'Exception: {str(e)}')
             return {
                 'statusCode': 500,
                 'headers': {
