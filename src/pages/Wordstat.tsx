@@ -53,8 +53,12 @@ export default function Wordstat() {
 
       const data = await response.json();
 
-      console.log('Полный ответ API:', data);
-      console.log('SearchQuery:', data.data?.SearchQuery);
+      console.log('🚀 НОВАЯ ВЕРСИЯ - Полный ответ API:', data);
+      console.log('🚀 SearchQuery массив:', data.data?.SearchQuery);
+      if (data.data?.SearchQuery?.[0]?.TopRequests) {
+        console.log('🚀 TopRequests количество:', data.data.SearchQuery[0].TopRequests.length);
+        console.log('🚀 Первые 5 запросов:', data.data.SearchQuery[0].TopRequests.slice(0, 5));
+      }
 
       if (data.success && data.data?.SearchQuery) {
         setResults(data.data.SearchQuery);
