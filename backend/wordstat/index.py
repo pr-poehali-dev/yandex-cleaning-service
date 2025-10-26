@@ -66,54 +66,58 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Accept-Language': 'ru'
             }
             
-            all_top_requests = []
-            page_size = 50
-            max_pages = 40
+            payload = {
+                'phrase': keyword,
+                'regions': regions
+            }
             
             try:
-                for page in range(max_pages):
-                    offset = page * page_size
-                    
-                    payload = {
-                        'phrase': keyword,
-                        'regions': regions,
-                        'limit': page_size,
-                        'offset': offset
-                    }
-                    
-                    print(f'Fetching page {page + 1}/{max_pages}, offset={offset}')
-                    response = requests.post(api_url, json=payload, headers=headers, timeout=30)
-                    
-                    if response.status_code != 200:
-                        print(f'API error on page {page + 1}: {response.status_code}')
-                        break
-                    
-                    data = response.json()
-                    
-                    if 'error' in data:
-                        error_msg = data.get('error', 'Ошибка API')
-                        print(f'API Error: {error_msg}')
-                        break
-                    
-                    page_requests = data.get('topRequests', [])
-                    
-                    if not page_requests:
-                        print(f'No more results on page {page + 1}')
-                        break
-                    
-                    all_top_requests.extend(page_requests)
-                    print(f'Page {page + 1}: got {len(page_requests)} requests, total: {len(all_top_requests)}')
-                    
-                    if len(page_requests) < page_size:
-                        print(f'Last page reached (got {len(page_requests)} < {page_size})')
-                        break
+                print(f'Fetching data for: {keyword}')
+                response = requests.post(api_url, json=payload, headers=headers, timeout=30)
                 
-                total_shows = data.get('totalCount', 0) if 'data' in locals() else 0
+                if response.status_code != 200:
+                    print(f'API error: {response.status_code}')
+                    return {
+                        'statusCode': response.status_code,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'isBase64Encoded': False,
+                        'body': json.dumps({
+                            'error': 'Ошибка API Wordstat',
+                            'details': response.text,
+                            'status': response.status_code
+                        })
+                    }
+                
+                data = response.json()
+                
+                if 'error' in data:
+                    error_msg = data.get('error', 'Ошибка API')
+                    print(f'API Error: {error_msg}')
+                    return {
+                        'statusCode': 500,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'isBase64Encoded': False,
+                        'body': json.dumps({
+                            'error': f'Ошибка Wordstat: {error_msg}',
+                            'hint': 'Проверьте токен на https://oauth.yandex.ru'
+                        })
+                    }
+                
+                total_shows = data.get('totalCount', 0)
+                top_requests = data.get('topRequests', [])
+                
+                print(f'Got {len(top_requests)} requests for "{keyword}"')
                 
                 search_query.append({
                     'Keyword': keyword,
                     'Shows': total_shows,
-                    'TopRequests': all_top_requests
+                    'TopRequests': top_requests
                 })
                     
             except requests.exceptions.Timeout:
