@@ -1,0 +1,37 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS request для CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": "",
+      "bodyMatcher": "exact"
+    },
+    {
+      "name": "POST запрос с ключевыми словами",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "keywords": ["клининг", "уборка квартир"],
+        "regions": [213]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST без ключевых слов",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "Необходимо указать ключевые слова"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
