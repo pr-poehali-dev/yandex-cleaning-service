@@ -2,6 +2,39 @@ import json
 import os
 from typing import Dict, Any, List
 import requests
+from collections import defaultdict
+
+def clusterize_keywords(phrases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    '''
+    Кластеризация ключевых слов по общим словам
+    '''
+    clusters = defaultdict(lambda: {'phrases': [], 'total_count': 0})
+    
+    for phrase_data in phrases:
+        phrase = phrase_data['phrase'].lower()
+        words = set(phrase.split())
+        
+        stop_words = {'в', 'на', 'с', 'по', 'для', 'из', 'и', 'или', 'как', 'что', 'за'}
+        keywords_in_phrase = [w for w in words if w not in stop_words and len(w) > 2]
+        
+        if not keywords_in_phrase:
+            keywords_in_phrase = list(words)[:1]
+        
+        main_keyword = sorted(keywords_in_phrase, key=lambda w: len(w), reverse=True)[0]
+        
+        clusters[main_keyword]['phrases'].append(phrase_data)
+        clusters[main_keyword]['total_count'] += phrase_data['count']
+    
+    result = []
+    for keyword, data in sorted(clusters.items(), key=lambda x: x[1]['total_count'], reverse=True):
+        result.append({
+            'cluster_name': keyword,
+            'total_count': data['total_count'],
+            'phrases_count': len(data['phrases']),
+            'phrases': sorted(data['phrases'], key=lambda x: x['count'], reverse=True)
+        })
+    
+    return result
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -62,60 +95,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'Accept-Language': 'ru'
         }
         
-        all_phrases_dict = {}
-        processed_phrases = set()
-        phrases_to_process = list(keywords)
-        max_iterations = 40
-        iteration = 0
-        
         try:
-            while phrases_to_process and iteration < max_iterations:
-                iteration += 1
-                current_phrase = phrases_to_process.pop(0)
-                
-                if current_phrase.lower() in processed_phrases:
-                    continue
-                
-                processed_phrases.add(current_phrase.lower())
-                
-                print(f'[{iteration}/40] Fetching: "{current_phrase}" (queue: {len(phrases_to_process)}, total: {len(all_phrases_dict)})')
-                
-                payload = {
-                    'phrase': current_phrase,
-                    'regions': regions
+            payload = {
+                'phrase': keywords[0],
+                'regions': regions
+            }
+            
+            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code != 200:
+                return {
+                    'statusCode': response.status_code,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': f'API error: {response.status_code}'})
                 }
-                
-                response = requests.post(api_url, json=payload, headers=headers, timeout=30)
-                
-                if response.status_code != 200:
-                    print(f'API error: {response.status_code}, skipping')
-                    continue
-                
-                data = response.json()
-                
-                if 'error' in data:
-                    print(f'API Error: {data.get("error")}, skipping')
-                    continue
-                
-                top_requests = data.get('topRequests', [])
-                print(f'Got {len(top_requests)} requests')
-                
-                for req in top_requests:
-                    phrase_lower = req['phrase'].lower()
-                    if phrase_lower not in all_phrases_dict:
-                        all_phrases_dict[phrase_lower] = req
-                        
-                        if len(all_phrases_dict) < 2000 and req['phrase'].lower() not in processed_phrases:
-                            phrases_to_process.append(req['phrase'])
             
-            print(f'Collection complete: {len(all_phrases_dict)} unique phrases collected')
+            data = response.json()
             
-            all_phrases_list = sorted(all_phrases_dict.values(), key=lambda x: x['count'], reverse=True)
+            if 'error' in data:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': data.get('error')})
+                }
+            
+            top_requests = data.get('topRequests', [])
+            print(f'Got {len(top_requests)} phrases')
+            
+            clusters = clusterize_keywords(top_requests)
+            print(f'Created {len(clusters)} clusters')
             
             search_query = [{
-                'Keyword': ', '.join(keywords),
-                'Shows': all_phrases_list[0]['count'] if all_phrases_list else 0,
-                'TopRequests': all_phrases_list
+                'Keyword': keywords[0],
+                'Shows': top_requests[0]['count'] if top_requests else 0,
+                'TopRequests': top_requests,
+                'Clusters': clusters
             }]
         
         except requests.exceptions.Timeout:
