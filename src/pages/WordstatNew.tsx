@@ -20,12 +20,21 @@ interface Cluster {
   phrases: TopRequest[];
 }
 
+interface MinusCategory {
+  name: string;
+  count: number;
+  total_volume: number;
+  phrases: TopRequest[];
+}
+
 export default function WordstatNew() {
   const [keywords, setKeywords] = useState('');
   const [loading, setLoading] = useState(false);
   const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [minusWords, setMinusWords] = useState<Record<string, MinusCategory>>({});
   const [region, setRegion] = useState('213');
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
+  const [expandedMinusCategories, setExpandedMinusCategories] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const regions = [
@@ -45,6 +54,18 @@ export default function WordstatNew() {
         next.delete(clusterName);
       } else {
         next.add(clusterName);
+      }
+      return next;
+    });
+  };
+
+  const toggleMinusCategory = (categoryKey: string) => {
+    setExpandedMinusCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(categoryKey)) {
+        next.delete(categoryKey);
+      } else {
+        next.add(categoryKey);
       }
       return next;
     });
@@ -78,6 +99,7 @@ export default function WordstatNew() {
 
     setLoading(true);
     setClusters([]);
+    setMinusWords({});
     
     try {
       const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8', {
@@ -96,8 +118,11 @@ export default function WordstatNew() {
 
       if (data.success && data.data?.SearchQuery) {
         const clusterData = data.data.SearchQuery[0]?.Clusters || [];
+        const minusData = data.data.SearchQuery[0]?.MinusWords || {};
         console.log('Clusters:', clusterData);
+        console.log('Minus words:', minusData);
         setClusters(clusterData);
+        setMinusWords(minusData);
         
         toast({
           title: 'Успех! ✅',
@@ -224,6 +249,67 @@ export default function WordstatNew() {
                                 <td className="p-3">{phrase.phrase}</td>
                                 <td className="p-3 text-right text-muted-foreground">
                                   {phrase.count.toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {Object.keys(minusWords).length > 0 && (
+              <div className="mt-6 space-y-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Icon name="ShieldAlert" size={24} />
+                  ⛔ Минус-слова ({Object.values(minusWords).reduce((sum, cat) => sum + cat.count, 0)} нецелевых фраз)
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Рекомендуется добавить эти слова в минус-фразы рекламных кампаний для экономии бюджета
+                </p>
+                {Object.entries(minusWords).map(([key, category]) => (
+                  <Card key={key} className="overflow-hidden border-red-200">
+                    <button
+                      onClick={() => toggleMinusCategory(key)}
+                      className="w-full text-left p-4 hover:bg-red-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Icon 
+                            name={expandedMinusCategories.has(key) ? "ChevronDown" : "ChevronRight"} 
+                            size={20} 
+                          />
+                          <div>
+                            <div className="font-semibold text-lg">{category.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {category.count} фраз · {category.total_volume.toLocaleString()} показов
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-red-600 font-medium">
+                          Нецелевые
+                        </div>
+                      </div>
+                    </button>
+                    
+                    {expandedMinusCategories.has(key) && (
+                      <div className="border-t border-red-200">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-red-50">
+                              <th className="text-left p-3 text-sm font-medium">Фраза</th>
+                              <th className="text-right p-3 text-sm font-medium">Показов</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {category.phrases.map((phrase, idx) => (
+                              <tr key={idx} className="border-t hover:bg-red-50/50">
+                                <td className="p-3">{phrase.phrase}</td>
+                                <td className="p-3 text-right text-muted-foreground">
+                                                  {phrase.count.toLocaleString()}
                                 </td>
                               </tr>
                             ))}

@@ -43,6 +43,84 @@ def detect_intent(phrase: str) -> str:
     else:
         return 'general'
 
+def detect_minus_words(phrases: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    '''
+    Автоматическое определение минус-слов для контекстной рекламы
+    Возвращает категоризированный список нецелевых запросов
+    '''
+    minus_categories = {
+        'free': {
+            'name': '🆓 Бесплатно / Халява',
+            'keywords': ['бесплатно', 'бесплатный', 'даром', 'безвозмездно', 'задарма', 'free'],
+            'phrases': []
+        },
+        'diy': {
+            'name': '🔧 Своими руками / DIY',
+            'keywords': ['своими руками', 'самостоятельно', 'сам', 'самому', 'diy', 'как сделать', 'инструкция'],
+            'phrases': []
+        },
+        'competitors': {
+            'name': '🏢 Конкуренты / Площадки',
+            'keywords': ['авито', 'циан', 'домклик', 'яндекс недвижимость', 'юла', 'из рук в руки'],
+            'phrases': []
+        },
+        'info': {
+            'name': 'ℹ️ Информационные запросы',
+            'keywords': ['что такое', 'как выбрать', 'какой лучше', 'отличия', 'разница', 'плюсы минусы', 'советы'],
+            'phrases': []
+        },
+        'job': {
+            'name': '💼 Работа / Вакансии',
+            'keywords': ['вакансии', 'работа', 'резюме', 'зарплата', 'требуются', 'ищу работу', 'карьера'],
+            'phrases': []
+        },
+        'education': {
+            'name': '🎓 Обучение / Курсы',
+            'keywords': ['курсы', 'обучение', 'семинар', 'тренинг', 'вебинар', 'мастер класс', 'уроки'],
+            'phrases': []
+        },
+        'download': {
+            'name': '📥 Скачать / Загрузить',
+            'keywords': ['скачать', 'загрузить', 'download', 'торрент', 'онлайн', 'смотреть'],
+            'phrases': []
+        },
+        'porn': {
+            'name': '🔞 Взрослый контент',
+            'keywords': ['порно', 'секс', 'xxx', 'эротика', 'интим'],
+            'phrases': []
+        },
+        'other': {
+            'name': '❓ Прочие нецелевые',
+            'keywords': ['игра', 'игры', 'мультфильм', 'картинки', 'рисунок', 'раскраска', 'шутки', 'анекдоты'],
+            'phrases': []
+        }
+    }
+    
+    for phrase_data in phrases:
+        phrase_lower = phrase_data['phrase'].lower()
+        
+        matched = False
+        for category_key, category_data in minus_categories.items():
+            for keyword in category_data['keywords']:
+                if keyword in phrase_lower:
+                    category_data['phrases'].append(phrase_data)
+                    matched = True
+                    break
+            if matched:
+                break
+    
+    result = {}
+    for key, data in minus_categories.items():
+        if len(data['phrases']) > 0:
+            result[key] = {
+                'name': data['name'],
+                'count': len(data['phrases']),
+                'total_volume': sum(p['count'] for p in data['phrases']),
+                'phrases': sorted(data['phrases'], key=lambda x: x['count'], reverse=True)
+            }
+    
+    return result
+
 def calculate_tfidf(phrases: List[str]) -> List[Dict[str, float]]:
     '''Упрощенная TF-IDF без scikit-learn'''
     stop_words = {
@@ -303,11 +381,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             clusters = smart_clusterize(top_requests)
             print(f'[WORDSTAT] Created {len(clusters)} smart clusters with TF-IDF+Cosine')
             
+            minus_words = detect_minus_words(top_requests)
+            print(f'[WORDSTAT] Detected {sum(v["count"] for v in minus_words.values())} minus-words in {len(minus_words)} categories')
+            
             search_query = [{
                 'Keyword': keywords[0],
                 'Shows': top_requests[0]['count'] if top_requests else 0,
                 'TopRequests': top_requests,
-                'Clusters': clusters
+                'Clusters': clusters,
+                'MinusWords': minus_words
             }]
         
         except requests.exceptions.Timeout:
