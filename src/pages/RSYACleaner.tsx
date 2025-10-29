@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
@@ -12,20 +11,80 @@ interface Filter {
   pattern: string;
 }
 
+interface Campaign {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+}
+
 const DEFAULT_FILTERS: Filter[] = [
   { id: '1', pattern: 'com.' },
   { id: '2', pattern: 'dsp' },
   { id: '3', pattern: 'vnp' }
 ];
 
+const MOCK_CAMPAIGNS: Campaign[] = [
+  { id: '12345678', name: 'Недвижимость РСЯ - Москва', type: 'TEXT_IMAGE_AD', status: 'RUNNING' },
+  { id: '87654321', name: 'Клининг РСЯ - СПб', type: 'TEXT_IMAGE_AD', status: 'RUNNING' },
+  { id: '11223344', name: 'Ремонт РСЯ - Регионы', type: 'TEXT_IMAGE_AD', status: 'PAUSED' }
+];
+
 export default function RSYACleaner() {
   const [filters, setFilters] = useState<Filter[]>(DEFAULT_FILTERS);
   const [newFilter, setNewFilter] = useState('');
-  const [apiToken, setApiToken] = useState('');
-  const [campaignId, setCampaignId] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{ disabled: number; total: number } | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const token = localStorage.getItem('yandex_direct_token');
+    if (token) {
+      setIsConnected(true);
+      setCampaigns(MOCK_CAMPAIGNS);
+    }
+  }, []);
+
+  const handleConnect = () => {
+    const clientId = 'your_client_id';
+    const redirectUri = encodeURIComponent(window.location.origin + '/rsya-cleaner');
+    const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
+    
+    toast({ 
+      title: '🔄 Перенаправление...', 
+      description: 'Сейчас откроется страница авторизации Яндекс' 
+    });
+
+    setTimeout(() => {
+      localStorage.setItem('yandex_direct_token', 'mock_token_' + Date.now());
+      setIsConnected(true);
+      setCampaigns(MOCK_CAMPAIGNS);
+      toast({ 
+        title: '✅ Подключено!', 
+        description: 'Яндекс.Директ успешно подключён' 
+      });
+    }, 1500);
+  };
+
+  const handleDisconnect = () => {
+    localStorage.removeItem('yandex_direct_token');
+    setIsConnected(false);
+    setCampaigns([]);
+    setSelectedCampaigns([]);
+    setResults(null);
+    toast({ title: 'Яндекс.Директ отключён' });
+  };
+
+  const toggleCampaign = (campaignId: string) => {
+    setSelectedCampaigns(prev => 
+      prev.includes(campaignId) 
+        ? prev.filter(id => id !== campaignId)
+        : [...prev, campaignId]
+    );
+  };
 
   const addFilter = () => {
     if (!newFilter.trim()) {
@@ -49,13 +108,8 @@ export default function RSYACleaner() {
   };
 
   const handleClean = async () => {
-    if (!apiToken.trim()) {
-      toast({ title: 'Введите токен Яндекс.Директ API', variant: 'destructive' });
-      return;
-    }
-
-    if (!campaignId.trim()) {
-      toast({ title: 'Введите ID кампании РСЯ', variant: 'destructive' });
+    if (selectedCampaigns.length === 0) {
+      toast({ title: 'Выберите хотя бы одну кампанию', variant: 'destructive' });
       return;
     }
 
@@ -67,7 +121,7 @@ export default function RSYACleaner() {
     setLoading(true);
     toast({ 
       title: '🚀 Запуск чистки...', 
-      description: `Применяем ${filters.length} фильтров к кампании ${campaignId}` 
+      description: `Применяем ${filters.length} фильтров к ${selectedCampaigns.length} кампаниям` 
     });
 
     setTimeout(() => {
@@ -97,144 +151,194 @@ export default function RSYACleaner() {
           <Card className="shadow-lg border-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Icon name="Key" size={20} />
-                API подключение
+                <Icon name="Link" size={20} />
+                Яндекс.Директ
               </CardTitle>
               <CardDescription>
-                Введите данные для подключения к Яндекс.Директ API
+                {isConnected ? 'Аккаунт подключён' : 'Подключите аккаунт для работы с кампаниями'}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="apiToken">Токен Яндекс.Директ API</Label>
-                <Input
-                  id="apiToken"
-                  type="password"
-                  placeholder="y0_AgAAAAAA..."
-                  value={apiToken}
-                  onChange={(e) => setApiToken(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  💡 Получить токен можно в настройках Яндекс.Директ
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="campaignId">ID кампании РСЯ</Label>
-                <Input
-                  id="campaignId"
-                  type="text"
-                  placeholder="12345678"
-                  value={campaignId}
-                  onChange={(e) => setCampaignId(e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="Filter" size={20} />
-                Фильтры площадок
-              </CardTitle>
-              <CardDescription>
-                Площадки, содержащие эти паттерны, будут отключены
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2 min-h-[48px] p-3 border rounded-lg bg-slate-50">
-                {filters.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Фильтры не добавлены</p>
-                ) : (
-                  filters.map(filter => (
-                    <Badge 
-                      key={filter.id} 
-                      className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 border-blue-200"
-                    >
-                      <span className="font-mono">{filter.pattern}</span>
-                      <Icon 
-                        name="X" 
-                        size={14} 
-                        className="ml-2 cursor-pointer hover:text-blue-900" 
-                        onClick={() => removeFilter(filter.id)}
-                      />
-                    </Badge>
-                  ))
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Введите паттерн (например: com., dsp, vnp)"
-                  value={newFilter}
-                  onChange={(e) => setNewFilter(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addFilter()}
-                />
-                <Button onClick={addFilter} variant="outline">
-                  <Icon name="Plus" size={18} className="mr-2" />
-                  Добавить
-                </Button>
-              </div>
-
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-medium text-blue-900 mb-2">
-                  📌 Примеры фильтров:
-                </p>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• <code className="font-mono bg-white px-1 rounded">com.</code> — блокирует домены типа example.com.ru</li>
-                  <li>• <code className="font-mono bg-white px-1 rounded">dsp</code> — блокирует DSP-площадки</li>
-                  <li>• <code className="font-mono bg-white px-1 rounded">vnp</code> — блокирует VNP-партнёрки</li>
-                  <li>• <code className="font-mono bg-white px-1 rounded">adult</code> — блокирует взрослый контент</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-
-          {results && (
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-green-50 to-emerald-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-700">
-                  <Icon name="CheckCircle2" size={20} />
-                  Результаты чистки
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-white rounded-lg">
-                    <div className="text-3xl font-bold text-green-600">{results.disabled}</div>
-                    <div className="text-sm text-muted-foreground">Площадок отключено</div>
+            <CardContent>
+              {!isConnected ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Icon name="Zap" size={32} className="text-white" />
                   </div>
-                  <div className="text-center p-4 bg-white rounded-lg">
-                    <div className="text-3xl font-bold text-slate-600">{results.total}</div>
-                    <div className="text-sm text-muted-foreground">Всего проверено</div>
+                  <h3 className="text-lg font-semibold mb-2">Подключите Яндекс.Директ</h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Авторизуйтесь через OAuth для доступа к кампаниям
+                  </p>
+                  <Button 
+                    onClick={handleConnect}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                  >
+                    <Icon name="Link" size={18} className="mr-2" />
+                    Подключить Яндекс.Директ
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                        <Icon name="CheckCircle2" size={20} className="text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-green-900">Яндекс.Директ подключён</p>
+                        <p className="text-sm text-green-700">Найдено {campaigns.length} кампаний РСЯ</p>
+                      </div>
+                    </div>
+                    <Button onClick={handleDisconnect} variant="outline" size="sm">
+                      <Icon name="Unlink" size={16} className="mr-2" />
+                      Отключить
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-700 mb-3">Выберите кампании для чистки:</p>
+                    {campaigns.map(campaign => (
+                      <Card 
+                        key={campaign.id}
+                        className={`cursor-pointer transition-all ${
+                          selectedCampaigns.includes(campaign.id) 
+                            ? 'ring-2 ring-blue-500 bg-blue-50' 
+                            : 'hover:shadow-md'
+                        }`}
+                        onClick={() => toggleCampaign(campaign.id)}
+                      >
+                        <CardContent className="p-4 flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            selectedCampaigns.includes(campaign.id) 
+                              ? 'bg-blue-600 border-blue-600' 
+                              : 'border-slate-300'
+                          }`}>
+                            {selectedCampaigns.includes(campaign.id) && (
+                              <Icon name="Check" size={14} className="text-white" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{campaign.name}</p>
+                            <p className="text-xs text-muted-foreground">ID: {campaign.id}</p>
+                          </div>
+                          <Badge className={campaign.status === 'RUNNING' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}>
+                            {campaign.status === 'RUNNING' ? 'Активна' : 'Приостановлена'}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-                <p className="mt-4 text-sm text-green-700 text-center">
-                  ✨ Отключено {((results.disabled / results.total) * 100).toFixed(1)}% площадок
-                </p>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
 
-          <Button 
-            onClick={handleClean} 
-            disabled={loading}
-            size="lg"
-            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
-          >
-            {loading ? (
-              <>
-                <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
-                Выполняется чистка...
-              </>
-            ) : (
-              <>
-                <Icon name="Sparkles" size={20} className="mr-2" />
-                Запустить чистку площадок
-              </>
-            )}
-          </Button>
+          {isConnected && (
+            <>
+              <Card className="shadow-lg border-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon name="Filter" size={20} />
+                    Фильтры площадок
+                  </CardTitle>
+                  <CardDescription>
+                    Площадки, содержащие эти паттерны, будут отключены
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2 min-h-[48px] p-3 border rounded-lg bg-slate-50">
+                    {filters.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Фильтры не добавлены</p>
+                    ) : (
+                      filters.map(filter => (
+                        <Badge 
+                          key={filter.id} 
+                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 border-blue-200"
+                        >
+                          <span className="font-mono">{filter.pattern}</span>
+                          <Icon 
+                            name="X" 
+                            size={14} 
+                            className="ml-2 cursor-pointer hover:text-blue-900" 
+                            onClick={() => removeFilter(filter.id)}
+                          />
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Введите паттерн (например: com., dsp, vnp)"
+                      value={newFilter}
+                      onChange={(e) => setNewFilter(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && addFilter()}
+                    />
+                    <Button onClick={addFilter} variant="outline">
+                      <Icon name="Plus" size={18} className="mr-2" />
+                      Добавить
+                    </Button>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900 mb-2">
+                      📌 Примеры фильтров:
+                    </p>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• <code className="font-mono bg-white px-1 rounded">com.</code> — блокирует домены типа example.com.ru</li>
+                      <li>• <code className="font-mono bg-white px-1 rounded">dsp</code> — блокирует DSP-площадки</li>
+                      <li>• <code className="font-mono bg-white px-1 rounded">vnp</code> — блокирует VNP-партнёрки</li>
+                      <li>• <code className="font-mono bg-white px-1 rounded">adult</code> — блокирует взрослый контент</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {results && (
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-green-50 to-emerald-50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-green-700">
+                      <Icon name="CheckCircle2" size={20} />
+                      Результаты чистки
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-3xl font-bold text-green-600">{results.disabled}</div>
+                        <div className="text-sm text-muted-foreground">Площадок отключено</div>
+                      </div>
+                      <div className="text-center p-4 bg-white rounded-lg">
+                        <div className="text-3xl font-bold text-slate-600">{results.total}</div>
+                        <div className="text-sm text-muted-foreground">Всего проверено</div>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm text-green-700 text-center">
+                      ✨ Отключено {((results.disabled / results.total) * 100).toFixed(1)}% площадок
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Button 
+                onClick={handleClean} 
+                disabled={loading || selectedCampaigns.length === 0}
+                size="lg"
+                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+              >
+                {loading ? (
+                  <>
+                    <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
+                    Выполняется чистка...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Sparkles" size={20} className="mr-2" />
+                    Запустить чистку площадок ({selectedCampaigns.length})
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
