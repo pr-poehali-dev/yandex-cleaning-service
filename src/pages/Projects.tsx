@@ -209,7 +209,7 @@ export default function Projects() {
                 <p className="text-slate-500 mb-6">Создайте первый проект для начала работы</p>
                 <Button
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                  className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                 >
                   <Icon name="Plus" size={20} className="mr-2" />
                   Создать проект

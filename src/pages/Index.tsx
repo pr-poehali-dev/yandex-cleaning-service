@@ -519,12 +519,12 @@ export default function Index() {
           {step === 'processing' && (
             <CardContent className="p-12">
               <div className="text-center space-y-8">
-                <div className="p-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full w-32 h-32 mx-auto flex items-center justify-center">
+                <div className="p-6 bg-gradient-to-br from-emerald-100 to-purple-100 rounded-full w-32 h-32 mx-auto flex items-center justify-center">
                   <Icon name="Sparkles" size={64} className="text-purple-600 animate-pulse" />
                 </div>
                 
                 <div>
-                  <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
                     {PROCESSING_STAGES[currentStage]?.label || 'Обработка...'}
                   </h2>
                   <p className="text-muted-foreground text-lg">
