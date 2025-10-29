@@ -1,24 +1,25 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
+
+interface Cluster {
+  cluster_name: string;
+  total_count: number;
+  phrases_count: number;
+  avg_words: number;
+  max_frequency: number;
+  min_frequency: number;
+  intent: string;
+  phrases: Array<{ phrase: string; count: number }>;
+}
 
 interface WordstatResult {
   Keyword: string;
   Shows: number;
   TopRequests?: Array<{ phrase: string; count: number }>;
-  Clusters?: Array<{
-    cluster_name: string;
-    total_count: number;
-    phrases_count: number;
-    avg_words: number;
-    max_frequency: number;
-    min_frequency: number;
-    intent: string;
-    phrases: Array<{ phrase: string; count: number }>;
-  }>;
+  Clusters?: Cluster[];
 }
 
 export default function Wordstat() {
@@ -26,7 +27,6 @@ export default function Wordstat() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<WordstatResult[]>([]);
   const [region, setRegion] = useState('213');
-  const [viewMode, setViewMode] = useState<'table' | 'clusters'>('clusters');
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -80,7 +80,7 @@ export default function Wordstat() {
 
     setLoading(true);
     try {
-      const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8?v=3', {
+      const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -92,16 +92,15 @@ export default function Wordstat() {
       });
 
       const data = await response.json();
+      console.log('🔥 API Response:', data);
 
       if (data.success && data.data?.SearchQuery) {
-        console.log('Данные ответа:', data);
-        console.log('SearchQuery[0]:', data.data.SearchQuery[0]);
-        console.log('Clusters:', data.data.SearchQuery[0]?.Clusters);
         setResults(data.data.SearchQuery);
-        const totalClusters = data.data.SearchQuery[0]?.Clusters?.length || 0;
+        const clusters = data.data.SearchQuery[0]?.Clusters;
+        console.log('🔥 Clusters found:', clusters?.length || 0);
         toast({
           title: 'Успех',
-          description: `Найдено ${totalClusters} кластеров ключевых слов`
+          description: `Найдено ${clusters?.length || 0} кластеров`
         });
       } else {
         toast({
@@ -111,6 +110,7 @@ export default function Wordstat() {
         });
       }
     } catch (error) {
+      console.error('🔥 Error:', error);
       toast({
         title: 'Ошибка',
         description: 'Не удалось выполнить запрос',
@@ -121,6 +121,8 @@ export default function Wordstat() {
     }
   };
 
+  const clusters = results[0]?.Clusters || [];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="max-w-4xl mx-auto">
@@ -128,10 +130,10 @@ export default function Wordstat() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Icon name="Search" size={24} />
-              Яндекс.Wordstat - Сбор семантики
+              Яндекс.Wordstat - Кластеризация
             </CardTitle>
             <CardDescription>
-              Введите ключевые слова (каждое с новой строки) для анализа частотности
+              Введите ключевое слово для анализа и кластеризации
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -149,10 +151,10 @@ export default function Wordstat() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Ключевые слова</label>
+              <label className="block text-sm font-medium mb-2">Ключевое слово</label>
               <textarea
-                className="w-full min-h-[200px] p-3 border rounded-md resize-y"
-                placeholder="клининг&#10;уборка квартир&#10;мойка окон"
+                className="w-full min-h-[100px] p-3 border rounded-md resize-y"
+                placeholder="купить квартиру"
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
               />
@@ -167,135 +169,69 @@ export default function Wordstat() {
               ) : (
                 <>
                   <Icon name="Search" size={20} className="mr-2" />
-                  Получить данные
+                  Анализировать
                 </>
               )}
             </Button>
 
-            {results.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Результаты:</h3>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={viewMode === 'clusters' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setViewMode('clusters')}
+            {clusters.length > 0 && (
+              <div className="mt-6 space-y-3">
+                <h3 className="text-lg font-semibold">Найдено {clusters.length} кластеров:</h3>
+                {clusters.map((cluster) => (
+                  <Card key={cluster.cluster_name} className="overflow-hidden">
+                    <button
+                      onClick={() => toggleCluster(cluster.cluster_name)}
+                      className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
                     >
-                      <Icon name="Layers" size={16} className="mr-2" />
-                      Кластеры
-                    </Button>
-                    <Button
-                      variant={viewMode === 'table' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setViewMode('table')}
-                    >
-                      <Icon name="Table" size={16} className="mr-2" />
-                      Таблица
-                    </Button>
-                  </div>
-                </div>
-
-                {viewMode === 'clusters' && results[0]?.Clusters ? (
-                  <>
-                    <div className="text-xs text-muted-foreground mb-2">
-                      Режим: {viewMode} | Кластеров: {results[0].Clusters.length}
-                    </div>
-                    <div className="space-y-3">
-                    {results[0].Clusters.map((cluster) => (
-                      <Card key={cluster.cluster_name} className="overflow-hidden">
-                        <button
-                          onClick={() => toggleCluster(cluster.cluster_name)}
-                          className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Icon 
-                                name={expandedClusters.has(cluster.cluster_name) ? "ChevronDown" : "ChevronRight"} 
-                                size={20} 
-                              />
-                              <div>
-                                <div className="font-semibold text-lg">{cluster.cluster_name}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  {cluster.phrases_count} фраз · {cluster.total_count.toLocaleString()} показов
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getIntentColor(cluster.intent)}`}>
-                                {getIntentLabel(cluster.intent)}
-                              </span>
-                              <div className="text-right text-sm text-muted-foreground">
-                                <div>Макс: {cluster.max_frequency.toLocaleString()}</div>
-                                <div>Мин: {cluster.min_frequency.toLocaleString()}</div>
-                              </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Icon 
+                            name={expandedClusters.has(cluster.cluster_name) ? "ChevronDown" : "ChevronRight"} 
+                            size={20} 
+                          />
+                          <div>
+                            <div className="font-semibold text-lg">{cluster.cluster_name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {cluster.phrases_count} фраз · {cluster.total_count.toLocaleString()} показов
                             </div>
                           </div>
-                        </button>
-                        
-                        {expandedClusters.has(cluster.cluster_name) && (
-                          <div className="border-t">
-                            <table className="w-full">
-                              <thead>
-                                <tr className="bg-muted/30">
-                                  <th className="text-left p-3 text-sm font-medium">Фраза</th>
-                                  <th className="text-right p-3 text-sm font-medium">Показов</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {cluster.phrases.map((phrase, idx) => (
-                                  <tr key={idx} className="border-t hover:bg-muted/20">
-                                    <td className="p-3">{phrase.phrase}</td>
-                                    <td className="p-3 text-right text-muted-foreground">
-                                      {phrase.count.toLocaleString()}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getIntentColor(cluster.intent)}`}>
+                            {getIntentLabel(cluster.intent)}
+                          </span>
+                          <div className="text-right text-sm text-muted-foreground">
+                            <div>Макс: {cluster.max_frequency.toLocaleString()}</div>
+                            <div>Мин: {cluster.min_frequency.toLocaleString()}</div>
                           </div>
-                        )}
-                      </Card>
-                    ))}
-                    </div>
-                  </>
-                ) : null}
-
-                {viewMode === 'table' && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b bg-muted/50">
-                          <th className="text-left p-3 font-semibold">Ключевое слово</th>
-                          <th className="text-right p-3 font-semibold">Частотность</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {results.flatMap((result, resultIndex) => {
-                          if (result.TopRequests && result.TopRequests.length > 0) {
-                            return result.TopRequests.map((top, topIndex) => (
-                              <tr key={`${resultIndex}-${topIndex}`} className="border-b hover:bg-muted/30">
-                                <td className="p-3">{top.phrase}</td>
+                        </div>
+                      </div>
+                    </button>
+                    
+                    {expandedClusters.has(cluster.cluster_name) && (
+                      <div className="border-t">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-muted/30">
+                              <th className="text-left p-3 text-sm font-medium">Фраза</th>
+                              <th className="text-right p-3 text-sm font-medium">Показов</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cluster.phrases.map((phrase, idx) => (
+                              <tr key={idx} className="border-t hover:bg-muted/20">
+                                <td className="p-3">{phrase.phrase}</td>
                                 <td className="p-3 text-right text-muted-foreground">
-                                  {top.count.toLocaleString()}
+                                  {phrase.count.toLocaleString()}
                                 </td>
                               </tr>
-                            ));
-                          } else {
-                            return (
-                              <tr key={resultIndex} className="border-b hover:bg-muted/30">
-                                <td className="p-3">{result.Keyword}</td>
-                                <td className="p-3 text-right text-muted-foreground">
-                                  {result.Shows.toLocaleString()}
-                                </td>
-                              </tr>
-                            );
-                          }
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Card>
+                ))}
               </div>
             )}
           </CardContent>
