@@ -67,19 +67,18 @@ export default function Projects() {
   const phone = localStorage.getItem('directkit_phone') || '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full bg-white border-r border-slate-200 shadow-lg transition-all duration-300 z-50 ${
+    <div className="min-h-screen bg-slate-50">
+      <aside className={`fixed top-0 left-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-50 ${
         menuOpen ? 'w-64' : 'w-20'
       }`}>
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Icon name="Sparkles" size={24} className="text-white" />
+            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
+              <Icon name="Zap" size={20} className="text-white" />
             </div>
             {menuOpen && (
               <div className="overflow-hidden">
-                <h2 className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h2 className="font-bold text-lg text-slate-900">
                   DirectKit
                 </h2>
               </div>
@@ -89,7 +88,7 @@ export default function Projects() {
 
         <nav className="p-4 space-y-2">
           <button
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-indigo-50 text-indigo-700 font-medium hover:bg-indigo-100 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-100 text-slate-900 font-medium hover:bg-slate-200 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <Icon name="FolderOpen" size={20} />
@@ -115,7 +114,7 @@ export default function Projects() {
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
           <div className={`flex items-center gap-3 mb-3 ${!menuOpen && 'justify-center'}`}>
-            <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
               {phone.slice(3, 4)}
             </div>
             {menuOpen && (
@@ -137,13 +136,12 @@ export default function Projects() {
 
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-md hover:bg-slate-50"
+          className="absolute top-1/2 -right-3 -translate-y-1/2 w-6 h-6 bg-white border border-slate-200 rounded-full flex items-center justify-center hover:bg-slate-50"
         >
           <Icon name={menuOpen ? 'ChevronLeft' : 'ChevronRight'} size={14} />
         </button>
       </aside>
 
-      {/* Main Content */}
       <main className={`transition-all duration-300 ${menuOpen ? 'ml-64' : 'ml-20'}`}>
         <div className="p-8">
           <div className="max-w-6xl mx-auto">
@@ -159,7 +157,7 @@ export default function Projects() {
                 <DialogTrigger asChild>
                   <Button 
                     size="lg"
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg"
+                    className="bg-black hover:bg-slate-800 text-white"
                   >
                     <Icon name="Plus" size={20} className="mr-2" />
                     Создать проект
@@ -186,7 +184,7 @@ export default function Projects() {
                     </div>
                     <Button 
                       onClick={handleCreateProject}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                      className="w-full bg-black hover:bg-slate-800 text-white"
                     >
                       Создать проект
                     </Button>
@@ -202,7 +200,7 @@ export default function Projects() {
                 <p className="text-slate-500 mb-6">Создайте первый проект для начала работы</p>
                 <Button
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                  className="bg-black hover:bg-slate-800 text-white"
                 >
                   <Icon name="Plus" size={20} className="mr-2" />
                   Создать проект
@@ -213,19 +211,19 @@ export default function Projects() {
                 {projects.map((project) => (
                   <Card 
                     key={project.id}
-                    className="hover:shadow-xl transition-all cursor-pointer group border-2 border-transparent hover:border-indigo-200"
+                    className="hover:shadow-md transition-all cursor-pointer group border hover:border-slate-300"
                     onClick={() => handleOpenProject(project.id)}
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between mb-2">
-                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Icon name="FolderOpen" size={24} className="text-white" />
+                        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Icon name="FolderOpen" size={24} className="text-slate-700" />
                         </div>
                         <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
                           <Icon name="MoreVertical" size={18} />
                         </Button>
                       </div>
-                      <CardTitle className="text-xl group-hover:text-indigo-600 transition-colors">
+                      <CardTitle className="text-xl">
                         {project.name}
                       </CardTitle>
                       <CardDescription>
@@ -235,11 +233,11 @@ export default function Projects() {
                     <CardContent>
                       <div className="flex gap-4">
                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Icon name="Key" size={16} className="text-indigo-500" />
+                          <Icon name="Key" size={16} className="text-slate-500" />
                           <span>{project.keywordsCount} ключей</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Icon name="Layers" size={16} className="text-purple-500" />
+                          <Icon name="Layers" size={16} className="text-slate-500" />
                           <span>{project.clustersCount} кластеров</span>
                         </div>
                       </div>
