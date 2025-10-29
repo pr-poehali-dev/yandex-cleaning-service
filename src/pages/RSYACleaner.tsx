@@ -24,11 +24,7 @@ const DEFAULT_FILTERS: Filter[] = [
   { id: '3', pattern: 'vnp' }
 ];
 
-const MOCK_CAMPAIGNS: Campaign[] = [
-  { id: '12345678', name: 'Недвижимость РСЯ - Москва', type: 'TEXT_IMAGE_AD', status: 'RUNNING' },
-  { id: '87654321', name: 'Клининг РСЯ - СПб', type: 'TEXT_IMAGE_AD', status: 'RUNNING' },
-  { id: '11223344', name: 'Ремонт РСЯ - Регионы', type: 'TEXT_IMAGE_AD', status: 'PAUSED' }
-];
+const BACKEND_URL = 'https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23';
 
 export default function RSYACleaner() {
   const [filters, setFilters] = useState<Filter[]>(DEFAULT_FILTERS);
@@ -44,9 +40,33 @@ export default function RSYACleaner() {
     const token = localStorage.getItem('yandex_direct_token');
     if (token) {
       setIsConnected(true);
-      setCampaigns(MOCK_CAMPAIGNS);
+      loadCampaigns(token);
     }
   }, []);
+
+  const loadCampaigns = async (token: string) => {
+    try {
+      const response = await fetch(BACKEND_URL, {
+        method: 'GET',
+        headers: {
+          'X-Auth-Token': token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка загрузки кампаний');
+      }
+
+      const data = await response.json();
+      setCampaigns(data.campaigns || []);
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки кампаний',
+        description: 'Не удалось загрузить список кампаний',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const handleConnect = () => {
     const clientId = 'your_client_id';
@@ -59,9 +79,10 @@ export default function RSYACleaner() {
     });
 
     setTimeout(() => {
-      localStorage.setItem('yandex_direct_token', 'mock_token_' + Date.now());
+      const mockToken = 'mock_token_' + Date.now();
+      localStorage.setItem('yandex_direct_token', mockToken);
       setIsConnected(true);
-      setCampaigns(MOCK_CAMPAIGNS);
+      loadCampaigns(mockToken);
       toast({ 
         title: '✅ Подключено!', 
         description: 'Яндекс.Директ успешно подключён' 
@@ -118,21 +139,50 @@ export default function RSYACleaner() {
       return;
     }
 
+    const token = localStorage.getItem('yandex_direct_token');
+    if (!token) {
+      toast({ title: 'Токен авторизации не найден', variant: 'destructive' });
+      return;
+    }
+
     setLoading(true);
     toast({ 
       title: '🚀 Запуск чистки...', 
       description: `Применяем ${filters.length} фильтров к ${selectedCampaigns.length} кампаниям` 
     });
 
-    setTimeout(() => {
-      setLoading(false);
-      const mockResults = { disabled: 247, total: 1520 };
-      setResults(mockResults);
+    try {
+      const response = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Auth-Token': token
+        },
+        body: JSON.stringify({
+          campaignIds: selectedCampaigns,
+          filters: filters.map(f => f.pattern)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка при выполнении чистки');
+      }
+
+      const data = await response.json();
+      setResults(data);
       toast({ 
         title: '✅ Чистка завершена!', 
-        description: `Отключено ${mockResults.disabled} площадок из ${mockResults.total}` 
+        description: `Отключено ${data.disabled} площадок из ${data.total}` 
       });
-    }, 3000);
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось выполнить чистку площадок',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
