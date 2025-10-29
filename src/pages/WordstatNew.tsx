@@ -9,11 +9,23 @@ interface TopRequest {
   count: number;
 }
 
+interface Cluster {
+  cluster_name: string;
+  total_count: number;
+  phrases_count: number;
+  avg_words: number;
+  max_frequency: number;
+  min_frequency: number;
+  intent: string;
+  phrases: TopRequest[];
+}
+
 export default function WordstatNew() {
   const [keywords, setKeywords] = useState('');
   const [loading, setLoading] = useState(false);
-  const [allRequests, setAllRequests] = useState<TopRequest[]>([]);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
   const [region, setRegion] = useState('213');
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const regions = [
@@ -26,6 +38,34 @@ export default function WordstatNew() {
     { id: '65', name: 'Нижний Новгород' }
   ];
 
+  const toggleCluster = (clusterName: string) => {
+    setExpandedClusters(prev => {
+      const next = new Set(prev);
+      if (next.has(clusterName)) {
+        next.delete(clusterName);
+      } else {
+        next.add(clusterName);
+      }
+      return next;
+    });
+  };
+
+  const getIntentColor = (intent: string) => {
+    switch (intent) {
+      case 'commercial': return 'bg-green-100 text-green-800 border-green-200';
+      case 'informational': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getIntentLabel = (intent: string) => {
+    switch (intent) {
+      case 'commercial': return '💰 Коммерческий';
+      case 'informational': return 'ℹ️ Информационный';
+      default: return '📊 Общий';
+    }
+  };
+
   const handleSearch = async () => {
     if (!keywords.trim()) {
       toast({
@@ -37,7 +77,7 @@ export default function WordstatNew() {
     }
 
     setLoading(true);
-    setAllRequests([]);
+    setClusters([]);
     
     try {
       const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8', {
@@ -52,21 +92,16 @@ export default function WordstatNew() {
       });
 
       const data = await response.json();
+      console.log('API Response:', data);
 
       if (data.success && data.data?.SearchQuery) {
-        const allTopRequests: TopRequest[] = [];
-        
-        data.data.SearchQuery.forEach((item: any) => {
-          if (item.TopRequests && Array.isArray(item.TopRequests)) {
-            allTopRequests.push(...item.TopRequests);
-          }
-        });
-        
-        setAllRequests(allTopRequests);
+        const clusterData = data.data.SearchQuery[0]?.Clusters || [];
+        console.log('Clusters:', clusterData);
+        setClusters(clusterData);
         
         toast({
           title: 'Успех! ✅',
-          description: `Получено ${allTopRequests.length} запросов`
+          description: `Найдено ${clusterData.length} кластеров`
         });
       } else {
         toast({
@@ -94,10 +129,10 @@ export default function WordstatNew() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Icon name="Search" size={24} />
-              Яндекс.Wordstat - Сбор семантики (NEW VERSION)
+              Яндекс.Wordstat - Умная кластеризация
             </CardTitle>
             <CardDescription>
-              Введите ключевые слова для анализа частотности
+              Введите ключевое слово для анализа и автоматической кластеризации
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -115,9 +150,9 @@ export default function WordstatNew() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Ключевые слова</label>
+              <label className="block text-sm font-medium mb-2">Ключевое слово</label>
               <textarea
-                className="w-full min-h-[150px] p-3 border rounded-md resize-y"
+                className="w-full min-h-[100px] p-3 border rounded-md resize-y"
                 placeholder="купить квартиру"
                 value={keywords}
                 onChange={(e) => setKeywords(e.target.value)}
@@ -128,49 +163,76 @@ export default function WordstatNew() {
               {loading ? (
                 <>
                   <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
-                  Загрузка данных (может занять до 30 сек)...
+                  Анализирую...
                 </>
               ) : (
                 <>
                   <Icon name="Search" size={20} className="mr-2" />
-                  Получить данные
+                  Анализировать
                 </>
               )}
             </Button>
-            
-            {loading && (
-              <div className="text-center text-sm text-muted-foreground">
-                ⏳ Загружаю до 2000 запросов с Яндекс.Wordstat...
-              </div>
-            )}
 
-            {allRequests.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">
-                  📊 Результаты: {allRequests.length} запросов
+            {clusters.length > 0 && (
+              <div className="mt-6 space-y-3">
+                <h3 className="text-lg font-semibold">
+                  🎯 Найдено {clusters.length} кластеров
                 </h3>
-                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                  <table className="w-full border-collapse">
-                    <thead className="sticky top-0 bg-white">
-                      <tr className="border-b bg-muted/50">
-                        <th className="text-left p-3 font-semibold w-12">#</th>
-                        <th className="text-left p-3 font-semibold">Ключевое слово</th>
-                        <th className="text-right p-3 font-semibold">Частотность</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {allRequests.map((item, index) => (
-                        <tr key={index} className="border-b hover:bg-muted/30">
-                          <td className="p-3 text-muted-foreground">{index + 1}</td>
-                          <td className="p-3">{item.phrase}</td>
-                          <td className="p-3 text-right text-muted-foreground">
-                            {item.count.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                {clusters.map((cluster) => (
+                  <Card key={cluster.cluster_name} className="overflow-hidden">
+                    <button
+                      onClick={() => toggleCluster(cluster.cluster_name)}
+                      className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Icon 
+                            name={expandedClusters.has(cluster.cluster_name) ? "ChevronDown" : "ChevronRight"} 
+                            size={20} 
+                          />
+                          <div>
+                            <div className="font-semibold text-lg">{cluster.cluster_name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {cluster.phrases_count} фраз · {cluster.total_count.toLocaleString()} показов
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getIntentColor(cluster.intent)}`}>
+                            {getIntentLabel(cluster.intent)}
+                          </span>
+                          <div className="text-right text-sm text-muted-foreground">
+                            <div>Макс: {cluster.max_frequency.toLocaleString()}</div>
+                            <div>Мин: {cluster.min_frequency.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                    
+                    {expandedClusters.has(cluster.cluster_name) && (
+                      <div className="border-t">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-muted/30">
+                              <th className="text-left p-3 text-sm font-medium">Фраза</th>
+                              <th className="text-right p-3 text-sm font-medium">Показов</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {cluster.phrases.map((phrase, idx) => (
+                              <tr key={idx} className="border-t hover:bg-muted/20">
+                                <td className="p-3">{phrase.phrase}</td>
+                                <td className="p-3 text-right text-muted-foreground">
+                                  {phrase.count.toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Card>
+                ))}
               </div>
             )}
           </CardContent>
