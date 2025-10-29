@@ -94,6 +94,9 @@ export default function Wordstat() {
       const data = await response.json();
 
       if (data.success && data.data?.SearchQuery) {
+        console.log('Данные ответа:', data);
+        console.log('SearchQuery[0]:', data.data.SearchQuery[0]);
+        console.log('Clusters:', data.data.SearchQuery[0]?.Clusters);
         setResults(data.data.SearchQuery);
         const totalClusters = data.data.SearchQuery[0]?.Clusters?.length || 0;
         toast({
@@ -193,7 +196,7 @@ export default function Wordstat() {
                   </div>
                 </div>
 
-                {viewMode === 'clusters' && results[0]?.Clusters && (
+                {viewMode === 'clusters' && results[0]?.Clusters && results[0].Clusters.length > 0 ? (
                   <div className="space-y-3">
                     {results[0].Clusters.map((cluster) => (
                       <Card key={cluster.cluster_name} className="overflow-hidden">
@@ -251,7 +254,11 @@ export default function Wordstat() {
                       </Card>
                     ))}
                   </div>
-                )}
+                ) : viewMode === 'clusters' ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    Кластеры не найдены
+                  </div>
+                ) : null}
 
                 {viewMode === 'table' && (
                   <div className="overflow-x-auto">
