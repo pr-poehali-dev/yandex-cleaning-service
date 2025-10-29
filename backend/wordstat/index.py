@@ -94,7 +94,7 @@ def cosine_similarity_simple(vec1: Dict[str, float], vec2: Dict[str, float]) -> 
     
     return dot_product / (norm1 * norm2)
 
-def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float = 0.25) -> List[Dict[str, Any]]:
+def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float = 0.15) -> List[Dict[str, Any]]:
     '''
     Супер-продвинутая кластеризация:
     - Лемматизация через pymorphy3
@@ -105,7 +105,7 @@ def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float 
     if not phrases:
         return []
     
-    if len(phrases) < 3:
+    if len(phrases) < 5:
         return [{
             'cluster_name': 'Все запросы',
             'total_count': sum(p['count'] for p in phrases),
@@ -132,7 +132,9 @@ def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float 
     
     clusters = [[i] for i in range(n)]
     
-    while len(clusters) > min(15, max(3, n // 8)):
+    target_clusters = max(5, min(12, n // 10))
+    
+    while len(clusters) > target_clusters:
         max_sim = -1
         merge_pair = None
         
@@ -158,6 +160,11 @@ def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float 
         clusters[i].extend(clusters[j])
         del clusters[j]
     
+    stop_words_for_naming = {
+        'купить', 'заказать', 'цена', 'стоимость', 'недорого', 
+        'дешево', 'москва', 'спб', 'россия', 'доставка'
+    }
+    
     result = []
     for cluster_indices in clusters:
         cluster_phrases = [phrases[i] for i in cluster_indices]
@@ -167,14 +174,16 @@ def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float 
         for idx in cluster_indices:
             lemma = lemmatized[idx]
             for word in lemma.split():
-                if len(word) > 2:
+                if len(word) > 2 and word not in stop_words_for_naming:
                     lemmas_counter[word] += 1
         
         if lemmas_counter:
-            most_common = max(lemmas_counter.items(), key=lambda x: x[1])[0]
-            cluster_name = most_common.capitalize()
+            sorted_words = sorted(lemmas_counter.items(), key=lambda x: x[1], reverse=True)
+            top_words = [w for w, _ in sorted_words[:2]]
+            cluster_name = ' '.join(top_words).title()
         else:
-            cluster_name = sorted_phrases[0]['phrase'].split()[0].capitalize()
+            words = sorted_phrases[0]['phrase'].split()
+            cluster_name = ' '.join(words[:2]).title()
         
         intents = [detect_intent(p['phrase']) for p in cluster_phrases]
         intent_counts = defaultdict(int)
