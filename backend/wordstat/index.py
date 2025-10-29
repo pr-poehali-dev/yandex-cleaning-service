@@ -172,16 +172,21 @@ def cosine_similarity_simple(vec1: Dict[str, float], vec2: Dict[str, float]) -> 
     
     return dot_product / (norm1 * norm2)
 
-def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float = 0.15) -> List[Dict[str, Any]]:
+def smart_clusterize(phrases: List[Dict[str, Any]], mode: str = 'seo') -> List[Dict[str, Any]]:
     '''
-    Супер-продвинутая кластеризация:
-    - Лемматизация через pymorphy3
-    - TF-IDF без тяжелых библиотек
-    - Иерархическая кластеризация по близости
-    - Определение search intent
+    Супер-продвинутая кластеризация с разными режимами:
+    - mode='seo': Широкие кластеры (10-30 фраз) для контента
+    - mode='context': Узкие кластеры (2-5 фраз) для контекстной рекламы
     '''
     if not phrases:
         return []
+    
+    if mode == 'context':
+        similarity_threshold = 0.35
+        target_clusters_ratio = 5
+    else:
+        similarity_threshold = 0.08
+        target_clusters_ratio = 15
     
     if len(phrases) < 5:
         return [{
@@ -210,7 +215,7 @@ def smart_clusterize(phrases: List[Dict[str, Any]], similarity_threshold: float 
     
     clusters = [[i] for i in range(n)]
     
-    target_clusters = max(5, min(12, n // 10))
+    target_clusters = max(3, min(20, n // target_clusters_ratio))
     
     while len(clusters) > target_clusters:
         max_sim = -1
@@ -376,20 +381,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             top_requests = data.get('topRequests', [])
-            print(f'[WORDSTAT] Got {len(top_requests)} phrases from Yandex API')
+            clustering_mode = body_data.get('mode', 'seo')
+            print(f'[WORDSTAT] Got {len(top_requests)} phrases from Yandex API, mode: {clustering_mode}')
             
-            clusters = smart_clusterize(top_requests)
-            print(f'[WORDSTAT] Created {len(clusters)} smart clusters with TF-IDF+Cosine')
+            clusters = smart_clusterize(top_requests, mode=clustering_mode)
+            print(f'[WORDSTAT] Created {len(clusters)} smart clusters ({clustering_mode} mode)')
             
-            minus_words = detect_minus_words(top_requests)
-            print(f'[WORDSTAT] Detected {sum(v["count"] for v in minus_words.values())} minus-words in {len(minus_words)} categories')
+            minus_words = {}
+            if clustering_mode == 'context':
+                minus_words = detect_minus_words(top_requests)
+                print(f'[WORDSTAT] Detected {sum(v["count"] for v in minus_words.values())} minus-words')
             
             search_query = [{
                 'Keyword': keywords[0],
                 'Shows': top_requests[0]['count'] if top_requests else 0,
                 'TopRequests': top_requests,
                 'Clusters': clusters,
-                'MinusWords': minus_words
+                'MinusWords': minus_words,
+                'Mode': clustering_mode
             }]
         
         except requests.exceptions.Timeout:

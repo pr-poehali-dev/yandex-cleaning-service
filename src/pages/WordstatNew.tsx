@@ -33,6 +33,7 @@ export default function WordstatNew() {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [minusWords, setMinusWords] = useState<Record<string, MinusCategory>>({});
   const [region, setRegion] = useState('213');
+  const [mode, setMode] = useState<'context' | 'seo'>('seo');
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const [expandedMinusCategories, setExpandedMinusCategories] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -109,7 +110,8 @@ export default function WordstatNew() {
         },
         body: JSON.stringify({
           keywords: keywords.split('\n').map(k => k.trim()).filter(k => k),
-          regions: [parseInt(region)]
+          regions: [parseInt(region)],
+          mode: mode
         })
       });
 
@@ -161,6 +163,40 @@ export default function WordstatNew() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Для чего собираем семантику?</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setMode('seo')}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    mode === 'seo' 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">📝</div>
+                  <div className="font-semibold">SEO</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Широкие кластеры для контента
+                  </div>
+                </button>
+                <button
+                  onClick={() => setMode('context')}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    mode === 'context' 
+                      ? 'border-green-500 bg-green-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">💰</div>
+                  <div className="font-semibold">Контекст</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Узкие группы + минус-слова
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2">Регион</label>
               <select
@@ -261,7 +297,7 @@ export default function WordstatNew() {
               </div>
             )}
 
-            {Object.keys(minusWords).length > 0 && (
+            {mode === 'context' && Object.keys(minusWords).length > 0 && (
               <div className="mt-6 space-y-3">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Icon name="ShieldAlert" size={24} />
