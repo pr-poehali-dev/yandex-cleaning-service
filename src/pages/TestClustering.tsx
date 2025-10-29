@@ -20,19 +20,19 @@ interface Cluster {
 
 type Step = 'input' | 'results';
 
-const minusPhrasesMock: Phrase[] = [
-  { phrase: 'купить квартиру бесплатно', count: 1200 },
-  { phrase: 'купить квартиру даром', count: 800 },
-  { phrase: 'купить квартиру своими руками', count: 2100 },
-  { phrase: 'как купить квартиру самому', count: 3500 },
-  { phrase: 'купить квартиру игра', count: 5600 },
-  { phrase: 'купить квартиру в игре', count: 4200 },
-  { phrase: 'скачать купить квартиру', count: 900 },
-  { phrase: 'купить квартиру торрент', count: 450 },
-  { phrase: 'купить квартиру порно', count: 320 },
-  { phrase: 'купить квартиру xxx', count: 180 },
-  { phrase: 'вакансия купить квартиру', count: 1100 },
-  { phrase: 'работа купить квартиру', count: 890 }
+const minusWordsMock: string[] = [
+  'бесплатно',
+  'даром',
+  'своими руками',
+  'самому',
+  'игра',
+  'в игре',
+  'скачать',
+  'торрент',
+  'порно',
+  'xxx',
+  'вакансия',
+  'работа'
 ];
 
 const aiClustersMock: Cluster[] = [
@@ -177,6 +177,25 @@ const aiClustersMock: Cluster[] = [
     ]
   },
   {
+    name: 'Нерелевантные запросы',
+    intent: 'informational',
+    color: 'bg-gray-100 text-gray-800 border-gray-300',
+    phrases: [
+      { phrase: 'купить квартиру бесплатно', count: 1200 },
+      { phrase: 'купить квартиру даром', count: 800 },
+      { phrase: 'купить квартиру своими руками', count: 2100 },
+      { phrase: 'как купить квартиру самому', count: 3500 },
+      { phrase: 'купить квартиру игра', count: 5600 },
+      { phrase: 'купить квартиру в игре', count: 4200 },
+      { phrase: 'скачать купить квартиру', count: 900 },
+      { phrase: 'купить квартиру торрент', count: 450 },
+      { phrase: 'купить квартиру порно', count: 320 },
+      { phrase: 'купить квартиру xxx', count: 180 },
+      { phrase: 'вакансия купить квартиру', count: 1100 },
+      { phrase: 'работа купить квартиру', count: 890 }
+    ]
+  },
+  {
     name: 'Общие запросы',
     intent: 'informational',
     color: 'bg-gray-100 text-gray-800 border-gray-300',
@@ -192,7 +211,7 @@ export default function TestClustering() {
   const [loading, setLoading] = useState(false);
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const [clusters] = useState<Cluster[]>(aiClustersMock);
-  const [minusPhrases] = useState<Phrase[]>(minusPhrasesMock);
+  const [minusWords] = useState<string[]>(minusWordsMock);
   const { toast } = useToast();
 
   const toggleCluster = (name: string) => {
@@ -215,19 +234,19 @@ export default function TestClustering() {
       setLoading(false);
       toast({ 
         title: 'Готово!', 
-        description: `Найдено ${clusters.length} кластеров и ${minusPhrases.length} минус-фраз` 
+        description: `Найдено ${clusters.length} кластеров и ${minusWords.length} минус-слов` 
       });
     }, 2000);
   };
 
   const exportMinusWords = () => {
-    const minusText = minusPhrases.map(p => p.phrase).join('\n');
+    const minusText = minusWords.join('\n');
     const blob = new Blob([minusText], { type: 'text/plain;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `минус-слова_демо_${new Date().toISOString().split('T')[0]}.txt`;
     link.click();
-    toast({ title: 'Экспорт завершен', description: `${minusPhrases.length} минус-фраз для Директа` });
+    toast({ title: 'Экспорт завершен', description: `${minusWords.length} минус-слов для Директа` });
   };
 
   const exportToCSV = () => {
@@ -248,7 +267,6 @@ export default function TestClustering() {
 
   const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
   const totalShows = clusters.reduce((sum, c) => sum + c.phrases.reduce((s, p) => s + p.count, 0), 0);
-  const minusTotalShows = minusPhrases.reduce((sum, p) => sum + p.count, 0);
 
   if (step === 'input') {
     return (
@@ -306,7 +324,7 @@ export default function TestClustering() {
                 <h3 className="font-semibold">Что покажет демо?</h3>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li>✅ 14 умных кластеров по смыслу (вместо 3-4 в TF-IDF)</li>
-                  <li>✅ Отдельный кластер "Минус-слова" с мусором</li>
+                  <li>✅ Список минус-слов (не фраз!) для Яндекс.Директа</li>
                   <li>✅ Планировки разделены: 1-комн, 2-комн, 3-комн ОТДЕЛЬНО</li>
                   <li>✅ Конкуренты (Авито, Циан) — отдельный полезный кластер</li>
                   <li>✅ Кнопка экспорта минус-фраз для Яндекс.Директа</li>
@@ -387,13 +405,13 @@ export default function TestClustering() {
           <Card className="p-4 bg-red-50 border-red-200">
             <div className="text-sm text-red-700 font-medium flex items-center gap-1">
               <Icon name="X" size={14} />
-              Минус-фраз
+              Минус-слов
             </div>
-            <div className="text-2xl font-bold text-red-600">{minusPhrases.length}</div>
+            <div className="text-2xl font-bold text-red-600">{minusWords.length}</div>
           </Card>
         </div>
 
-        {minusPhrases.length > 0 && (
+        {minusWords.length > 0 && (
           <Card className="overflow-hidden border-red-300 bg-red-50/30">
             <button
               onClick={() => toggleCluster('minus-words')}
@@ -407,9 +425,9 @@ export default function TestClustering() {
                 />
                 <Icon name="X" size={24} className="text-red-600" />
                 <div className="text-left">
-                  <div className="font-semibold text-lg text-red-800">Минус-слова (мусор)</div>
+                  <div className="font-semibold text-lg text-red-800">Минус-слова</div>
                   <div className="text-sm text-muted-foreground">
-                    {minusPhrases.length} фраз • {minusTotalShows.toLocaleString()} показов отфильтровано
+                    {minusWords.length} слов для исключения нерелевантных показов
                   </div>
                 </div>
               </div>
@@ -434,36 +452,32 @@ export default function TestClustering() {
 
             {expandedClusters.has('minus-words') && (
               <div className="border-t border-red-200">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-red-50">
-                      <th className="text-left p-3 text-sm font-medium">Фраза</th>
-                      <th className="text-right p-3 text-sm font-medium">Показов</th>
-                      <th className="text-left p-3 text-sm font-medium">Причина</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {minusPhrases.map((phrase, idx) => {
+                <div className="p-6">
+                  <div className="text-sm text-muted-foreground mb-3">
+                    Эти слова нужно добавить в минус-фразы Яндекс.Директа, чтобы исключить показы по нерелевантным запросам:
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {minusWords.map((word, idx) => {
                       let reason = '';
-                      if (phrase.phrase.includes('бесплатно') || phrase.phrase.includes('даром')) reason = '🆓 Халява';
-                      else if (phrase.phrase.includes('своими руками') || phrase.phrase.includes('самому')) reason = '🔧 DIY';
-                      else if (phrase.phrase.includes('игра')) reason = '🎮 Игра';
-                      else if (phrase.phrase.includes('скачать') || phrase.phrase.includes('торрент')) reason = '📥 Загрузка';
-                      else if (phrase.phrase.includes('порно') || phrase.phrase.includes('xxx')) reason = '🔞 Взрослый контент';
-                      else if (phrase.phrase.includes('вакансия') || phrase.phrase.includes('работа')) reason = '💼 Работа';
+                      let color = 'bg-red-100 text-red-800';
+                      if (word.includes('бесплатно') || word.includes('даром')) { reason = '🆓 Халява'; color = 'bg-red-100 text-red-800'; }
+                      else if (word.includes('своими руками') || word.includes('самому')) { reason = '🔧 DIY'; color = 'bg-orange-100 text-orange-800'; }
+                      else if (word.includes('игра')) { reason = '🎮 Игра'; color = 'bg-purple-100 text-purple-800'; }
+                      else if (word.includes('скачать') || word.includes('торрент')) { reason = '📥 Загрузка'; color = 'bg-blue-100 text-blue-800'; }
+                      else if (word.includes('порно') || word.includes('xxx')) { reason = '🔞 Контент 18+'; color = 'bg-pink-100 text-pink-800'; }
+                      else if (word.includes('вакансия') || word.includes('работа')) { reason = '💼 Работа'; color = 'bg-yellow-100 text-yellow-800'; }
                       
                       return (
-                        <tr key={idx} className="border-t border-red-100 hover:bg-red-50/50">
-                          <td className="p-3">{phrase.phrase}</td>
-                          <td className="p-3 text-right text-muted-foreground">
-                            {phrase.count.toLocaleString()}
-                          </td>
-                          <td className="p-3 text-sm text-red-600">{reason}</td>
-                        </tr>
+                        <Badge key={idx} className={`${color} px-3 py-1.5 text-sm font-mono`}>
+                          {word} <span className="ml-2 text-xs opacity-70">{reason}</span>
+                        </Badge>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-50 rounded-md text-sm text-blue-700">
+                    💡 <strong>Как использовать:</strong> Скопируйте эти слова в раздел "Минус-фразы" вашей рекламной кампании в Яндекс.Директе
+                  </div>
+                </div>
               </div>
             )}
           </Card>
@@ -530,7 +544,7 @@ export default function TestClustering() {
             <div className="space-y-2">
               <h3 className="font-semibold text-lg">Результат AI-кластеризации</h3>
               <p className="text-sm text-muted-foreground">
-                GPT-4 разделил 62 фразы на 14 смысловых кластеров + отдельно выделил 12 минус-фраз (мусор)
+                GPT-4 разделил 74 фразы на 15 смысловых кластеров + выделил {minusWords.length} минус-слов для фильтрации
               </p>
               <p className="text-sm text-green-700 font-medium mt-2">
                 ✅ Каждый кластер имеет четкую семантику и готов для контекстной рекламы
