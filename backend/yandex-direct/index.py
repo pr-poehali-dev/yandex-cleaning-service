@@ -1,6 +1,7 @@
 import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List
+import requests
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -39,44 +40,65 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Отсутствует токен авторизации'})
             }
         
-        # TODO: Реальный запрос к API Яндекс.Директ
-        # import requests
-        # response = requests.post(
-        #     'https://api.direct.yandex.com/json/v5/campaigns',
-        #     headers={'Authorization': f'Bearer {token}'},
-        #     json={...}
-        # )
-        
-        # Пока возвращаем mock данные
-        campaigns = [
-            {
-                'id': '12345678',
-                'name': 'Недвижимость РСЯ - Москва',
-                'type': 'TEXT_IMAGE_AD',
-                'status': 'RUNNING'
-            },
-            {
-                'id': '87654321',
-                'name': 'Клининг РСЯ - СПб',
-                'type': 'TEXT_IMAGE_AD',
-                'status': 'RUNNING'
-            },
-            {
-                'id': '11223344',
-                'name': 'Ремонт РСЯ - Регионы',
-                'type': 'TEXT_IMAGE_AD',
-                'status': 'PAUSED'
+        try:
+            response = requests.post(
+                'https://api.direct.yandex.com/json/v5/campaigns',
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Accept-Language': 'ru',
+                    'Client-Login': 'your-login'
+                },
+                json={
+                    'method': 'get',
+                    'params': {
+                        'SelectionCriteria': {
+                            'Types': ['TEXT_AD_NETWORK']
+                        },
+                        'FieldNames': ['Id', 'Name', 'Type', 'Status', 'State']
+                    }
+                }
+            )
+            
+            if response.status_code != 200:
+                return {
+                    'statusCode': response.status_code,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Ошибка API Яндекс.Директ', 'details': response.text})
+                }
+            
+            data = response.json()
+            campaigns_raw = data.get('result', {}).get('Campaigns', [])
+            
+            campaigns = []
+            for c in campaigns_raw:
+                campaigns.append({
+                    'id': str(c.get('Id')),
+                    'name': c.get('Name'),
+                    'type': c.get('Type'),
+                    'status': c.get('Status')
+                })
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'campaigns': campaigns})
             }
-        ]
-        
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'campaigns': campaigns})
-        }
+            
+        except Exception as e:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': f'Ошибка запроса: {str(e)}'})
+            }
     
     # POST /clean - запустить чистку площадок
     if method == 'POST':
