@@ -568,7 +568,7 @@ export default function Index() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
                     <CardContent className="p-6 text-center">
-                      <div className="text-4xl font-bold text-blue-600 mb-1">{clusters.length}</div>
+                      <div className="text-4xl font-bold text-emerald-600 mb-1">{clusters.length}</div>
                       <div className="text-sm text-muted-foreground">Кластеров</div>
                     </CardContent>
                   </Card>

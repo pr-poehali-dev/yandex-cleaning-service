@@ -166,7 +166,7 @@ export default function Projects() {
                 <DialogTrigger asChild>
                   <Button 
                     size="lg"
-                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white">
+                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                   >
                     <Icon name="Plus" size={20} className="mr-2" />
                     Создать проект

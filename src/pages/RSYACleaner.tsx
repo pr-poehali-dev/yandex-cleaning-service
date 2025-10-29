@@ -287,7 +287,7 @@ export default function RSYACleaner() {
     <div className="min-h-screen bg-gradient-to-br from-green-50/50 via-emerald-50/30 to-teal-50/50 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-2">
             Чистка площадок РСЯ
           </h1>
           <p className="text-slate-600">
@@ -309,7 +309,7 @@ export default function RSYACleaner() {
             <CardContent>
               {!isConnected ? (
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Icon name="Zap" size={32} className="text-white" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">Подключите Яндекс.Директ</h3>
@@ -320,14 +320,14 @@ export default function RSYACleaner() {
                   {!showCodeInput ? (
                     <Button 
                       onClick={handleConnect}
-                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                      className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                     >
                       <Icon name="Link" size={18} className="mr-2" />
                       Подключить Яндекс.Директ
                     </Button>
                   ) : (
                     <div className="max-w-md mx-auto space-y-4">
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
+                      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-left">
                         <p className="text-sm font-medium text-green-900 mb-2">
                           📋 Инструкция:
                         </p>
