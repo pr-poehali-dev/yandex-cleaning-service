@@ -458,7 +458,7 @@ export default function RSYACleaner() {
                           <Icon 
                             name="X" 
                             size={14} 
-                            className="ml-2 cursor-pointer hover:text-blue-900" 
+                            className="ml-2 cursor-pointer hover:text-green-900" 
                             onClick={() => removeFilter(filter.id)}
                           />
                         </Badge>
@@ -479,11 +479,11 @@ export default function RSYACleaner() {
                     </Button>
                   </div>
 
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <p className="text-sm font-medium text-blue-900 mb-2">
                       📌 Примеры фильтров:
                     </p>
-                    <ul className="text-sm text-blue-700 space-y-1">
+                    <ul className="text-sm text-green-700 space-y-1">
                       <li>• <code className="font-mono bg-white px-1 rounded">com.</code> — блокирует домены типа example.com.ru</li>
                       <li>• <code className="font-mono bg-white px-1 rounded">dsp</code> — блокирует DSP-площадки</li>
                       <li>• <code className="font-mono bg-white px-1 rounded">vnp</code> — блокирует VNP-партнёрки</li>
@@ -523,7 +523,7 @@ export default function RSYACleaner() {
                 onClick={handleClean} 
                 disabled={loading || selectedCampaigns.length === 0}
                 size="lg"
-                className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                className="w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white"
               >
                 {loading ? (
                   <>
