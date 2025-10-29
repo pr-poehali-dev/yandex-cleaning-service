@@ -34,6 +34,8 @@ export default function RSYACleaner() {
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{ disabled: number; total: number } | null>(null);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [authCode, setAuthCode] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -125,7 +127,13 @@ export default function RSYACleaner() {
       
       const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}`;
       
-      window.location.href = authUrl;
+      window.open(authUrl, '_blank');
+      setShowCodeInput(true);
+      
+      toast({
+        title: '📋 Скопируйте код',
+        description: 'После авторизации Яндекс покажет код — вставьте его в поле ниже'
+      });
     } catch (error) {
       toast({
         title: 'Ошибка',
@@ -133,6 +141,21 @@ export default function RSYACleaner() {
         variant: 'destructive'
       });
     }
+  };
+
+  const handleCodeSubmit = async () => {
+    if (!authCode.trim()) {
+      toast({
+        title: 'Введите код',
+        description: 'Вставьте код из окна авторизации Яндекс',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    await exchangeCodeForToken(authCode.trim());
+    setShowCodeInput(false);
+    setAuthCode('');
   };
 
   const handleDisconnect = () => {
@@ -263,13 +286,65 @@ export default function RSYACleaner() {
                   <p className="text-sm text-muted-foreground mb-6">
                     Авторизуйтесь через OAuth для доступа к кампаниям
                   </p>
-                  <Button 
-                    onClick={handleConnect}
-                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
-                  >
-                    <Icon name="Link" size={18} className="mr-2" />
-                    Подключить Яндекс.Директ
-                  </Button>
+                  
+                  {!showCodeInput ? (
+                    <Button 
+                      onClick={handleConnect}
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                    >
+                      <Icon name="Link" size={18} className="mr-2" />
+                      Подключить Яндекс.Директ
+                    </Button>
+                  ) : (
+                    <div className="max-w-md mx-auto space-y-4">
+                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
+                        <p className="text-sm font-medium text-blue-900 mb-2">
+                          📋 Инструкция:
+                        </p>
+                        <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                          <li>В открывшемся окне войдите в Яндекс</li>
+                          <li>Разрешите доступ к Директу</li>
+                          <li>Скопируйте код из окна</li>
+                          <li>Вставьте его в поле ниже</li>
+                        </ol>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Вставьте код из окна Яндекс (например: fkyiev3vbcechree)"
+                          value={authCode}
+                          onChange={(e) => setAuthCode(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
+                          className="flex-1"
+                        />
+                        <Button 
+                          onClick={handleCodeSubmit}
+                          disabled={loading || !authCode.trim()}
+                          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                        >
+                          {loading ? (
+                            <Icon name="Loader2" size={18} className="animate-spin" />
+                          ) : (
+                            <>
+                              <Icon name="Check" size={18} className="mr-2" />
+                              Подтвердить
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      
+                      <Button 
+                        onClick={() => {
+                          setShowCodeInput(false);
+                          setAuthCode('');
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Отмена
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div>
