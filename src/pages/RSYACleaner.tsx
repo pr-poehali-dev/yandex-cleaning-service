@@ -57,6 +57,8 @@ export default function RSYACleaner() {
   const exchangeCodeForToken = async (code: string) => {
     try {
       setLoading(true);
+      console.log('🔑 Обмен кода на токен:', code);
+      
       const response = await fetch(BACKEND_URL, {
         method: 'POST',
         headers: {
@@ -68,24 +70,33 @@ export default function RSYACleaner() {
         })
       });
 
+      console.log('📡 Ответ exchange:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Ошибка exchange:', errorText);
         throw new Error('Ошибка обмена кода на токен');
       }
 
       const data = await response.json();
+      console.log('🎫 Получен токен:', data);
+      
       const token = data.access_token;
       
       localStorage.setItem('yandex_direct_token', token);
       window.history.replaceState({}, document.title, window.location.pathname);
       
       setIsConnected(true);
-      loadCampaigns(token);
       
       toast({
         title: '✅ Подключено!',
         description: 'Яндекс.Директ успешно подключён'
       });
+      
+      console.log('📥 Запускаю загрузку кампаний...');
+      await loadCampaigns(token);
     } catch (error) {
+      console.error('❌ Ошибка авторизации:', error);
       toast({
         title: 'Ошибка авторизации',
         description: 'Не удалось получить токен доступа',
@@ -98,6 +109,8 @@ export default function RSYACleaner() {
 
   const loadCampaigns = async (token: string) => {
     try {
+      console.log('🔄 Загрузка кампаний с токеном:', token.substring(0, 10) + '...');
+      
       const response = await fetch(BACKEND_URL, {
         method: 'GET',
         headers: {
@@ -105,13 +118,25 @@ export default function RSYACleaner() {
         }
       });
 
+      console.log('📡 Ответ сервера:', response.status, response.statusText);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Ошибка:', errorText);
         throw new Error('Ошибка загрузки кампаний');
       }
 
       const data = await response.json();
+      console.log('📊 Получены кампании:', data);
+      
       setCampaigns(data.campaigns || []);
+      
+      toast({
+        title: '✅ Кампании загружены',
+        description: `Найдено кампаний: ${data.campaigns?.length || 0}`
+      });
     } catch (error) {
+      console.error('❌ Ошибка загрузки:', error);
       toast({
         title: 'Ошибка загрузки кампаний',
         description: 'Не удалось загрузить список кампаний',
@@ -153,9 +178,14 @@ export default function RSYACleaner() {
       return;
     }
 
-    await exchangeCodeForToken(authCode.trim());
-    setShowCodeInput(false);
-    setAuthCode('');
+    setLoading(true);
+    try {
+      await exchangeCodeForToken(authCode.trim());
+      setShowCodeInput(false);
+      setAuthCode('');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = () => {
