@@ -68,18 +68,18 @@ export default function Projects() {
   const phone = localStorage.getItem('directkit_phone') || '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-sky-50/30 to-cyan-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50">
       <aside className={`fixed top-0 left-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-50 ${
         menuOpen ? 'w-64' : 'w-20'
       }`}>
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
               <Icon name="Zap" size={20} className="text-white" />
             </div>
             {menuOpen && (
               <div className="overflow-hidden">
-                <h2 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                <h2 className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
                   DirectKit
                 </h2>
               </div>
@@ -89,7 +89,7 @@ export default function Projects() {
 
         <nav className="p-4 space-y-2">
           <button
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-50 text-emerald-700 font-medium hover:bg-emerald-100 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <Icon name="FolderOpen" size={20} />
@@ -123,7 +123,7 @@ export default function Projects() {
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
           <div className={`flex items-center gap-3 mb-3 ${!menuOpen && 'justify-center'}`}>
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
               {phone.slice(3, 4)}
             </div>
             {menuOpen && (
@@ -166,7 +166,7 @@ export default function Projects() {
                 <DialogTrigger asChild>
                   <Button 
                     size="lg"
-                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white">
                   >
                     <Icon name="Plus" size={20} className="mr-2" />
                     Создать проект
@@ -193,7 +193,7 @@ export default function Projects() {
                     </div>
                     <Button 
                       onClick={handleCreateProject}
-                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                      className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                     >
                       Создать проект
                     </Button>

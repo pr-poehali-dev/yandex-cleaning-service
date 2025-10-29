@@ -328,10 +328,10 @@ export default function RSYACleaner() {
                   ) : (
                     <div className="max-w-md mx-auto space-y-4">
                       <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
-                        <p className="text-sm font-medium text-blue-900 mb-2">
+                        <p className="text-sm font-medium text-green-900 mb-2">
                           📋 Инструкция:
                         </p>
-                        <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                        <ol className="text-sm text-green-700 space-y-1 list-decimal list-inside">
                           <li>В открывшемся окне войдите в Яндекс</li>
                           <li>Разрешите доступ к Директу</li>
                           <li>Скопируйте код из окна</li>
@@ -350,7 +350,7 @@ export default function RSYACleaner() {
                         <Button 
                           onClick={handleCodeSubmit}
                           disabled={loading || !authCode.trim()}
-                          className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                          className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white"
                         >
                           {loading ? (
                             <Icon name="Loader2" size={18} className="animate-spin" />
@@ -401,7 +401,7 @@ export default function RSYACleaner() {
                         key={campaign.id}
                         className={`cursor-pointer transition-all ${
                           selectedCampaigns.includes(campaign.id) 
-                            ? 'ring-2 ring-blue-500 bg-blue-50' 
+                            ? 'ring-2 ring-green-500 bg-green-50' 
                             : 'hover:shadow-md'
                         }`}
                         onClick={() => toggleCampaign(campaign.id)}
@@ -409,7 +409,7 @@ export default function RSYACleaner() {
                         <CardContent className="p-4 flex items-center gap-3">
                           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                             selectedCampaigns.includes(campaign.id) 
-                              ? 'bg-blue-600 border-blue-600' 
+                              ? 'bg-green-600 border-green-600' 
                               : 'border-slate-300'
                           }`}>
                             {selectedCampaigns.includes(campaign.id) && (
@@ -452,7 +452,7 @@ export default function RSYACleaner() {
                       filters.map(filter => (
                         <Badge 
                           key={filter.id} 
-                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 border-blue-200"
+                          className="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 border-green-200"
                         >
                           <span className="font-mono">{filter.pattern}</span>
                           <Icon 
@@ -480,7 +480,7 @@ export default function RSYACleaner() {
                   </div>
 
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-900 mb-2">
+                    <p className="text-sm font-medium text-green-900 mb-2">
                       📌 Примеры фильтров:
                     </p>
                     <ul className="text-sm text-green-700 space-y-1">

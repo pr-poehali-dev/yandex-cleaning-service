@@ -67,13 +67,13 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-cyan-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl mb-4">
             <Icon name="Zap" size={28} className="text-white" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-2">
             DirectKit
           </h1>
           <p className="text-muted-foreground">
@@ -116,7 +116,7 @@ export default function Auth() {
                 <Button 
                   onClick={handlePhoneSubmit} 
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                  className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                   size="lg"
                 >
                   {loading ? (
@@ -134,7 +134,7 @@ export default function Auth() {
 
                 <div className="text-center text-sm text-muted-foreground">
                   Нажимая кнопку, вы соглашаетесь с{' '}
-                  <a href="#" className="text-blue-600 hover:underline font-medium">
+                  <a href="#" className="text-emerald-600 hover:underline font-medium">
                     условиями использования
                   </a>
                 </div>
@@ -168,7 +168,7 @@ export default function Auth() {
                   <Button 
                     onClick={handleCodeSubmit} 
                     disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                    className="flex-1 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
                   >
                     {loading ? (
                       <>
@@ -187,7 +187,7 @@ export default function Auth() {
                 <Button 
                   onClick={() => toast({ title: 'Код отправлен повторно' })}
                   variant="ghost" 
-                  className="w-full text-blue-600 hover:text-blue-700"
+                  className="w-full text-emerald-600 hover:text-emerald-700"
                 >
                   <Icon name="RotateCcw" size={16} className="mr-2" />
                   Отправить код повторно
