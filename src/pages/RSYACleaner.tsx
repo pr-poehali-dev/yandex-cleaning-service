@@ -37,13 +37,11 @@ export default function RSYACleaner() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token=')) {
-      const token = hash.split('access_token=')[1].split('&')[0];
-      localStorage.setItem('yandex_direct_token', token);
-      window.location.hash = '';
-      setIsConnected(true);
-      loadCampaigns(token);
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      exchangeCodeForToken(code);
       return;
     }
 
@@ -53,6 +51,48 @@ export default function RSYACleaner() {
       loadCampaigns(token);
     }
   }, []);
+
+  const exchangeCodeForToken = async (code: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'exchange_code',
+          code: code
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка обмена кода на токен');
+      }
+
+      const data = await response.json();
+      const token = data.access_token;
+      
+      localStorage.setItem('yandex_direct_token', token);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      setIsConnected(true);
+      loadCampaigns(token);
+      
+      toast({
+        title: '✅ Подключено!',
+        description: 'Яндекс.Директ успешно подключён'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка авторизации',
+        description: 'Не удалось получить токен доступа',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadCampaigns = async (token: string) => {
     try {
@@ -83,8 +123,7 @@ export default function RSYACleaner() {
       const response = await fetch(BACKEND_URL + '?action=config');
       const { clientId } = await response.json();
       
-      const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-      const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
+      const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}`;
       
       window.location.href = authUrl;
     } catch (error) {

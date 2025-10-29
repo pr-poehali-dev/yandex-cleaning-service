@@ -133,8 +133,69 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 })
             }
     
-    # POST /clean - запустить чистку площадок
+    # POST /exchange_code - обмен кода на токен
     if method == 'POST':
+        body_data = json.loads(event.get('body', '{}'))
+        action = body_data.get('action')
+        
+        if action == 'exchange_code':
+            code = body_data.get('code')
+            if not code:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Код авторизации не указан'})
+                }
+            
+            client_id = os.environ.get('YANDEX_DIRECT_CLIENT_ID', '')
+            client_secret = os.environ.get('YANDEX_DIRECT_CLIENT_SECRET', '')
+            
+            try:
+                token_response = requests.post(
+                    'https://oauth.yandex.ru/token',
+                    data={
+                        'grant_type': 'authorization_code',
+                        'code': code,
+                        'client_id': client_id,
+                        'client_secret': client_secret
+                    }
+                )
+                
+                if token_response.status_code != 200:
+                    print(f'[ERROR] Token exchange failed: {token_response.text}')
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({'error': 'Ошибка обмена кода на токен', 'details': token_response.text})
+                    }
+                
+                token_data = token_response.json()
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps(token_data)
+                }
+            except Exception as e:
+                print(f'[ERROR] Token exchange exception: {str(e)}')
+                return {
+                    'statusCode': 500,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': f'Ошибка: {str(e)}'})
+                }
+        
+        # POST /clean - запустить чистку площадок
         headers = event.get('headers', {})
         token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
         
@@ -148,7 +209,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Отсутствует токен авторизации'})
             }
         
-        body_data = json.loads(event.get('body', '{}'))
         campaign_ids = body_data.get('campaignIds', [])
         filters = body_data.get('filters', [])
         
