@@ -176,17 +176,30 @@ def smart_clusterize(phrases: List[Dict[str, Any]], mode: str = 'seo') -> List[D
     '''
     Супер-продвинутая кластеризация с разными режимами:
     - mode='seo': Широкие кластеры (10-30 фраз) для контента
-    - mode='context': Узкие кластеры (2-5 фраз) для контекстной рекламы
+    - mode='context': Базовые кластеры (10-50 фраз) для контекстной рекламы
     '''
     if not phrases:
         return []
     
+    competitors = ['авито', 'циан', 'домклик', 'яндекс недвижимость', 'юла', 'из рук в руки']
+    competitor_phrases = []
+    regular_phrases = []
+    
+    for p in phrases:
+        is_competitor = any(comp in p['phrase'].lower() for comp in competitors)
+        if is_competitor:
+            competitor_phrases.append(p)
+        else:
+            regular_phrases.append(p)
+    
     if mode == 'context':
-        similarity_threshold = 0.35
-        target_clusters_ratio = 5
+        similarity_threshold = 0.05
+        target_clusters_ratio = 25
     else:
         similarity_threshold = 0.08
         target_clusters_ratio = 15
+    
+    phrases = regular_phrases
     
     if len(phrases) < 5:
         return [{
@@ -286,6 +299,18 @@ def smart_clusterize(phrases: List[Dict[str, Any]], mode: str = 'seo') -> List[D
         })
     
     result.sort(key=lambda x: x['total_count'], reverse=True)
+    
+    if competitor_phrases:
+        result.append({
+            'cluster_name': 'Агрегаторы и конкуренты',
+            'total_count': sum(p['count'] for p in competitor_phrases),
+            'phrases_count': len(competitor_phrases),
+            'avg_words': round(sum(len(p['phrase'].split()) for p in competitor_phrases) / len(competitor_phrases), 1),
+            'max_frequency': max(p['count'] for p in competitor_phrases),
+            'min_frequency': min(p['count'] for p in competitor_phrases),
+            'intent': 'general',
+            'phrases': sorted(competitor_phrases, key=lambda x: x['count'], reverse=True)
+        })
     
     return result
 

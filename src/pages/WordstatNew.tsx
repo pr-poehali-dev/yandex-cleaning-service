@@ -41,6 +41,10 @@ export default function WordstatNew() {
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const [editingClusterName, setEditingClusterName] = useState<string | null>(null);
   const [newClusterName, setNewClusterName] = useState('');
+  const [showSmartClusterDialog, setShowSmartClusterDialog] = useState(false);
+  const [smartClusterKeyword, setSmartClusterKeyword] = useState('');
+  const [smartClusterMinShows, setSmartClusterMinShows] = useState(50);
+  const [highlightKeyword, setHighlightKeyword] = useState('');
   const { toast } = useToast();
 
   const regions = [
@@ -108,6 +112,81 @@ export default function WordstatNew() {
     toast({ title: 'Удалено', description: phraseText });
   };
 
+  const createSmartCluster = () => {
+    if (!newClusterName.trim() || !smartClusterKeyword.trim()) {
+      toast({ title: 'Ошибка', description: 'Заполните все поля', variant: 'destructive' });
+      return;
+    }
+
+    const keyword = smartClusterKeyword.toLowerCase();
+    const matchedPhrases: TopRequest[] = [];
+    
+    setClusters(prev => {
+      const updated = prev.map(c => {
+        const remaining: TopRequest[] = [];
+        const matched: TopRequest[] = [];
+        
+        c.phrases.forEach(p => {
+          if (p.phrase.toLowerCase().includes(keyword) && p.count >= smartClusterMinShows) {
+            matched.push(p);
+          } else {
+            remaining.push(p);
+          }
+        });
+        
+        matchedPhrases.push(...matched);
+        
+        if (remaining.length === 0) return null;
+        
+        return {
+          ...c,
+          phrases: remaining,
+          phrases_count: remaining.length,
+          total_count: remaining.reduce((sum, p) => sum + p.count, 0),
+          max_frequency: remaining.length > 0 ? Math.max(...remaining.map(p => p.count)) : 0,
+          min_frequency: remaining.length > 0 ? Math.min(...remaining.map(p => p.count)) : 0,
+        };
+      }).filter(c => c !== null) as Cluster[];
+      
+      if (matchedPhrases.length > 0) {
+        const newCluster: Cluster = {
+          cluster_name: newClusterName,
+          total_count: matchedPhrases.reduce((sum, p) => sum + p.count, 0),
+          phrases_count: matchedPhrases.length,
+          avg_words: matchedPhrases.reduce((sum, p) => sum + p.phrase.split(' ').length, 0) / matchedPhrases.length,
+          max_frequency: Math.max(...matchedPhrases.map(p => p.count)),
+          min_frequency: Math.min(...matchedPhrases.map(p => p.count)),
+          intent: 'general',
+          phrases: matchedPhrases.sort((a, b) => b.count - a.count)
+        };
+        updated.push(newCluster);
+        setExpandedClusters(prev => new Set([...prev, newClusterName]));
+      }
+      
+      return updated;
+    });
+    
+    setShowSmartClusterDialog(false);
+    setNewClusterName('');
+    setSmartClusterKeyword('');
+    setSmartClusterMinShows(50);
+    
+    toast({ 
+      title: 'Кластер создан', 
+      description: `Найдено ${matchedPhrases.length} фраз с "${smartClusterKeyword}"` 
+    });
+  };
+
+  const highlightText = (text: string, keyword: string) => {
+    if (!keyword) return text;
+    const parts = text.split(new RegExp(`(${keyword})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === keyword.toLowerCase() ? 
+        <span key={i} className="bg-yellow-200 font-semibold">{part}</span> : 
+        part
+    );
+  };
+
   const exportToCSV = () => {
     let csv = 'Кластер,Фраза,Частотность\n';
     clusters.forEach(cluster => {
@@ -159,6 +238,7 @@ export default function WordstatNew() {
         const minusData = data.data.SearchQuery[0]?.MinusWords || {};
         setClusters(clusterData);
         setMinusWords(minusData);
+        setExpandedClusters(new Set(clusterData.map((c: Cluster) => c.cluster_name)));
         
         toast({
           title: 'Успех! ✅',
@@ -292,12 +372,70 @@ export default function WordstatNew() {
                     Назад
                   </Button>
                   <div className="flex gap-2">
+                    <Button onClick={() => setShowSmartClusterDialog(true)} className="bg-purple-600 hover:bg-purple-700">
+                      <Icon name="Sparkles" size={16} className="mr-2" />
+                      Умный кластер
+                    </Button>
                     <Button onClick={exportToCSV} variant="outline">
                       <Icon name="Download" size={16} className="mr-2" />
                       Экспорт CSV
                     </Button>
                   </div>
                 </div>
+
+                {showSmartClusterDialog && (
+                  <Card className="mb-4 border-purple-300 bg-purple-50">
+                    <CardHeader>
+                      <CardTitle className="text-lg">✨ Создать умный кластер</CardTitle>
+                      <CardDescription>
+                        Система автоматически найдет и сгруппирует подходящие фразы
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Название кластера</label>
+                        <Input
+                          placeholder="Квартиры у шоссе"
+                          value={newClusterName}
+                          onChange={(e) => setNewClusterName(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Ключевое слово для поиска</label>
+                        <Input
+                          placeholder="шоссе"
+                          value={smartClusterKeyword}
+                          onChange={(e) => {
+                            setSmartClusterKeyword(e.target.value);
+                            setHighlightKeyword(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Минимум показов</label>
+                        <Input
+                          type="number"
+                          value={smartClusterMinShows}
+                          onChange={(e) => setSmartClusterMinShows(parseInt(e.target.value) || 0)}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={createSmartCluster} className="flex-1">
+                          Создать кластер
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            setShowSmartClusterDialog(false);
+                            setHighlightKeyword('');
+                          }} 
+                          variant="outline"
+                        >
+                          Отмена
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <div className="space-y-3">
                   {clusters.map((cluster) => (
@@ -365,7 +503,9 @@ export default function WordstatNew() {
                             <tbody>
                               {cluster.phrases.map((phrase, idx) => (
                                 <tr key={idx} className="border-t hover:bg-muted/20">
-                                  <td className="p-3">{phrase.phrase}</td>
+                                  <td className="p-3">
+                                    {highlightKeyword ? highlightText(phrase.phrase, highlightKeyword) : phrase.phrase}
+                                  </td>
                                   <td className="p-3 text-right text-muted-foreground">
                                     {phrase.count.toLocaleString()}
                                   </td>
