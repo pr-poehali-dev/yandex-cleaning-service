@@ -30,6 +30,7 @@ export default function Projects() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+
   const handleCreateProject = () => {
     if (!newProjectName.trim()) {
       toast({ title: 'Введите название проекта', variant: 'destructive' });
@@ -219,13 +220,13 @@ export default function Projects() {
                 {projects.map((project) => (
                   <Card 
                     key={project.id}
-                    className="hover:shadow-lg transition-all cursor-pointer group border hover:border-blue-200 bg-white"
+                    className="hover:shadow-lg transition-all cursor-pointer group border hover:border-green-200 bg-white"
                     onClick={() => handleOpenProject(project.id)}
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between mb-2">
-                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Icon name="FolderOpen" size={24} className="text-blue-600" />
+                        <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Icon name="FolderOpen" size={24} className="text-green-600" />
                         </div>
                         <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
                           <Icon name="MoreVertical" size={18} />
@@ -241,11 +242,11 @@ export default function Projects() {
                     <CardContent>
                       <div className="flex gap-4">
                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Icon name="Key" size={16} className="text-blue-500" />
+                          <Icon name="Key" size={16} className="text-green-500" />
                           <span>{project.keywordsCount} ключей</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Icon name="Layers" size={16} className="text-cyan-500" />
+                          <Icon name="Layers" size={16} className="text-teal-500" />
                           <span>{project.clustersCount} кластеров</span>
                         </div>
                       </div>
