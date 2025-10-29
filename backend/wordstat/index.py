@@ -65,7 +65,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         all_phrases_dict = {}
         processed_phrases = set()
         phrases_to_process = list(keywords)
-        max_iterations = 10
+        max_iterations = 40
         iteration = 0
         
         try:
@@ -78,7 +78,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 processed_phrases.add(current_phrase.lower())
                 
-                print(f'[{iteration}] Fetching: "{current_phrase}" (queue: {len(phrases_to_process)}, total: {len(all_phrases_dict)})')
+                print(f'[{iteration}/40] Fetching: "{current_phrase}" (queue: {len(phrases_to_process)}, total: {len(all_phrases_dict)})')
                 
                 payload = {
                     'phrase': current_phrase,
@@ -105,7 +105,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     if phrase_lower not in all_phrases_dict:
                         all_phrases_dict[phrase_lower] = req
                         
-                        if len(all_phrases_dict) < 500 and req['phrase'].lower() not in processed_phrases:
+                        if len(all_phrases_dict) < 2000 and req['phrase'].lower() not in processed_phrases:
                             phrases_to_process.append(req['phrase'])
             
             print(f'Collection complete: {len(all_phrases_dict)} unique phrases collected')
