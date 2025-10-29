@@ -196,7 +196,11 @@ export default function Wordstat() {
                   </div>
                 </div>
 
-{viewMode === 'clusters' && results[0]?.Clusters && results[0].Clusters.length > 0 && (
+{viewMode === 'clusters' && results[0]?.Clusters ? (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Режим: {viewMode} | Кластеров: {results[0].Clusters.length}
+                    </div>
                   <div className="space-y-3">
                     {results[0].Clusters.map((cluster) => (
                       <Card key={cluster.cluster_name} className="overflow-hidden">
@@ -254,7 +258,8 @@ export default function Wordstat() {
                       </Card>
                     ))}
                   </div>
-                )}
+                  </>
+                ) : null}
 
                 {viewMode === 'table' && (
                   <div className="overflow-x-auto">
