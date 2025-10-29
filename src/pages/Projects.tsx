@@ -67,18 +67,18 @@ export default function Projects() {
   const phone = localStorage.getItem('directkit_phone') || '';
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-sky-50/30 to-cyan-50/50">
       <aside className={`fixed top-0 left-0 h-full bg-white border-r border-slate-200 transition-all duration-300 z-50 ${
         menuOpen ? 'w-64' : 'w-20'
       }`}>
         <div className="p-4 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
               <Icon name="Zap" size={20} className="text-white" />
             </div>
             {menuOpen && (
               <div className="overflow-hidden">
-                <h2 className="font-bold text-lg text-slate-900">
+                <h2 className="font-bold text-lg bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   DirectKit
                 </h2>
               </div>
@@ -88,7 +88,7 @@ export default function Projects() {
 
         <nav className="p-4 space-y-2">
           <button
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-100 text-slate-900 font-medium hover:bg-slate-200 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <Icon name="FolderOpen" size={20} />
@@ -97,10 +97,18 @@ export default function Projects() {
 
           <button
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => navigate('/wordstat')}
           >
             <Icon name="Search" size={20} />
             {menuOpen && <span>Сбор семантики</span>}
+          </button>
+
+          <button
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+            onClick={() => navigate('/rsya-cleaner')}
+          >
+            <Icon name="ShieldOff" size={20} />
+            {menuOpen && <span>Чистка РСЯ</span>}
           </button>
 
           <button
@@ -114,7 +122,7 @@ export default function Projects() {
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
           <div className={`flex items-center gap-3 mb-3 ${!menuOpen && 'justify-center'}`}>
-            <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
               {phone.slice(3, 4)}
             </div>
             {menuOpen && (
@@ -157,7 +165,7 @@ export default function Projects() {
                 <DialogTrigger asChild>
                   <Button 
                     size="lg"
-                    className="bg-black hover:bg-slate-800 text-white"
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
                   >
                     <Icon name="Plus" size={20} className="mr-2" />
                     Создать проект
@@ -184,7 +192,7 @@ export default function Projects() {
                     </div>
                     <Button 
                       onClick={handleCreateProject}
-                      className="w-full bg-black hover:bg-slate-800 text-white"
+                      className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
                     >
                       Создать проект
                     </Button>
@@ -200,7 +208,7 @@ export default function Projects() {
                 <p className="text-slate-500 mb-6">Создайте первый проект для начала работы</p>
                 <Button
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-black hover:bg-slate-800 text-white"
+                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
                 >
                   <Icon name="Plus" size={20} className="mr-2" />
                   Создать проект
@@ -211,13 +219,13 @@ export default function Projects() {
                 {projects.map((project) => (
                   <Card 
                     key={project.id}
-                    className="hover:shadow-md transition-all cursor-pointer group border hover:border-slate-300"
+                    className="hover:shadow-lg transition-all cursor-pointer group border hover:border-blue-200 bg-white"
                     onClick={() => handleOpenProject(project.id)}
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between mb-2">
-                        <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Icon name="FolderOpen" size={24} className="text-slate-700" />
+                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Icon name="FolderOpen" size={24} className="text-blue-600" />
                         </div>
                         <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
                           <Icon name="MoreVertical" size={18} />
@@ -233,11 +241,11 @@ export default function Projects() {
                     <CardContent>
                       <div className="flex gap-4">
                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Icon name="Key" size={16} className="text-slate-500" />
+                          <Icon name="Key" size={16} className="text-blue-500" />
                           <span>{project.keywordsCount} ключей</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Icon name="Layers" size={16} className="text-slate-500" />
+                          <Icon name="Layers" size={16} className="text-cyan-500" />
                           <span>{project.clustersCount} кластеров</span>
                         </div>
                       </div>

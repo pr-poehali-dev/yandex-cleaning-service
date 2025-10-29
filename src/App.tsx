@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Auth from "./pages/Auth";
 import Projects from "./pages/Projects";
+import RSYACleaner from "./pages/RSYACleaner";
 import Index from "./pages/Index";
 import Wordstat from "./pages/Wordstat";
 import WordstatNew from "./pages/WordstatNew";
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
           <Route path="/project/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/rsya-cleaner" element={<ProtectedRoute><RSYACleaner /></ProtectedRoute>} />
           <Route path="/wordstat" element={<ProtectedRoute><WordstatNew /></ProtectedRoute>} />
           <Route path="/wordstat-old" element={<ProtectedRoute><Wordstat /></ProtectedRoute>} />
           <Route path="/test" element={<ProtectedRoute><TestClustering /></ProtectedRoute>} />
