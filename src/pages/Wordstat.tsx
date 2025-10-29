@@ -9,6 +9,16 @@ interface WordstatResult {
   Keyword: string;
   Shows: number;
   TopRequests?: Array<{ phrase: string; count: number }>;
+  Clusters?: Array<{
+    cluster_name: string;
+    total_count: number;
+    phrases_count: number;
+    avg_words: number;
+    max_frequency: number;
+    min_frequency: number;
+    intent: string;
+    phrases: Array<{ phrase: string; count: number }>;
+  }>;
 }
 
 export default function Wordstat() {
@@ -16,6 +26,8 @@ export default function Wordstat() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<WordstatResult[]>([]);
   const [region, setRegion] = useState('213');
+  const [viewMode, setViewMode] = useState<'table' | 'clusters'>('clusters');
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const regions = [
@@ -28,6 +40,34 @@ export default function Wordstat() {
     { id: '65', name: 'Нижний Новгород' }
   ];
 
+  const toggleCluster = (clusterName: string) => {
+    setExpandedClusters(prev => {
+      const next = new Set(prev);
+      if (next.has(clusterName)) {
+        next.delete(clusterName);
+      } else {
+        next.add(clusterName);
+      }
+      return next;
+    });
+  };
+
+  const getIntentColor = (intent: string) => {
+    switch (intent) {
+      case 'commercial': return 'bg-green-100 text-green-800 border-green-200';
+      case 'informational': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getIntentLabel = (intent: string) => {
+    switch (intent) {
+      case 'commercial': return '💰 Коммерческий';
+      case 'informational': return 'ℹ️ Информационный';
+      default: return '📊 Общий';
+    }
+  };
+
   const handleSearch = async () => {
     if (!keywords.trim()) {
       toast({
@@ -39,9 +79,8 @@ export default function Wordstat() {
     }
 
     setLoading(true);
-    console.log('⭐ VERSION 2.0 - Starting request...');
     try {
-      const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8?v=2', {
+      const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8?v=3', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -54,24 +93,14 @@ export default function Wordstat() {
 
       const data = await response.json();
 
-      console.log('🚀 НОВАЯ ВЕРСИЯ - Полный ответ API:', data);
-      console.log('🚀 SearchQuery массив:', data.data?.SearchQuery);
-      if (data.data?.SearchQuery?.[0]?.TopRequests) {
-        console.log('🚀 TopRequests количество:', data.data.SearchQuery[0].TopRequests.length);
-        console.log('🚀 Первые 5 запросов:', data.data.SearchQuery[0].TopRequests.slice(0, 5));
-      }
-
       if (data.success && data.data?.SearchQuery) {
         setResults(data.data.SearchQuery);
-        const totalRequests = data.data.SearchQuery.reduce((sum: number, item: WordstatResult) => {
-          return sum + (item.TopRequests?.length || 0);
-        }, 0);
+        const totalClusters = data.data.SearchQuery[0]?.Clusters?.length || 0;
         toast({
           title: 'Успех',
-          description: `Найдено ${totalRequests} похожих запросов`
+          description: `Найдено ${totalClusters} кластеров ключевых слов`
         });
       } else {
-        console.error('Ответ API:', data);
         toast({
           title: 'Ошибка',
           description: data.error || 'Не удалось получить данные',
@@ -79,7 +108,6 @@ export default function Wordstat() {
         });
       }
     } catch (error) {
-      console.error('Ошибка:', error);
       toast({
         title: 'Ошибка',
         description: 'Не удалось выполнить запрос',
@@ -143,40 +171,123 @@ export default function Wordstat() {
 
             {results.length > 0 && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">Результаты:</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="text-left p-3 font-semibold">Ключевое слово</th>
-                        <th className="text-right p-3 font-semibold">Частотность</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {results.flatMap((result, resultIndex) => {
-                        if (result.TopRequests && result.TopRequests.length > 0) {
-                          return result.TopRequests.map((top, topIndex) => (
-                            <tr key={`${resultIndex}-${topIndex}`} className="border-b hover:bg-muted/30">
-                              <td className="p-3">{top.phrase}</td>
-                              <td className="p-3 text-right text-muted-foreground">
-                                {top.count.toLocaleString()}
-                              </td>
-                            </tr>
-                          ));
-                        } else {
-                          return (
-                            <tr key={resultIndex} className="border-b hover:bg-muted/30">
-                              <td className="p-3">{result.Keyword}</td>
-                              <td className="p-3 text-right text-muted-foreground">
-                                {result.Shows.toLocaleString()}
-                              </td>
-                            </tr>
-                          );
-                        }
-                      })}
-                    </tbody>
-                  </table>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Результаты:</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={viewMode === 'clusters' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('clusters')}
+                    >
+                      <Icon name="Layers" size={16} className="mr-2" />
+                      Кластеры
+                    </Button>
+                    <Button
+                      variant={viewMode === 'table' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('table')}
+                    >
+                      <Icon name="Table" size={16} className="mr-2" />
+                      Таблица
+                    </Button>
+                  </div>
                 </div>
+
+                {viewMode === 'clusters' && results[0]?.Clusters && (
+                  <div className="space-y-3">
+                    {results[0].Clusters.map((cluster) => (
+                      <Card key={cluster.cluster_name} className="overflow-hidden">
+                        <button
+                          onClick={() => toggleCluster(cluster.cluster_name)}
+                          className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Icon 
+                                name={expandedClusters.has(cluster.cluster_name) ? "ChevronDown" : "ChevronRight"} 
+                                size={20} 
+                              />
+                              <div>
+                                <div className="font-semibold text-lg">{cluster.cluster_name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {cluster.phrases_count} фраз · {cluster.total_count.toLocaleString()} показов
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getIntentColor(cluster.intent)}`}>
+                                {getIntentLabel(cluster.intent)}
+                              </span>
+                              <div className="text-right text-sm text-muted-foreground">
+                                <div>Макс: {cluster.max_frequency.toLocaleString()}</div>
+                                <div>Мин: {cluster.min_frequency.toLocaleString()}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                        
+                        {expandedClusters.has(cluster.cluster_name) && (
+                          <div className="border-t">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="bg-muted/30">
+                                  <th className="text-left p-3 text-sm font-medium">Фраза</th>
+                                  <th className="text-right p-3 text-sm font-medium">Показов</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cluster.phrases.map((phrase, idx) => (
+                                  <tr key={idx} className="border-t hover:bg-muted/20">
+                                    <td className="p-3">{phrase.phrase}</td>
+                                    <td className="p-3 text-right text-muted-foreground">
+                                      {phrase.count.toLocaleString()}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {viewMode === 'table' && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="text-left p-3 font-semibold">Ключевое слово</th>
+                          <th className="text-right p-3 font-semibold">Частотность</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {results.flatMap((result, resultIndex) => {
+                          if (result.TopRequests && result.TopRequests.length > 0) {
+                            return result.TopRequests.map((top, topIndex) => (
+                              <tr key={`${resultIndex}-${topIndex}`} className="border-b hover:bg-muted/30">
+                                <td className="p-3">{top.phrase}</td>
+                                <td className="p-3 text-right text-muted-foreground">
+                                  {top.count.toLocaleString()}
+                                </td>
+                              </tr>
+                            ));
+                          } else {
+                            return (
+                              <tr key={resultIndex} className="border-b hover:bg-muted/30">
+                                <td className="p-3">{result.Keyword}</td>
+                                <td className="p-3 text-right text-muted-foreground">
+                                  {result.Shows.toLocaleString()}
+                                </td>
+                              </tr>
+                            );
+                          }
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

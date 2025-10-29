@@ -6,32 +6,91 @@ from collections import defaultdict
 
 def clusterize_keywords(phrases: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     '''
-    Кластеризация ключевых слов по общим словам
+    Умная кластеризация по смысловой близости и коммерческим намерениям
     '''
-    clusters = defaultdict(lambda: {'phrases': [], 'total_count': 0})
+    stop_words = {
+        'в', 'на', 'с', 'по', 'для', 'из', 'и', 'или', 'как', 'что', 'за', 
+        'это', 'то', 'так', 'но', 'а', 'о', 'у', 'от', 'к', 'до'
+    }
+    
+    commercial_words = {
+        'купить': 'Коммерческие (покупка)',
+        'цена': 'Коммерческие (цена)',
+        'заказать': 'Коммерческие (заказ)',
+        'доставка': 'Коммерческие (доставка)',
+        'недорого': 'Коммерческие (цена)',
+        'дешево': 'Коммерческие (цена)',
+        'стоимость': 'Коммерческие (цена)',
+        'интернет': 'Коммерческие (онлайн)',
+        'магазин': 'Коммерческие (онлайн)',
+        'сайт': 'Коммерческие (онлайн)'
+    }
+    
+    info_words = {
+        'как': 'Информационные (инструкции)',
+        'что': 'Информационные (определения)',
+        'почему': 'Информационные (причины)',
+        'где': 'Информационные (местоположение)',
+        'когда': 'Информационные (время)',
+        'отзывы': 'Информационные (отзывы)',
+        'рейтинг': 'Информационные (рейтинги)',
+        'лучший': 'Информационные (рейтинги)',
+        'сравнение': 'Информационные (сравнение)'
+    }
+    
+    clusters = defaultdict(lambda: {
+        'phrases': [], 
+        'total_count': 0,
+        'avg_words': 0,
+        'intent': 'Общие'
+    })
     
     for phrase_data in phrases:
         phrase = phrase_data['phrase'].lower()
-        words = set(phrase.split())
+        words = phrase.split()
         
-        stop_words = {'в', 'на', 'с', 'по', 'для', 'из', 'и', 'или', 'как', 'что', 'за'}
         keywords_in_phrase = [w for w in words if w not in stop_words and len(w) > 2]
         
         if not keywords_in_phrase:
-            keywords_in_phrase = list(words)[:1]
+            keywords_in_phrase = words[:1] if words else ['другое']
         
-        main_keyword = sorted(keywords_in_phrase, key=lambda w: len(w), reverse=True)[0]
+        cluster_key = None
+        intent = 'Общие'
         
-        clusters[main_keyword]['phrases'].append(phrase_data)
-        clusters[main_keyword]['total_count'] += phrase_data['count']
+        for word in keywords_in_phrase:
+            if word in commercial_words:
+                cluster_key = commercial_words[word]
+                intent = 'commercial'
+                break
+            elif word in info_words:
+                cluster_key = info_words[word]
+                intent = 'informational'
+                break
+        
+        if not cluster_key:
+            main_keyword = sorted(keywords_in_phrase, key=lambda w: len(w), reverse=True)[0]
+            cluster_key = main_keyword.capitalize()
+        
+        clusters[cluster_key]['phrases'].append(phrase_data)
+        clusters[cluster_key]['total_count'] += phrase_data['count']
+        clusters[cluster_key]['intent'] = intent
     
     result = []
-    for keyword, data in sorted(clusters.items(), key=lambda x: x[1]['total_count'], reverse=True):
+    for cluster_name, data in sorted(clusters.items(), key=lambda x: x[1]['total_count'], reverse=True):
+        phrases_list = data['phrases']
+        avg_words = sum(len(p['phrase'].split()) for p in phrases_list) / len(phrases_list)
+        max_count = max(p['count'] for p in phrases_list)
+        min_count = min(p['count'] for p in phrases_list)
+        
         result.append({
-            'cluster_name': keyword,
+            'cluster_name': cluster_name,
             'total_count': data['total_count'],
-            'phrases_count': len(data['phrases']),
-            'phrases': sorted(data['phrases'], key=lambda x: x['count'], reverse=True)
+            'phrases_count': len(phrases_list),
+            'avg_words': round(avg_words, 1),
+            'max_frequency': max_count,
+            'min_frequency': min_count,
+            'intent': data['intent'],
+            'phrases': sorted(phrases_list, key=lambda x: x['count'], reverse=True)
         })
     
     return result
