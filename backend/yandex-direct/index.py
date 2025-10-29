@@ -5,12 +5,14 @@ import requests
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Работа с API Яндекс.Директ - получение кампаний РСЯ
+    Business: Работа с API Яндекс.Директ - получение кампаний РСЯ и OAuth конфиг
     Args: event - dict с httpMethod, queryStringParameters, body
           context - объект с request_id
     Returns: HTTP response dict с данными кампаний
     '''
     method: str = event.get('httpMethod', 'GET')
+    path: str = event.get('path', '')
+    query_params = event.get('queryStringParameters', {}) or {}
     
     # CORS OPTIONS
     if method == 'OPTIONS':
@@ -23,6 +25,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Max-Age': '86400'
             },
             'body': ''
+        }
+    
+    # GET /config - вернуть OAuth Client ID
+    if method == 'GET' and query_params.get('action') == 'config':
+        client_id = os.environ.get('YANDEX_DIRECT_CLIENT_ID', '')
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'clientId': client_id})
         }
     
     # GET /campaigns - получить кампании РСЯ

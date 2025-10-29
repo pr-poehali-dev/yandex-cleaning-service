@@ -37,6 +37,16 @@ export default function RSYACleaner() {
   const { toast } = useToast();
 
   useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token=')) {
+      const token = hash.split('access_token=')[1].split('&')[0];
+      localStorage.setItem('yandex_direct_token', token);
+      window.location.hash = '';
+      setIsConnected(true);
+      loadCampaigns(token);
+      return;
+    }
+
     const token = localStorage.getItem('yandex_direct_token');
     if (token) {
       setIsConnected(true);
@@ -68,26 +78,22 @@ export default function RSYACleaner() {
     }
   };
 
-  const handleConnect = () => {
-    const clientId = 'your_client_id';
-    const redirectUri = encodeURIComponent(window.location.origin + '/rsya-cleaner');
-    const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
-    
-    toast({ 
-      title: '🔄 Перенаправление...', 
-      description: 'Сейчас откроется страница авторизации Яндекс' 
-    });
-
-    setTimeout(() => {
-      const mockToken = 'mock_token_' + Date.now();
-      localStorage.setItem('yandex_direct_token', mockToken);
-      setIsConnected(true);
-      loadCampaigns(mockToken);
-      toast({ 
-        title: '✅ Подключено!', 
-        description: 'Яндекс.Директ успешно подключён' 
+  const handleConnect = async () => {
+    try {
+      const response = await fetch(BACKEND_URL + '?action=config');
+      const { clientId } = await response.json();
+      
+      const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+      const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
+      
+      window.location.href = authUrl;
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось получить настройки OAuth',
+        variant: 'destructive'
       });
-    }, 1500);
+    }
   };
 
   const handleDisconnect = () => {
