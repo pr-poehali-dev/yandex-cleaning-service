@@ -41,45 +41,59 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
+            print(f'[DEBUG] Requesting Yandex.Direct API with token: {token[:10]}...')
+            
             response = requests.post(
                 'https://api.direct.yandex.com/json/v5/campaigns',
                 headers={
                     'Authorization': f'Bearer {token}',
-                    'Accept-Language': 'ru',
-                    'Client-Login': 'your-login'
+                    'Accept-Language': 'ru'
                 },
                 json={
                     'method': 'get',
                     'params': {
-                        'SelectionCriteria': {
-                            'Types': ['TEXT_AD_NETWORK']
-                        },
-                        'FieldNames': ['Id', 'Name', 'Type', 'Status', 'State']
+                        'SelectionCriteria': {},
+                        'FieldNames': ['Id', 'Name', 'Type', 'Status']
                     }
-                }
+                },
+                timeout=10
             )
             
+            print(f'[DEBUG] API Response status: {response.status_code}')
+            print(f'[DEBUG] API Response body: {response.text[:500]}')
+            
             if response.status_code != 200:
+                print(f'[ERROR] Yandex.Direct API error: {response.text}')
                 return {
-                    'statusCode': response.status_code,
+                    'statusCode': 200,
                     'headers': {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*'
                     },
-                    'body': json.dumps({'error': 'Ошибка API Яндекс.Директ', 'details': response.text})
+                    'body': json.dumps({
+                        'campaigns': [],
+                        'error': f'Ошибка API: {response.status_code}',
+                        'message': 'Проверьте токен авторизации в настройках Яндекс.Директ'
+                    })
                 }
             
             data = response.json()
             campaigns_raw = data.get('result', {}).get('Campaigns', [])
             
+            print(f'[DEBUG] Found {len(campaigns_raw)} campaigns')
+            
             campaigns = []
             for c in campaigns_raw:
-                campaigns.append({
-                    'id': str(c.get('Id')),
-                    'name': c.get('Name'),
-                    'type': c.get('Type'),
-                    'status': c.get('Status')
-                })
+                campaign_type = c.get('Type', '')
+                if campaign_type == 'TEXT_AD_NETWORK':
+                    campaigns.append({
+                        'id': str(c.get('Id')),
+                        'name': c.get('Name'),
+                        'type': campaign_type,
+                        'status': c.get('Status')
+                    })
+            
+            print(f'[DEBUG] Filtered {len(campaigns)} TEXT_AD_NETWORK campaigns')
             
             return {
                 'statusCode': 200,
@@ -91,13 +105,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
             
         except Exception as e:
+            print(f'[ERROR] Exception: {str(e)}')
             return {
-                'statusCode': 500,
+                'statusCode': 200,
                 'headers': {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'error': f'Ошибка запроса: {str(e)}'})
+                'body': json.dumps({
+                    'campaigns': [],
+                    'error': f'Ошибка: {str(e)}',
+                    'message': 'Не удалось подключиться к API Яндекс.Директ'
+                })
             }
     
     # POST /clean - запустить чистку площадок
