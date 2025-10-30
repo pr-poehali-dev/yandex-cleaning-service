@@ -88,20 +88,24 @@ export default function ResultsStep({
 
   const getFilteredPhrases = (clusterIndex: number) => {
     const cluster = clusters[clusterIndex];
-    const searchTerm = cluster.searchText.toLowerCase();
+    const searchTerm = cluster.searchText?.toLowerCase().trim() || '';
     
     if (!searchTerm) {
       return cluster.phrases;
     }
 
-    const tempPhrases = [...cluster.phrases];
+    const ownPhrases = cluster.phrases.filter(p => !p.isTemporary);
+    const tempPhrases = [...ownPhrases];
     
     for (let i = 0; i < clusters.length; i++) {
       if (i === clusterIndex) continue;
       
       const otherCluster = clusters[i];
       const matchingPhrases = otherCluster.phrases
-        .filter(p => p.phrase.toLowerCase().includes(searchTerm) && !p.sourceCluster)
+        .filter(p => {
+          const hasSource = p.sourceCluster && !p.isTemporary;
+          return p.phrase.toLowerCase().includes(searchTerm) && !hasSource;
+        })
         .map(p => ({
           ...p,
           sourceCluster: otherCluster.name,
