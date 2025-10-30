@@ -216,9 +216,10 @@ export default function TestClustering() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          phrase: query,
+          keywords: [query],
           regions: regionIds,
-          mode: mode
+          mode: mode,
+          use_openai: true
         })
       });
 
@@ -227,20 +228,48 @@ export default function TestClustering() {
       }
 
       const data = await response.json();
+      console.log('📦 Full response:', data);
       
-      if (data.clusters && Array.isArray(data.clusters)) {
-        console.log('✅ Received clusters from Wordstat:', data.clusters.length);
-        
-        setClusters(data.clusters);
-        setMinusWords(data.minusWords || []);
-        
-        await saveResultsToAPI(data.clusters, data.minusWords || []);
-        
-        setStep('results');
-        toast.success(`Собрано ${data.clusters.length} кластеров из Wordstat`);
-      } else {
+      const searchQuery = data.data?.SearchQuery?.[0];
+      if (!searchQuery || !searchQuery.Clusters) {
         throw new Error('Invalid response format');
       }
+      
+      const clusters = searchQuery.Clusters;
+      const minusWords = searchQuery.MinusWords || {};
+      
+      console.log('✅ Received clusters from Wordstat:', clusters.length);
+      console.log('🔍 First cluster:', clusters[0]);
+      
+      const transformedClusters = clusters.map((cluster: any, idx: number) => ({
+        name: cluster.cluster_name || 'Кластер ' + (idx + 1),
+        intent: cluster.intent || 'general',
+        color: 'emerald',
+        icon: cluster.intent === 'commercial' ? 'ShoppingCart' : 'FileText',
+        phrases: cluster.phrases || []
+      }));
+      
+      const transformedMinusWords = Object.keys(minusWords).flatMap(category => {
+        const catData = minusWords[category];
+        if (Array.isArray(catData)) {
+          return catData;
+        }
+        if (catData.phrases) {
+          return catData.phrases.map((p: any) => p.phrase);
+        }
+        return [];
+      });
+      
+      console.log('✅ Transformed clusters:', transformedClusters.length);
+      console.log('✅ Transformed minus words:', transformedMinusWords.length);
+      
+      setClusters(transformedClusters);
+      setMinusWords(transformedMinusWords);
+      
+      await saveResultsToAPI(transformedClusters, transformedMinusWords);
+      
+      setStep('results');
+      toast.success(`Собрано ${transformedClusters.length} кластеров из Wordstat`);
     } catch (error) {
       console.error('Error fetching from Wordstat:', error);
       toast.error('Не удалось получить данные из Wordstat');
