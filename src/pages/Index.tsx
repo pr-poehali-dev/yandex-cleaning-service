@@ -114,6 +114,7 @@ export default function Index() {
   const [currentStage, setCurrentStage] = useState(0);
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [minusWords, setMinusWords] = useState<string[]>([]);
+  const [renderKey, setRenderKey] = useState(0);
   const { toast } = useToast();
 
   const filteredCities = RUSSIAN_CITIES.filter(city => 
@@ -154,6 +155,7 @@ export default function Index() {
             setTimeout(() => {
               setClusters(mockClusters);
               setMinusWords(mockMinusWords);
+              setRenderKey(prev => prev + 1);
               setStep('results');
               toast({ 
                 title: '✅ Готово!', 
@@ -587,7 +589,7 @@ export default function Index() {
                   OpenAI создал кластеры и минус-слова
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6" key={`results-${renderKey}`}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 shadow-lg">
                     <CardContent className="p-6">
