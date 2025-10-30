@@ -525,26 +525,31 @@ export default function TestClustering() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
-              AI сбор ключевых фраз
-            </h1>
-            <p className="text-lg text-slate-500">
-              Автоматическая кластеризация ключевых слов с помощью ИИ
-            </p>
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate('/clustering')}
-              className="mt-4 text-slate-600 hover:text-slate-800"
-            >
-              <Icon name="ArrowLeft" className="mr-2 h-4 w-4" />
-              К проектам
-            </Button>
-          </div>
+      <div className={step === 'results' 
+        ? "min-h-screen bg-white" 
+        : "min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8"
+      }>
+        <div className={step === 'results' ? 'w-full' : 'max-w-3xl mx-auto'}>
+          {step !== 'results' && (
+            <div className="text-center mb-16">
+              <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
+                AI сбор ключевых фраз
+              </h1>
+              <p className="text-lg text-slate-500">
+                Автоматическая кластеризация ключевых слов с помощью ИИ
+              </p>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate('/clustering')}
+                className="mt-4 text-slate-600 hover:text-slate-800"
+              >
+                <Icon name="ArrowLeft" className="mr-2 h-4 w-4" />
+                К проектам
+              </Button>
+            </div>
+          )}
 
-          <StepIndicator currentStep={step} />
+          {step !== 'results' && <StepIndicator currentStep={step} />}
 
           {step === 'source' && (
             <SourceStep
