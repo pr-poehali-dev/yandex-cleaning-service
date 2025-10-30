@@ -350,6 +350,34 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
             'body': json.dumps({'success': True})
         }
     
+    elif method == 'DELETE':
+        query_params = event.get('queryStringParameters') or {}
+        project_id = query_params.get('id')
+        
+        if not project_id:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Project ID is required'})
+            }
+        
+        cur.execute("DELETE FROM clustering_projects WHERE id = %s AND user_id = %s", (project_id, user_id))
+        
+        if cur.rowcount == 0:
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Project not found'})
+            }
+        
+        conn.commit()
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'success': True})
+        }
+    
     return {
         'statusCode': 405,
         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},

@@ -130,14 +130,31 @@ export default function ClusteringProjects() {
     setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (projectToDelete) {
-      const project = projects.find(p => p.id === projectToDelete);
-      const updatedProjects = projects.filter(p => p.id !== projectToDelete);
-      setProjects(updatedProjects);
-      setDeleteDialogOpen(false);
-      setProjectToDelete(null);
-      toast.success(`Проект "${project?.name}" удалён`);
+  const confirmDelete = async () => {
+    if (!projectToDelete || !userId) return;
+
+    try {
+      const res = await fetch(`${API_URL}?endpoint=projects&id=${projectToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId
+        }
+      });
+
+      if (res.ok) {
+        const project = projects.find(p => p.id === projectToDelete);
+        const updatedProjects = projects.filter(p => p.id !== projectToDelete);
+        setProjects(updatedProjects);
+        setDeleteDialogOpen(false);
+        setProjectToDelete(null);
+        toast.success(`Проект "${project?.name}" удалён из базы данных`);
+      } else {
+        toast.error('Ошибка удаления проекта');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Ошибка соединения');
     }
   };
 
