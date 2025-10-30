@@ -310,6 +310,9 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         if 'minusWordsCount' in body_data:
             update_fields.append('minus_words_count = %s')
             update_values.append(body_data['minusWordsCount'])
+        if 'results' in body_data:
+            update_fields.append('results = %s')
+            update_values.append(json.dumps(body_data['results']))
         
         update_fields.append('updated_at = %s')
         update_values.append(datetime.now())
@@ -320,10 +323,6 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
             f"UPDATE clustering_projects SET {', '.join(update_fields)} WHERE id = %s AND user_id = %s",
             update_values
         )
-        
-        if 'results' in body_data:
-            update_fields.append('results = %s')
-            update_values.insert(-2, json.dumps(body_data['results']))
         
         conn.commit()
         
