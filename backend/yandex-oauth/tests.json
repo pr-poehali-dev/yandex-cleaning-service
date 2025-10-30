@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Get OAuth init URL",
+      "method": "GET",
+      "path": "/?action=init",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "auth_url": "string",
+        "client_id": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

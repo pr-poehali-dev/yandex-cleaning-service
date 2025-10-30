@@ -1,10 +1,15 @@
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { RUSSIAN_CITIES, City } from '@/data/russian-cities';
+import { City } from '@/data/russian-cities';
+import { toast } from 'sonner';
+
+const OAUTH_API = 'https://functions.poehali.dev/7670577f-a6d7-4122-b6ca-d0c77f43e21e';
+const REGIONS_API = 'https://functions.poehali.dev/a0ab9dc8-671f-45ed-a5a9-a17f5e7fd34d';
 
 interface CitiesStepProps {
   selectedCities: City[];
@@ -29,8 +34,49 @@ export default function CitiesStep({
   onWordstatCollect,
   hasManualKeywords = false
 }: CitiesStepProps) {
-  const filteredCities = RUSSIAN_CITIES.filter(city => 
-    city.name.toLowerCase().startsWith(citySearch.toLowerCase()) &&
+  const [regions, setRegions] = useState<City[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('yandex_wordstat_token');
+    setIsAuthorized(!!token);
+    
+    if (token) {
+      loadRegions();
+    }
+  }, []);
+
+  const handleAuthorize = async () => {
+    try {
+      const response = await fetch(`${OAUTH_API}?action=init`);
+      const data = await response.json();
+      
+      localStorage.setItem('oauth_return_url', window.location.pathname);
+      window.location.href = data.auth_url;
+    } catch (error) {
+      toast.error('Ошибка при инициализации авторизации');
+    }
+  };
+
+  const loadRegions = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(REGIONS_API);
+      const data = await response.json();
+      
+      if (data.regions) {
+        setRegions(data.regions);
+      }
+    } catch (error) {
+      toast.error('Ошибка при загрузке регионов');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredCities = regions.filter(city => 
+    city.name.toLowerCase().includes(citySearch.toLowerCase()) &&
     !selectedCities.find(c => c.id === city.id)
   );
 
@@ -43,11 +89,35 @@ export default function CitiesStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="city-search" className="text-slate-700">Добавить город</Label>
-          <Input
-            id="city-search"
-            value={citySearch}
+        {!isAuthorized ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+            <Icon name="Lock" className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+              Требуется авторизация
+            </h3>
+            <p className="text-sm text-yellow-700 mb-4">
+              Для получения списка регионов необходимо авторизоваться через Яндекс
+            </p>
+            <Button
+              onClick={handleAuthorize}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"
+            >
+              <Icon name="LogIn" className="mr-2 h-4 w-4" />
+              Авторизоваться через Яндекс
+            </Button>
+          </div>
+        ) : isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-2"></div>
+            <p className="text-sm text-slate-500">Загрузка регионов...</p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="city-search" className="text-slate-700">Добавить регион</Label>
+              <Input
+                id="city-search"
+                value={citySearch}
             onChange={(e) => setCitySearch(e.target.value)}
             placeholder="Начните вводить название города..."
             className="border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
@@ -67,12 +137,14 @@ export default function CitiesStep({
                   )}
                 </div>
               ))}
-              {filteredCities.length === 0 && (
-                <div className="p-4 text-center text-slate-500">Город не найден</div>
+                  {filteredCities.length === 0 && (
+                <div className="p-4 text-center text-slate-500">Регион не найден</div>
               )}
             </div>
           )}
         </div>
+          </>
+        )}
 
         <div>
           <Label className="text-slate-700 mb-2 block">Выбранные города ({selectedCities.length})</Label>

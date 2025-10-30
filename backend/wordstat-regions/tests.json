@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Get regions from Wordstat",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "regions": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
