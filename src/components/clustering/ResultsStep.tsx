@@ -147,6 +147,34 @@ export default function ResultsStep({
     console.log(`🔍 ПОИСК НАЧАТ: "${value}"`);
     console.log(`   Минимум символов: ${value.trim().length >= 3 ? '✅' : '❌ слишком мало'}`);
 
+    // ШАГ 1: Вернуть фразы из целевого кластера, которые больше НЕ подходят под поиск
+    const phrasesToReturn = targetCluster.phrases.filter(p => {
+      const originalCluster = moveHistory.get(p.phrase);
+      const stillMatches = matchesWholeWord(p.phrase, value);
+      // Возвращаем только те, что были перенесены ранее И больше не подходят
+      return originalCluster !== undefined && originalCluster !== clusterIndex && !stillMatches;
+    });
+
+    if (phrasesToReturn.length > 0) {
+      console.log(`\n🔙 ВОЗВРАТ ${phrasesToReturn.length} фраз, которые больше не подходят`);
+      phrasesToReturn.forEach(p => {
+        const originalClusterIdx = moveHistory.get(p.phrase);
+        if (originalClusterIdx !== undefined && originalClusterIdx !== clusterIndex) {
+          console.log(`   "${p.phrase}" → обратно в кластер #${originalClusterIdx}`);
+          newClusters[originalClusterIdx].phrases.push(p);
+          newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
+          newHistory.delete(p.phrase);
+        }
+      });
+
+      targetCluster.phrases = targetCluster.phrases.filter(p => {
+        const originalCluster = moveHistory.get(p.phrase);
+        const stillMatches = matchesWholeWord(p.phrase, value);
+        return originalCluster === undefined || originalCluster === clusterIndex || stillMatches;
+      });
+    }
+
+    // ШАГ 2: Найти новые фразы, которые подходят под поиск
     for (let i = 0; i < newClusters.length; i++) {
       if (i === clusterIndex) continue;
 
