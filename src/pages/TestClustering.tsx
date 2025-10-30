@@ -397,18 +397,7 @@ export default function TestClustering() {
               removeCity={(cityId) => {
                 setSelectedCities(selectedCities.filter(c => c.id !== cityId));
               }}
-              onNext={async () => {
-                if (manualKeywords.trim()) {
-                  const firstKeyword = manualKeywords.split('\n')[0].trim();
-                  if (firstKeyword && selectedCities.length > 0) {
-                    await handleWordstatSubmit(firstKeyword, selectedCities, 'seo');
-                  } else {
-                    setStep('goal');
-                  }
-                } else {
-                  setStep('goal');
-                }
-              }}
+              onNext={() => setStep('goal')}
               onBack={handleBack}
               hasManualKeywords={manualKeywords.trim().length > 0}
               manualKeyword={manualKeywords.split('\n')[0]?.trim() || ''}
@@ -428,7 +417,15 @@ export default function TestClustering() {
             <IntentsStep
               selectedIntents={selectedIntents}
               setSelectedIntents={setSelectedIntents}
-              onNext={() => setStep('processing')}
+              onNext={async () => {
+                const firstKeyword = manualKeywords.split('\n')[0]?.trim();
+                if (firstKeyword && selectedCities.length > 0) {
+                  setStep('processing');
+                  await handleWordstatSubmit(firstKeyword, selectedCities, goal);
+                } else {
+                  setStep('processing');
+                }
+              }}
               onBack={handleBack}
             />
           )}
