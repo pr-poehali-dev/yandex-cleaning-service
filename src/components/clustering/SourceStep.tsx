@@ -78,7 +78,6 @@ export default function SourceStep({
             <span className="text-blue-700 font-medium">Проверяет частотность в Wordstat → добавляет в кластер 📍 Геолокация</span>
           </p>
         </div>
-        }
 
         <Button 
           onClick={handleNext}
