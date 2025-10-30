@@ -82,7 +82,9 @@ export default function ResultsStep({
 
   const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
     const trimmed = searchTerm.trim();
-    if (trimmed.length === 0) return false;
+    
+    // Минимум 3 символа для поиска
+    if (trimmed.length < 3) return false;
     
     const phraseLower = phrase.toLowerCase();
     const searchLower = trimmed.toLowerCase();
@@ -93,14 +95,8 @@ export default function ResultsStep({
     // Ищем только те слова, которые НАЧИНАЮТСЯ с поискового запроса
     // "куп" найдёт: "купить", "куплю", НО НЕ "закупить" 
     // "вторич" найдёт: "вторичка", "вторичный", НО НЕ "авторичка"
-    const matches = words.some(word => word.startsWith(searchLower));
-    
-    // Отладочный лог
-    if (matches) {
-      console.log(`✓ Найдено совпадение: "${phrase}" содержит "${searchTerm}" в словах:`, words.filter(w => w.startsWith(searchLower)));
-    }
-    
-    return matches;
+    // "куплю" найдёт: "куплю", НО НЕ "купить"
+    return words.some(word => word.startsWith(searchLower));
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
