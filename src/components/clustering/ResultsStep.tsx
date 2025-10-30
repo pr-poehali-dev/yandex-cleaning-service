@@ -394,9 +394,9 @@ export default function ResultsStep({
                         </div>
                         <button
                           onClick={() => removePhrase(idx, pIdx)}
-                          className="w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-900 text-white flex items-center justify-center flex-shrink-0"
+                          className="opacity-0 group-hover/phrase:opacity-100 text-gray-700 hover:text-gray-900 flex-shrink-0"
                         >
-                          <Icon name="X" size={10} />
+                          <Icon name="X" size={14} />
                         </button>
                       </div>
                     </div>
