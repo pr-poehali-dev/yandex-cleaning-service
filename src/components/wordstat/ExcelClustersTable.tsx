@@ -499,58 +499,52 @@ export default function ExcelClustersTable({
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: maxPhrasesCount }).map((_, rowIdx) => (
-                <tr key={rowIdx} className="border-b hover:bg-slate-50/50">
-                  {clusters.map((cluster, colIdx) => (
-                    <td 
-                      key={cluster.id}
-                      className="border-r align-top"
-                      style={{ backgroundColor: `${cluster.color}30` }}
+              <tr>
+                {clusters.map((cluster, colIdx) => (
+                  <td 
+                    key={cluster.id}
+                    className="border-r align-top p-0"
+                    style={{ backgroundColor: `${cluster.color}30` }}
+                  >
+                    <SortableContext
+                      items={cluster.phrases.map(p => p.id)}
+                      strategy={verticalListSortingStrategy}
                     >
-                      {rowIdx === 0 && (
-                        <SortableContext
-                          items={cluster.phrases.map(p => p.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          <div 
-                            id={cluster.id}
-                            className="min-h-[40px]"
-                          >
-                            {cluster.phrases.map((phrase) => (
-                              <SortablePhrase
-                                key={phrase.id}
-                                phrase={phrase}
-                                onRemove={() => removePhrase(colIdx, phrase.id)}
-                              />
-                            ))}
-                          </div>
-                        </SortableContext>
-                      )}
-                    </td>
-                  ))}
-                  <td className="border-r align-top bg-red-50">
-                    {rowIdx === 0 && (
-                      <SortableContext
-                        items={minusPhrases.map(p => p.id)}
-                        strategy={verticalListSortingStrategy}
+                      <div 
+                        id={cluster.id}
+                        className="min-h-[100px]"
                       >
-                        <div 
-                          id="minus-drop"
-                          className="min-h-[40px]"
-                        >
-                          {minusPhrases.map((phrase) => (
-                            <SortablePhrase
-                              key={phrase.id}
-                              phrase={phrase}
-                              onRemove={() => removeMinusPhrase(phrase.id)}
-                            />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    )}
+                        {cluster.phrases.map((phrase) => (
+                          <SortablePhrase
+                            key={phrase.id}
+                            phrase={phrase}
+                            onRemove={() => removePhrase(colIdx, phrase.id)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
                   </td>
-                </tr>
-              ))}
+                ))}
+                <td className="border-r align-top bg-red-50 p-0">
+                  <SortableContext
+                    items={minusPhrases.map(p => p.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div 
+                      id="minus-drop"
+                      className="min-h-[100px]"
+                    >
+                      {minusPhrases.map((phrase) => (
+                        <SortablePhrase
+                          key={phrase.id}
+                          phrase={phrase}
+                          onRemove={() => removeMinusPhrase(phrase.id)}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
