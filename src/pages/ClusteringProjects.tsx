@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -32,12 +32,29 @@ const PROJECT_COLORS = [
 ];
 
 export default function ClusteringProjects() {
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const saved = localStorage.getItem('clustering_projects');
+    if (saved) {
+      setProjects(JSON.parse(saved));
+    } else {
+      setProjects(mockProjects);
+      localStorage.setItem('clustering_projects', JSON.stringify(mockProjects));
+    }
+  }, []);
+
+  const saveProjects = (updatedProjects: Project[]) => {
+    setProjects(updatedProjects);
+    localStorage.setItem('clustering_projects', JSON.stringify(updatedProjects));
+  };
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -57,7 +74,8 @@ export default function ClusteringProjects() {
       clustersCount: 0
     };
 
-    setProjects([newProject, ...projects]);
+    const updatedProjects = [newProject, ...projects];
+    saveProjects(updatedProjects);
     setNewProjectName('');
     setIsDialogOpen(false);
     navigate(`/clustering/${newProject.id}`);
@@ -69,6 +87,27 @@ export default function ClusteringProjects() {
 
   const handleOpenProject = (projectId: string) => {
     navigate(`/clustering/${projectId}`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    setProjectToDelete(projectId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (projectToDelete) {
+      const project = projects.find(p => p.id === projectToDelete);
+      const updatedProjects = projects.filter(p => p.id !== projectToDelete);
+      saveProjects(updatedProjects);
+      localStorage.removeItem(`clustering_project_${projectToDelete}`);
+      toast({ 
+        title: '✅ Проект удалён',
+        description: `Проект "${project?.name}" успешно удалён`
+      });
+    }
+    setDeleteDialogOpen(false);
+    setProjectToDelete(null);
   };
 
   return (
@@ -123,6 +162,32 @@ export default function ClusteringProjects() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Удалить проект?</DialogTitle>
+                    <DialogDescription>
+                      Это действие нельзя отменить. Проект и все его данные будут удалены навсегда.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex gap-3 mt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setDeleteDialogOpen(false)}
+                      className="flex-1"
+                    >
+                      Отмена
+                    </Button>
+                    <Button 
+                      onClick={confirmDelete}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Удалить
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             <div className="mb-6">
@@ -166,9 +231,19 @@ export default function ClusteringProjects() {
                         <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                           <Icon name="FolderOpen" size={24} className="text-emerald-600" />
                         </div>
-                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
-                          {new Date(project.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                            {new Date(project.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => handleDeleteClick(e, project.id)}
+                          >
+                            <Icon name="Trash2" size={16} className="text-slate-400 hover:text-red-600" />
+                          </Button>
+                        </div>
                       </div>
                       
                       <h3 className="text-xl font-bold mb-4 text-slate-900 group-hover:text-emerald-700 transition-colors">

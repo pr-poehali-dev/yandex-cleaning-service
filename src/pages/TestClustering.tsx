@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -91,6 +92,8 @@ const mockClusters: Cluster[] = [
 const mockMinusWords = ['бесплатно', 'даром', 'игра', 'в игре', 'скачать', 'торрент', 'порно', 'xxx', 'вакансия', 'работа'];
 
 export default function TestClustering() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>('source');
   const [source, setSource] = useState<Source>('manual');
   const [manualKeywords, setManualKeywords] = useState('');
@@ -104,7 +107,29 @@ export default function TestClustering() {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [minusWords, setMinusWords] = useState<string[]>([]);
   const [renderKey, setRenderKey] = useState(0);
+  const [projectName, setProjectName] = useState('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (projectId) {
+      const savedData = localStorage.getItem(`clustering_project_${projectId}`);
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        if (data.clusters && data.clusters.length > 0) {
+          setClusters(data.clusters);
+          setMinusWords(data.minusWords || []);
+          setStep('results');
+        }
+        setProjectName(data.projectName || '');
+      }
+      
+      const projects = JSON.parse(localStorage.getItem('clustering_projects') || '[]');
+      const project = projects.find((p: any) => p.id === projectId);
+      if (project) {
+        setProjectName(project.name);
+      }
+    }
+  }, [projectId]);
 
   const filteredCities = RUSSIAN_CITIES.filter(city => 
     city.name.toLowerCase().includes(citySearch.toLowerCase()) &&
@@ -146,6 +171,33 @@ export default function TestClustering() {
               setMinusWords(mockMinusWords);
               setRenderKey(prev => prev + 1);
               setStep('results');
+              
+              // Сохраняем результаты в localStorage
+              if (projectId) {
+                const projectData = {
+                  projectName,
+                  clusters: mockClusters,
+                  minusWords: mockMinusWords,
+                  updatedAt: new Date().toISOString()
+                };
+                localStorage.setItem(`clustering_project_${projectId}`, JSON.stringify(projectData));
+                
+                // Обновляем счётчики в списке проектов
+                const projects = JSON.parse(localStorage.getItem('clustering_projects') || '[]');
+                const updatedProjects = projects.map((p: any) => {
+                  if (p.id === projectId) {
+                    const totalPhrases = mockClusters.reduce((sum, c) => sum + c.phrases.length, 0);
+                    return {
+                      ...p,
+                      keywordsCount: totalPhrases,
+                      clustersCount: mockClusters.length
+                    };
+                  }
+                  return p;
+                });
+                localStorage.setItem('clustering_projects', JSON.stringify(updatedProjects));
+              }
+              
               toast({ 
                 title: '✅ Готово!', 
                 description: 'Кластеры созданы, минус-слова выделены' 
@@ -192,7 +244,9 @@ export default function TestClustering() {
     if (step === 'cities') setStep('source');
     else if (step === 'goal') setStep('cities');
     else if (step === 'intents') setStep('goal');
-    else if (step === 'results') setStep('intents');
+    else if (step === 'results') {
+      navigate('/clustering');
+    }
   };
 
   const exportClusters = () => {
@@ -221,13 +275,23 @@ export default function TestClustering() {
       <AppSidebar />
       <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8 ml-64">
       <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
-            AI сбор ключей
-          </h1>
-          <p className="text-lg text-slate-500">
-            Автоматическая кластеризация и минус-слова за 30 секунд
-          </p>
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/clustering')}
+            className="mb-4"
+          >
+            <Icon name="ArrowLeft" size={20} className="mr-2" />
+            К проектам
+          </Button>
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
+              {projectName || 'AI сбор ключей'}
+            </h1>
+            <p className="text-lg text-slate-500">
+              Автоматическая кластеризация и минус-слова за 30 секунд
+            </p>
+          </div>
         </div>
 
         {step !== 'processing' && step !== 'results' && (
@@ -635,7 +699,7 @@ export default function TestClustering() {
               variant="outline"
               className="w-full py-6 text-lg"
             >
-              <Icon name="ArrowLeft" size={20} className="mr-2" /> Назад к настройкам
+              <Icon name="ArrowLeft" size={20} className="mr-2" /> К списку проектов
             </Button>
           </div>
         )}
