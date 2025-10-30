@@ -42,11 +42,30 @@ const PROCESSING_STAGES = [
   { label: 'Финализация результатов...', duration: 1000 }
 ];
 
+const CLUSTER_COLORS = {
+  blue: {
+    header: 'bg-gradient-to-r from-blue-500 to-blue-600',
+    badge: 'bg-blue-100 text-blue-800 border-blue-300'
+  },
+  emerald: {
+    header: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
+    badge: 'bg-emerald-100 text-emerald-800 border-emerald-300'
+  },
+  purple: {
+    header: 'bg-gradient-to-r from-purple-500 to-purple-600',
+    badge: 'bg-purple-100 text-purple-800 border-purple-300'
+  },
+  amber: {
+    header: 'bg-gradient-to-r from-amber-500 to-amber-600',
+    badge: 'bg-amber-100 text-amber-800 border-amber-300'
+  }
+};
+
 const mockClusters: Cluster[] = [
   {
     name: 'Вторичный рынок',
     intent: 'commercial',
-    color: 'bg-blue-50 text-blue-700 border-blue-200',
+    color: 'blue',
     icon: 'Home',
     phrases: [
       { phrase: 'купить квартиру вторичку', count: 12000 },
@@ -58,7 +77,7 @@ const mockClusters: Cluster[] = [
   {
     name: 'Новостройки от застройщика',
     intent: 'commercial',
-    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    color: 'emerald',
     icon: 'Building2',
     phrases: [
       { phrase: 'купить квартиру от застройщика', count: 8500 },
@@ -70,7 +89,7 @@ const mockClusters: Cluster[] = [
   {
     name: 'Агрегаторы и площадки',
     intent: 'navigational',
-    color: 'bg-purple-50 text-purple-700 border-purple-200',
+    color: 'purple',
     icon: 'Globe',
     phrases: [
       { phrase: 'купить квартиру авито', count: 19000 },
@@ -570,41 +589,41 @@ export default function Index() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 shadow-lg">
                     <CardContent className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500 rounded-lg">
-                          <Icon name="Layers" size={24} className="text-white" />
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                          <Icon name="Layers" size={28} className="text-white" />
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-blue-900">{clusters.length}</div>
-                          <div className="text-sm text-blue-700">Кластеров</div>
+                          <div className="text-3xl font-bold text-white">{clusters.length}</div>
+                          <div className="text-sm text-white/80 font-medium">Кластеров</div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200">
+                  <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 border-0 shadow-lg">
                     <CardContent className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-500 rounded-lg">
-                          <Icon name="FileText" size={24} className="text-white" />
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                          <Icon name="FileText" size={28} className="text-white" />
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-emerald-900">{totalPhrases}</div>
-                          <div className="text-sm text-emerald-700">Фраз</div>
+                          <div className="text-3xl font-bold text-white">{totalPhrases}</div>
+                          <div className="text-sm text-white/80 font-medium">Фраз</div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-gradient-to-br from-rose-50 to-rose-100/50 border-rose-200">
+                  <Card className="bg-gradient-to-br from-rose-500 to-rose-600 border-0 shadow-lg">
                     <CardContent className="p-6">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-rose-500 rounded-lg">
-                          <Icon name="XCircle" size={24} className="text-white" />
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                          <Icon name="ShieldX" size={28} className="text-white" />
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-rose-900">{minusWords.length}</div>
-                          <div className="text-sm text-rose-700">Минус-слов</div>
+                          <div className="text-3xl font-bold text-white">{minusWords.length}</div>
+                          <div className="text-sm text-white/80 font-medium">Минус-слов</div>
                         </div>
                       </div>
                     </CardContent>
@@ -620,57 +639,60 @@ export default function Index() {
                     </Button>
                   </div>
                   
-                  {clusters.map((cluster, idx) => (
-                    <Card key={idx} className="border-2 hover:shadow-lg transition-all overflow-hidden">
-                      <CardContent className="p-0">
-                        <div className={`p-5 ${cluster.color.replace('text-', 'bg-').replace('-700', '-100').replace('border-', 'bg-')}`}>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className={`p-2 rounded-lg ${cluster.color.split(' ')[0].replace('50', '500')}`}>
-                              <Icon name={cluster.icon as any} size={24} className="text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-bold text-lg">{cluster.name}</h4>
-                              <Badge variant={cluster.intent === 'commercial' ? 'default' : 'secondary'} className="mt-1">
-                                {cluster.intent === 'commercial' ? 'Коммерческий' : cluster.intent === 'navigational' ? 'Навигационный' : 'Инфо'}
-                              </Badge>
+                  {clusters.map((cluster, idx) => {
+                    const colors = CLUSTER_COLORS[cluster.color as keyof typeof CLUSTER_COLORS];
+                    return (
+                      <Card key={idx} className="border-0 shadow-lg hover:shadow-xl transition-all overflow-hidden">
+                        <CardContent className="p-0">
+                          <div className={`p-6 ${colors.header}`}>
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                                <Icon name={cluster.icon as any} size={28} className="text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-bold text-xl text-white mb-2">{cluster.name}</h4>
+                                <Badge className={colors.badge}>
+                                  {cluster.intent === 'commercial' ? '💰 Коммерческий' : cluster.intent === 'navigational' ? '🧭 Навигационный' : '📚 Инфо'}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="p-5 space-y-2 bg-white">
-                          {cluster.phrases.map((phrase, pidx) => (
-                            <div key={pidx} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                              <span className="text-sm font-medium">{phrase.phrase}</span>
-                              <Badge variant="outline" className="ml-2">
-                                <Icon name="TrendingUp" size={12} className="mr-1" />
-                                {phrase.count.toLocaleString()}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <div className="p-6 space-y-3 bg-white">
+                            {cluster.phrases.map((phrase, pidx) => (
+                              <div key={pidx} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200">
+                                <span className="text-sm font-semibold text-slate-700">{phrase.phrase}</span>
+                                <Badge variant="outline" className="ml-3 font-mono text-xs">
+                                  <Icon name="TrendingUp" size={14} className="mr-1 text-emerald-600" />
+                                  {phrase.count.toLocaleString()}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
 
-                <Card className="border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-rose-100/50 overflow-hidden">
+                <Card className="border-0 shadow-lg overflow-hidden">
                   <CardContent className="p-0">
-                    <div className="p-5 bg-rose-100/50 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-rose-500 rounded-lg">
-                          <Icon name="ShieldX" size={24} className="text-white" />
+                    <div className="p-6 bg-gradient-to-r from-rose-500 to-rose-600 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                          <Icon name="ShieldX" size={28} className="text-white" />
                         </div>
-                        <h3 className="text-xl font-bold text-rose-900">Минус-слова для Директа</h3>
+                        <h3 className="text-xl font-bold text-white">Минус-слова для Директа</h3>
                       </div>
-                      <Button onClick={exportMinusWords} size="sm" variant="outline" className="border-rose-300 bg-white">
+                      <Button onClick={exportMinusWords} size="sm" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border-0">
                         <Icon name="Download" size={16} className="mr-2" />
                         Экспорт
                       </Button>
                     </div>
-                    <div className="p-5 bg-white">
+                    <div className="p-6 bg-white">
                       <div className="flex flex-wrap gap-2">
                         {minusWords.map((word, idx) => (
-                          <Badge key={idx} variant="secondary" className="bg-rose-100 text-rose-900 border-rose-200 px-3 py-1">
-                            -{word}
+                          <Badge key={idx} className="bg-rose-100 text-rose-800 border border-rose-300 px-3 py-1.5 font-medium">
+                            −{word}
                           </Badge>
                         ))}
                       </div>
