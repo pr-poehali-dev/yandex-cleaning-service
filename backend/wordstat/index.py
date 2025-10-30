@@ -243,12 +243,12 @@ JSON:
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'gpt-4o-mini',
+                'model': 'gpt-4o',
                 'messages': [
-                    {'role': 'system', 'content': 'Ты эксперт по кластеризации. Отвечаешь только валидным JSON.'},
+                    {'role': 'system', 'content': 'Ты эксперт по кластеризации запросов. Анализируешь смысл и намерения пользователя. Отвечаешь только валидным JSON.'},
                     {'role': 'user', 'content': prompt}
                 ],
-                'temperature': 0.2,
+                'temperature': 0.3,
                 'response_format': {'type': 'json_object'}
             },
             proxies=proxies if proxies else None,
