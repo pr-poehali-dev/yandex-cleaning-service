@@ -420,16 +420,21 @@ export default function ResultsStep({
     setClusters(newClusters);
     setDraggedCluster(null);
 
+    console.log('🔄 Cluster moved, saving...', { onSaveChanges: !!onSaveChanges });
+    
     if (onSaveChanges) {
       await onSaveChanges(
         newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
         minusWords
       );
+      console.log('✅ Cluster move saved to API');
+    } else {
+      console.warn('⚠️ onSaveChanges not provided');
     }
 
     toast({
       title: '✅ Кластер перемещён',
-      description: 'Позиция изменена'
+      description: 'Позиция сохранена'
     });
   };
 
