@@ -58,6 +58,7 @@ export default function TestClustering() {
   const [minusWords, setMinusWords] = useState<string[]>([]);
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [wordstatToken, setWordstatToken] = useState('');
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -334,6 +335,8 @@ export default function TestClustering() {
               setWebsiteUrl={setWebsiteUrl}
               objectAddress={objectAddress}
               setObjectAddress={setObjectAddress}
+              wordstatToken={wordstatToken}
+              setWordstatToken={setWordstatToken}
               onNext={handleNextFromSource}
             />
           )}
