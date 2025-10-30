@@ -176,11 +176,6 @@ export default function TestClustering() {
     }
     
     try {
-      setLoadingProgress(0);
-      const progressInterval = setInterval(() => {
-        setLoadingProgress(prev => Math.min(prev + 2, 90));
-      }, 200);
-      
       const regionIds = cities.map(c => c.id);
       
       const requestBody = {
@@ -199,12 +194,10 @@ export default function TestClustering() {
       });
 
       if (!response.ok) {
-        clearInterval(progressInterval);
         throw new Error('Wordstat request failed');
       }
 
       const data = await response.json();
-      clearInterval(progressInterval);
       setLoadingProgress(100);
       
       const searchQuery = data.data?.SearchQuery?.[0];
@@ -382,7 +375,16 @@ export default function TestClustering() {
                   setLoadingProgress(0);
                   setIsWordstatLoading(true);
                   setStep('processing');
-                  await handleWordstatSubmit(firstKeyword, selectedCities, goal);
+                  
+                  const progressInterval = setInterval(() => {
+                    setLoadingProgress(prev => Math.min(prev + 2, 90));
+                  }, 200);
+                  
+                  try {
+                    await handleWordstatSubmit(firstKeyword, selectedCities, goal);
+                  } finally {
+                    clearInterval(progressInterval);
+                  }
                 }
               }}
               onBack={handleBack}
