@@ -327,21 +327,38 @@ export default function TestClustering() {
                     const data = await response.json();
                     console.log('✅ Wordstat response:', data);
                     
-                    generatedClusters = (data.clusters || []).map((cluster: any, idx: number) => ({
-                      name: cluster.cluster_name,
-                      intent: cluster.intent || selectedIntents[0] || 'commercial',
-                      color: ['blue', 'emerald', 'purple', 'orange'][idx % 4],
-                      icon: ['Home', 'Building2', 'Globe', 'ShoppingCart'][idx % 4],
-                      phrases: cluster.phrases.map((p: any) => ({
-                        phrase: p.phrase,
-                        count: p.count
-                      }))
-                    }));
+                    const searchResults = data.data?.SearchQuery || [];
                     
-                    const minusCats = data.minus_words || {};
-                    generatedMinusWords = Object.values(minusCats).flatMap((cat: any) => 
-                      cat.phrases.map((p: any) => p.phrase)
-                    ).slice(0, 20);
+                    if (searchResults.length > 0) {
+                      const allClusters = searchResults.flatMap((result: any) => result.Clusters || []);
+                      
+                      generatedClusters = allClusters.map((cluster: any, idx: number) => ({
+                        name: cluster.cluster_name,
+                        intent: cluster.intent || selectedIntents[0] || 'commercial',
+                        color: ['blue', 'emerald', 'purple', 'orange'][idx % 4],
+                        icon: ['Home', 'Building2', 'Globe', 'ShoppingCart'][idx % 4],
+                        phrases: cluster.phrases.map((p: any) => ({
+                          phrase: p.phrase,
+                          count: p.count
+                        }))
+                      }));
+                      
+                      const allMinusWords = searchResults.flatMap((result: any) => {
+                        const minusCats = result.MinusWords || {};
+                        return Object.values(minusCats).flatMap((cat: any) => 
+                          cat.phrases?.map((p: any) => p.phrase) || []
+                        );
+                      });
+                      
+                      generatedMinusWords = [...new Set(allMinusWords)].slice(0, 20);
+                      
+                      console.log('✅ Parsed clusters:', generatedClusters.length);
+                      console.log('✅ Parsed minus words:', generatedMinusWords.length);
+                    } else {
+                      console.warn('⚠️ No SearchQuery results, using fallback');
+                      generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
+                      generatedMinusWords = generateMinusWords(keywords);
+                    }
                   } else {
                     console.error('❌ Wordstat API error');
                     generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
@@ -403,9 +420,15 @@ export default function TestClustering() {
         const data = await response.json();
         console.log('✅ Wordstat collect response:', data);
         
-        const phrases = data.clusters.flatMap((c: any) => 
-          c.phrases.map((p: any) => `${p.phrase} (${p.count})`)
-        );
+        const searchResults = data.data?.SearchQuery || [];
+        const phrases: string[] = [];
+        
+        searchResults.forEach((result: any) => {
+          const topRequests = result.TopRequests || [];
+          topRequests.forEach((req: any) => {
+            phrases.push(req.phrase);
+          });
+        });
         
         if (phrases.length === 0) {
           toast.error('Ключи не найдены. Попробуйте другой запрос');
