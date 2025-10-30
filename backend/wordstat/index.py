@@ -208,6 +208,15 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context')
   ]
 }}"""
     
+    proxy_url = os.environ.get('OPENAI_PROXY_URL')
+    proxies = {}
+    if proxy_url:
+        proxies = {
+            'http': proxy_url,
+            'https': proxy_url
+        }
+        print(f'[OPENAI] Using proxy: {proxy_url[:20]}...')
+    
     try:
         response = requests.post(
             'https://api.openai.com/v1/chat/completions',
@@ -224,6 +233,7 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context')
                 'temperature': 0.3,
                 'response_format': {'type': 'json_object'}
             },
+            proxies=proxies if proxies else None,
             timeout=60
         )
         
