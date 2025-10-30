@@ -173,18 +173,12 @@ export default function ResultsStep({
 
   const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
     const trimmed = searchTerm.trim();
-    
-    // Минимум 3 символа для поиска в кластерах
-    if (trimmed.length < 3) return false;
+    if (trimmed.length === 0) return false;
     
     const phraseLower = phrase.toLowerCase();
     const searchLower = trimmed.toLowerCase();
     
-    // Разбиваем фразу на слова (разделители: пробелы, дефисы, точки, запятые)
-    const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
-    
-    // Ищем только те слова, которые НАЧИНАЮТСЯ с поискового запроса
-    return words.some(word => word.startsWith(searchLower));
+    return phraseLower.includes(searchLower);
   };
 
   // Для минус-слов: ТОЧНОЕ совпадение слова целиком
@@ -206,27 +200,25 @@ export default function ResultsStep({
 
   // Подсветка найденных слов в фразе
   const highlightMatches = (phrase: string, searchTerm: string) => {
-    if (!searchTerm || searchTerm.trim().length < 3) {
+    if (!searchTerm || searchTerm.trim().length === 0) {
       return phrase;
     }
 
     const searchLower = searchTerm.trim().toLowerCase();
-    const words = phrase.split(/(\s+|\-|\.|,)/); // Разбиваем с сохранением разделителей
+    const phraseLower = phrase.toLowerCase();
+    const index = phraseLower.indexOf(searchLower);
     
-    return words.map((word, idx) => {
-      const wordLower = word.toLowerCase();
-      if (wordLower.startsWith(searchLower)) {
-        const matchPart = word.substring(0, searchLower.length);
-        const restPart = word.substring(searchLower.length);
-        return (
-          <span key={idx}>
-            <span className="bg-yellow-300 font-bold">{matchPart}</span>
-            {restPart}
-          </span>
-        );
-      }
-      return <span key={idx}>{word}</span>;
-    });
+    if (index === -1) return phrase;
+    
+    return (
+      <>
+        {phrase.substring(0, index)}
+        <span className="bg-yellow-300 font-bold">
+          {phrase.substring(index, index + searchLower.length)}
+        </span>
+        {phrase.substring(index + searchLower.length)}
+      </>
+    );
   };
 
   const handleConfirmClusterSearch = (clusterIndex: number) => {
@@ -631,8 +623,8 @@ export default function ResultsStep({
               {clusters.map((cluster, idx) => (
                 <th 
                   key={idx} 
-                  className="px-3 py-3 text-left border-r border-white/30 min-w-[280px] max-w-[380px]"
-                  style={{ backgroundColor: cluster.bgColor }}
+                  className="px-3 py-3 text-left border-r border-white/30"
+                  style={{ backgroundColor: cluster.bgColor, width: `${100 / (clusters.length + 1)}%` }}
                 >
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -688,7 +680,8 @@ export default function ResultsStep({
                 </th>
               ))}
               <th 
-                className="px-3 py-3 text-left border-r border-white/30 min-w-[280px] max-w-[380px] bg-red-100"
+                className="px-3 py-3 text-left border-r border-white/30 bg-red-100"
+                style={{ width: `${100 / (clusters.length + 1)}%` }}
               >
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-red-700">
