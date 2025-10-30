@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 interface Phrase {
   phrase: string;
   count: number;
+  sourceCluster?: string;
+  sourceColor?: string;
 }
 
 interface Cluster {
@@ -104,7 +106,14 @@ export default function ResultsStep({
         cluster.phrases = cluster.phrases.filter(p =>
           !p.phrase.toLowerCase().includes(searchTerm)
         );
-        movedPhrases.push(...matchingPhrases);
+        
+        const phrasesWithSource = matchingPhrases.map(p => ({
+          ...p,
+          sourceCluster: cluster.name,
+          sourceColor: cluster.bgColor
+        }));
+        
+        movedPhrases.push(...phrasesWithSource);
       }
     }
 
@@ -387,15 +396,13 @@ export default function ResultsStep({
 
               <div className="flex-1 overflow-y-auto">
                 {cluster.phrases.map((phrase, pIdx) => {
-                  const isHighlighted = matchesSearch(phrase.phrase, cluster.searchText);
-                  
                   return (
                     <div
                       key={pIdx}
                       className="px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/phrase"
-                      style={isHighlighted ? {
-                        backgroundColor: '#FFF59D',
-                        fontWeight: 600
+                      style={phrase.sourceColor ? {
+                        backgroundColor: phrase.sourceColor,
+                        borderLeft: `3px solid ${phrase.sourceColor}`
                       } : {}}
                     >
                       <div className="flex items-center gap-2">
@@ -403,8 +410,15 @@ export default function ResultsStep({
                           <div className="text-sm text-gray-800 leading-snug mb-1">
                             {phrase.phrase}
                           </div>
-                          <div className="text-xs text-gray-500 font-mono">
-                            {phrase.count.toLocaleString()}
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-gray-500 font-mono">
+                              {phrase.count.toLocaleString()}
+                            </div>
+                            {phrase.sourceCluster && (
+                              <div className="text-xs text-gray-600 italic">
+                                из "{phrase.sourceCluster}"
+                              </div>
+                            )}
                           </div>
                         </div>
                         <button
