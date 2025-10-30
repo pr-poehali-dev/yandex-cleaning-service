@@ -98,15 +98,15 @@ export default function Projects() {
 
           <button
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-            onClick={() => navigate('/wordstat')}
+            onClick={() => navigate('/clustering-projects')}
           >
             <Icon name="Search" size={20} />
-            {menuOpen && <span>Сбор семантики</span>}
+            {menuOpen && <span>AI Сбор семантики</span>}
           </button>
 
           <button
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-            onClick={() => navigate('/rsya-cleaner')}
+            onClick={() => navigate('/rsya-projects')}
           >
             <Icon name="ShieldOff" size={20} />
             {menuOpen && <span>Чистка РСЯ</span>}
