@@ -80,6 +80,59 @@ const mockClusters: Cluster[] = [
 
 const mockMinusWords = ['бесплатно', 'даром', 'игра', 'в игре', 'скачать', 'торрент', 'порно', 'xxx', 'вакансия', 'работа'];
 
+function generateClustersFromKeywords(keywords: string[], intents: string[]): Cluster[] {
+  if (keywords.length === 0) return mockClusters;
+  
+  const clusters: Cluster[] = [];
+  const clusterColors = ['blue', 'emerald', 'purple', 'orange'];
+  const clusterIcons = ['Home', 'Building2', 'Globe', 'ShoppingCart'];
+  
+  const groupedKeywords = new Map<string, string[]>();
+  
+  keywords.forEach(kw => {
+    const words = kw.toLowerCase().split(' ');
+    const mainWord = words[words.length - 1] || words[0];
+    
+    if (!groupedKeywords.has(mainWord)) {
+      groupedKeywords.set(mainWord, []);
+    }
+    groupedKeywords.get(mainWord)!.push(kw);
+  });
+  
+  let colorIdx = 0;
+  groupedKeywords.forEach((phrases, mainWord) => {
+    if (phrases.length > 0) {
+      clusters.push({
+        name: `Кластер: ${mainWord}`,
+        intent: intents[0] || 'commercial',
+        color: clusterColors[colorIdx % clusterColors.length],
+        icon: clusterIcons[colorIdx % clusterIcons.length],
+        phrases: phrases.map(p => ({
+          phrase: p,
+          count: Math.floor(Math.random() * 15000) + 1000
+        }))
+      });
+      colorIdx++;
+    }
+  });
+  
+  return clusters.length > 0 ? clusters : mockClusters;
+}
+
+function generateMinusWords(keywords: string[]): string[] {
+  const commonMinusWords = ['бесплатно', 'даром', 'скачать', 'торрент', 'игра', 'вакансия', 'работа'];
+  const keywordWords = keywords.flatMap(kw => kw.toLowerCase().split(' '));
+  
+  const excludeWords = new Set(['купить', 'заказать', 'цена', 'москва', 'спб']);
+  const minusWords = keywordWords.filter(w => 
+    w.length > 3 && 
+    !excludeWords.has(w) &&
+    Math.random() > 0.7
+  );
+  
+  return [...new Set([...commonMinusWords, ...minusWords])].slice(0, 15);
+}
+
 export default function TestClustering() {
   const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -246,10 +299,20 @@ export default function TestClustering() {
           if (idx === PROCESSING_STAGES.length - 1) {
             setTimeout(async () => {
               console.log('✨ PROCESSING COMPLETE, CALLING SAVE...');
-              setClusters(mockClusters);
-              setMinusWords(mockMinusWords);
+              
+              const keywords = source === 'manual' 
+                ? manualKeywords.split('\n').filter(k => k.trim())
+                : source === 'wordstat'
+                ? [wordstatQuery]
+                : [];
+              
+              const generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
+              const generatedMinusWords = generateMinusWords(keywords);
+              
+              setClusters(generatedClusters);
+              setMinusWords(generatedMinusWords);
               console.log('💾 About to call saveResultsToAPI...');
-              await saveResultsToAPI(mockClusters, mockMinusWords);
+              await saveResultsToAPI(generatedClusters, generatedMinusWords);
               console.log('✅ Save completed, showing results');
               setStep('results');
               toast.success('Кластеризация завершена!');
