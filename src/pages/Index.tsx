@@ -42,25 +42,6 @@ const PROCESSING_STAGES = [
   { label: 'Финализация результатов...', duration: 1000 }
 ];
 
-const CLUSTER_COLORS = {
-  blue: {
-    header: 'bg-gradient-to-r from-blue-500 to-blue-600',
-    badge: 'bg-blue-100 text-blue-800 border-blue-300'
-  },
-  emerald: {
-    header: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
-    badge: 'bg-emerald-100 text-emerald-800 border-emerald-300'
-  },
-  purple: {
-    header: 'bg-gradient-to-r from-purple-500 to-purple-600',
-    badge: 'bg-purple-100 text-purple-800 border-purple-300'
-  },
-  amber: {
-    header: 'bg-gradient-to-r from-amber-500 to-amber-600',
-    badge: 'bg-amber-100 text-amber-800 border-amber-300'
-  }
-};
-
 const mockClusters: Cluster[] = [
   {
     name: 'Вторичный рынок',
@@ -232,10 +213,10 @@ export default function Index() {
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
-            Кластеризатор
+            AI сбор ключей
           </h1>
           <p className="text-lg text-slate-500">
-            OpenAI создаст кластеры и минус-слова за 30 секунд
+            Автоматическая кластеризация и минус-слова за 30 секунд
           </p>
         </div>
 
@@ -341,28 +322,25 @@ export default function Index() {
 
           {step === 'cities' && (
             <>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
-                    <Icon name="MapPin" size={24} className="text-white" />
-                  </div>
+              <CardHeader className="p-8 border-b border-slate-100">
+                <CardTitle className="text-2xl font-semibold text-slate-800 mb-2">
                   География
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription className="text-base text-slate-500">
                   Для каких регионов собираем ключи?
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="p-8">
                 <div>
-                  <Label className="text-base font-semibold">Выбранные города ({selectedCities.length})</Label>
-                  <div className="flex flex-wrap gap-2 mt-3 min-h-[60px] p-4 border-2 border-dashed rounded-xl bg-gradient-to-br from-gray-50 to-blue-50">
+                  <Label className="text-sm font-medium text-slate-700">Выбранные города ({selectedCities.length})</Label>
+                  <div className="flex flex-wrap gap-2 mt-3 min-h-[60px] p-4 border border-slate-200 rounded-lg bg-white">
                     {selectedCities.map(city => (
-                      <Badge key={city.id} className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 text-sm font-medium shadow-md hover:shadow-lg transition-all">
+                      <Badge key={city.id} className="bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1 text-sm font-medium">
                         {city.name}
                         <Icon 
                           name="X" 
-                          size={16} 
-                          className="ml-2 cursor-pointer hover:bg-white/20 rounded-full p-0.5" 
+                          size={14} 
+                          className="ml-2 cursor-pointer hover:text-emerald-900" 
                           onClick={(e) => { e.stopPropagation(); removeCity(city.id); }}
                         />
                       </Badge>
@@ -370,20 +348,20 @@ export default function Index() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Label className="text-base font-semibold">Добавить город</Label>
+                <div className="space-y-3 mt-6">
+                  <Label className="text-sm font-medium text-slate-700">Добавить город</Label>
                   <Input
-                    placeholder="🔍 Начните вводить название города..."
+                    placeholder="Начните вводить название города..."
                     value={citySearch}
                     onChange={(e) => setCitySearch(e.target.value)}
-                    className="h-12 border-2 focus:ring-4 focus:ring-green-200"
+                    className="h-12 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                   />
                   {citySearch && filteredCities.length > 0 && (
-                    <div className="border-2 rounded-xl max-h-[240px] overflow-y-auto shadow-inner bg-white">
+                    <div className="border border-slate-200 rounded-lg max-h-[240px] overflow-y-auto bg-white">
                       {filteredCities.slice(0, 10).map(city => (
                         <div
                           key={city.id}
-                          className="p-4 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 cursor-pointer border-b last:border-b-0 transition-all"
+                          className="p-4 hover:bg-emerald-50 cursor-pointer border-b last:border-b-0 transition-colors"
                           onClick={() => addCity(city)}
                         >
                           <span className="font-medium">{city.name}</span>
@@ -398,12 +376,12 @@ export default function Index() {
                   )}
                 </div>
 
-                <div className="flex gap-3">
-                  <Button onClick={handleBack} variant="outline" className="w-full h-12 border-2">
-                    <Icon name="ArrowLeft" size={20} className="mr-2" /> Назад
+                <div className="flex gap-3 mt-6">
+                  <Button onClick={handleBack} variant="outline" className="w-full h-12 border border-slate-200 hover:bg-slate-50">
+                    Назад
                   </Button>
-                  <Button onClick={handleNext} className="w-full h-12 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg">
-                    Далее <Icon name="ArrowRight" size={20} className="ml-2" />
+                  <Button onClick={handleNext} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white">
+                    Далее
                   </Button>
                 </div>
               </CardContent>
@@ -412,65 +390,53 @@ export default function Index() {
 
           {step === 'goal' && (
             <>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
-                    <Icon name="Target" size={24} className="text-white" />
-                  </div>
+              <CardHeader className="p-8 border-b border-slate-100">
+                <CardTitle className="text-2xl font-semibold text-slate-800 mb-2">
                   Цель использования
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription className="text-base text-slate-500">
                   Для чего собираем ключи?
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="p-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card 
-                    className={`cursor-pointer transition-all hover:scale-105 ${goal === 'context' ? 'ring-4 ring-orange-500 shadow-xl bg-gradient-to-br from-orange-50 to-red-50' : 'hover:shadow-lg bg-white'}`}
+                  <button 
+                    className={`p-6 rounded-xl border-2 transition-all text-left ${
+                      goal === 'context' 
+                        ? 'border-emerald-500 bg-emerald-50/50' 
+                        : 'border-slate-200 hover:border-emerald-300 bg-white'
+                    }`}
                     onClick={() => setGoal('context')}
                   >
-                    <CardContent className="p-8 text-center">
-                      <div className="p-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl inline-block mb-4">
-                        <Icon name="MousePointerClick" size={40} className="text-white" />
-                      </div>
-                      <h3 className="font-bold text-xl mb-2">Яндекс.Директ</h3>
-                      <p className="text-sm text-muted-foreground">Контекстная реклама</p>
-                    </CardContent>
-                  </Card>
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
+                      <Icon name="MousePointerClick" size={20} className="text-emerald-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg text-slate-800 mb-1">Яндекс.Директ</h3>
+                    <p className="text-sm text-slate-500">Контекстная реклама</p>
+                  </button>
 
-                  <Card 
-                    className={`cursor-pointer transition-all hover:scale-105 ${goal === 'seo' ? 'ring-4 ring-green-500 shadow-xl bg-gradient-to-br from-green-50 to-emerald-50' : 'hover:shadow-lg bg-white'}`}
+                  <button 
+                    className={`p-6 rounded-xl border-2 transition-all text-left ${
+                      goal === 'seo' 
+                        ? 'border-emerald-500 bg-emerald-50/50' 
+                        : 'border-slate-200 hover:border-emerald-300 bg-white'
+                    }`}
                     onClick={() => setGoal('seo')}
                   >
-                    <CardContent className="p-8 text-center">
-                      <div className="p-4 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl inline-block mb-4">
-                        <Icon name="TrendingUp" size={40} className="text-white" />
-                      </div>
-                      <h3 className="font-bold text-xl mb-2">SEO-продвижение</h3>
-                      <p className="text-sm text-muted-foreground">Органический трафик</p>
-                    </CardContent>
-                  </Card>
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
+                      <Icon name="TrendingUp" size={20} className="text-emerald-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg text-slate-800 mb-1">SEO-продвижение</h3>
+                    <p className="text-sm text-slate-500">Органический трафик</p>
+                  </button>
                 </div>
 
-                <div className="p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl">
-                  <p className="font-semibold mb-2 flex items-center gap-2">
-                    <span className="text-xl">💡</span>
-                    {goal === 'context' ? 'Для Директа:' : 'Для SEO:'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {goal === 'context' 
-                      ? 'Информационные запросы ("как купить") автоматически попадут в минус-слова'
-                      : 'Информационные запросы останутся — делаем из них статьи'
-                    }
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button onClick={handleBack} variant="outline" className="w-full h-12 border-2">
-                    <Icon name="ArrowLeft" size={20} className="mr-2" /> Назад
+                <div className="flex gap-3 mt-6">
+                  <Button onClick={handleBack} variant="outline" className="w-full h-12 border border-slate-200 hover:bg-slate-50">
+                    Назад
                   </Button>
-                  <Button onClick={handleNext} className="w-full h-12 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 shadow-lg">
-                    Далее <Icon name="ArrowRight" size={20} className="ml-2" />
+                  <Button onClick={handleNext} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white">
+                    Далее
                   </Button>
                 </div>
               </CardContent>
@@ -479,60 +445,41 @@ export default function Index() {
 
           {step === 'intents' && (
             <>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-                    <Icon name="ListFilter" size={24} className="text-white" />
-                  </div>
+              <CardHeader className="p-8 border-b border-slate-100">
+                <CardTitle className="text-2xl font-semibold text-slate-800 mb-2">
                   Типы запросов
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription className="text-base text-slate-500">
                   Какие интенты нужны?
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="p-8">
                 <div className="space-y-3">
                   {INTENT_TYPES.map(intent => (
-                    <Card 
+                    <label 
                       key={intent.id}
-                      className={`cursor-pointer transition-all hover:scale-[1.02] ${
-                        selectedIntents.includes(intent.id) ? 'ring-4 ring-purple-500 bg-gradient-to-r from-purple-50 to-pink-50 shadow-lg' : 'hover:shadow-md bg-white'
+                      className={`flex items-start gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all ${
+                        selectedIntents.includes(intent.id) ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-200 hover:border-emerald-300 bg-white'
                       }`}
-                      onClick={() => toggleIntent(intent.id)}
                     >
-                      <CardContent className="p-5 flex items-start gap-4">
-                        <Checkbox 
-                          checked={selectedIntents.includes(intent.id)}
-                          className="mt-1.5 h-6 w-6"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="text-3xl">{intent.emoji}</span>
-                            <h3 className="font-bold text-lg">{intent.label}</h3>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{intent.description}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                      <Checkbox 
+                        checked={selectedIntents.includes(intent.id)}
+                        onCheckedChange={() => toggleIntent(intent.id)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg text-slate-800 mb-1">{intent.label}</h3>
+                        <p className="text-sm text-slate-500">{intent.description}</p>
+                      </div>
+                    </label>
                   ))}
                 </div>
 
-                <div className="p-5 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl">
-                  <p className="font-semibold text-yellow-800 mb-2 flex items-center gap-2">
-                    <span className="text-xl">⚠️</span>
-                    Для Директа:
-                  </p>
-                  <p className="text-sm text-yellow-700">
-                    Оставьте только <strong>Коммерческие</strong> и <strong>Транзакционные</strong> — они конвертируют в заявки
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button onClick={handleBack} variant="outline" className="w-full h-12 border-2">
-                    <Icon name="ArrowLeft" size={20} className="mr-2" /> Назад
+                <div className="flex gap-3 mt-6">
+                  <Button onClick={handleBack} variant="outline" className="w-full h-12 border border-slate-200 hover:bg-slate-50">
+                    Назад
                   </Button>
-                  <Button onClick={handleNext} className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg">
-                    <Icon name="Sparkles" size={20} className="mr-2" />
+                  <Button onClick={handleNext} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white">
                     Создать кластеры
                   </Button>
                 </div>
@@ -543,30 +490,30 @@ export default function Index() {
           {step === 'processing' && (
             <CardContent className="p-12">
               <div className="text-center space-y-8">
-                <div className="p-6 bg-gradient-to-br from-emerald-100 to-purple-100 rounded-full w-32 h-32 mx-auto flex items-center justify-center">
-                  <Icon name="Sparkles" size={64} className="text-purple-600 animate-pulse" />
+                <div className="p-6 bg-emerald-100 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
+                  <Icon name="Loader2" size={48} className="text-emerald-600 animate-spin" />
                 </div>
                 
                 <div>
-                  <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-emerald-600 to-purple-600 bg-clip-text text-transparent">
+                  <h2 className="text-2xl font-semibold mb-3 text-slate-800">
                     {PROCESSING_STAGES[currentStage]?.label || 'Обработка...'}
                   </h2>
-                  <p className="text-muted-foreground text-lg">
-                    OpenAI анализирует ваши ключи
+                  <p className="text-slate-500">
+                    Анализируем ваши ключи
                   </p>
                 </div>
 
                 <div className="space-y-3">
-                  <Progress value={processingProgress} className="h-4" />
-                  <p className="text-2xl font-bold text-purple-600">{Math.round(processingProgress)}%</p>
+                  <Progress value={processingProgress} className="h-2" />
+                  <p className="text-lg font-medium text-emerald-600">{Math.round(processingProgress)}%</p>
                 </div>
 
                 <div className="flex justify-center gap-2">
                   {PROCESSING_STAGES.map((_, idx) => (
                     <div
                       key={idx}
-                      className={`h-2 w-12 rounded-full transition-all ${
-                        idx <= currentStage ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-gray-200'
+                      className={`h-1.5 w-12 rounded-full transition-all ${
+                        idx <= currentStage ? 'bg-emerald-500' : 'bg-slate-200'
                       }`}
                     />
                   ))}
@@ -577,132 +524,78 @@ export default function Index() {
 
           {step === 'results' && (
             <>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg">
-                    <Icon name="CheckCircle2" size={24} className="text-white" />
-                  </div>
+              <CardHeader className="p-8 border-b border-slate-100">
+                <CardTitle className="text-2xl font-semibold text-slate-800 mb-2">
                   Готово!
                 </CardTitle>
-                <CardDescription className="text-base">
-                  OpenAI создал кластеры и минус-слова
+                <CardDescription className="text-base text-slate-500">
+                  Кластеры и минус-слова созданы
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6" key={`results-${renderKey}`}>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                          <Icon name="Layers" size={28} className="text-white" />
-                        </div>
-                        <div>
-                          <div className="text-3xl font-bold text-white">{clusters.length}</div>
-                          <div className="text-sm text-white/80 font-medium">Кластеров</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                          <Icon name="FileText" size={28} className="text-white" />
-                        </div>
-                        <div>
-                          <div className="text-3xl font-bold text-white">{totalPhrases}</div>
-                          <div className="text-sm text-white/80 font-medium">Фраз</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-gradient-to-br from-rose-500 to-rose-600 border-0 shadow-lg">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                          <Icon name="ShieldX" size={28} className="text-white" />
-                        </div>
-                        <div>
-                          <div className="text-3xl font-bold text-white">{minusWords.length}</div>
-                          <div className="text-sm text-white/80 font-medium">Минус-слов</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+              <CardContent className="p-8" key={`results-${renderKey}`}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div className="text-3xl font-semibold text-emerald-600 mb-1">{clusters.length}</div>
+                    <div className="text-sm text-slate-600">Кластеров</div>
+                  </div>
+                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div className="text-3xl font-semibold text-emerald-600 mb-1">{totalPhrases}</div>
+                    <div className="text-sm text-slate-600">Фраз</div>
+                  </div>
+                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div className="text-3xl font-semibold text-emerald-600 mb-1">{minusWords.length}</div>
+                    <div className="text-sm text-slate-600">Минус-слов</div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold">Кластеры</h3>
-                    <Button onClick={exportClusters} size="sm" variant="outline">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-slate-800">Кластеры</h3>
+                    <Button onClick={exportClusters} size="sm" variant="outline" className="border-slate-200 hover:bg-slate-50">
                       <Icon name="Download" size={16} className="mr-2" />
                       Экспорт
                     </Button>
                   </div>
                   
-                  {clusters.map((cluster, idx) => {
-                    const colors = CLUSTER_COLORS[cluster.color as keyof typeof CLUSTER_COLORS];
-                    return (
-                      <Card key={idx} className="border-0 shadow-lg hover:shadow-xl transition-all overflow-hidden">
-                        <CardContent className="p-0">
-                          <div className={`p-6 ${colors.header}`}>
-                            <div className="flex items-center gap-4">
-                              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                                <Icon name={cluster.icon as any} size={28} className="text-white" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-bold text-xl text-white mb-2">{cluster.name}</h4>
-                                <Badge className={colors.badge}>
-                                  {cluster.intent === 'commercial' ? '💰 Коммерческий' : cluster.intent === 'navigational' ? '🧭 Навигационный' : '📚 Инфо'}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="p-6 space-y-3 bg-white">
-                            {cluster.phrases.map((phrase, pidx) => (
-                              <div key={pidx} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200">
-                                <span className="text-sm font-semibold text-slate-700">{phrase.phrase}</span>
-                                <Badge variant="outline" className="ml-3 font-mono text-xs">
-                                  <Icon name="TrendingUp" size={14} className="mr-1 text-emerald-600" />
-                                  {phrase.count.toLocaleString()}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-
-                <Card className="border-0 shadow-lg overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="p-6 bg-gradient-to-r from-rose-500 to-rose-600 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                          <Icon name="ShieldX" size={28} className="text-white" />
-                        </div>
-                        <h3 className="text-xl font-bold text-white">Минус-слова для Директа</h3>
+                  {clusters.map((cluster, idx) => (
+                    <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
+                      <div className="p-5 bg-emerald-50 border-b border-emerald-200">
+                        <h4 className="font-semibold text-lg text-slate-800">{cluster.name}</h4>
                       </div>
-                      <Button onClick={exportMinusWords} size="sm" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border-0">
-                        <Icon name="Download" size={16} className="mr-2" />
-                        Экспорт
-                      </Button>
-                    </div>
-                    <div className="p-6 bg-white">
-                      <div className="flex flex-wrap gap-2">
-                        {minusWords.map((word, idx) => (
-                          <Badge key={idx} className="bg-rose-100 text-rose-800 border border-rose-300 px-3 py-1.5 font-medium">
-                            −{word}
-                          </Badge>
+                      <div className="p-5 space-y-2 bg-white">
+                        {cluster.phrases.map((phrase, pidx) => (
+                          <div key={pidx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                            <span className="text-sm text-slate-700">{phrase.phrase}</span>
+                            <span className="text-xs text-slate-500 font-mono ml-3">
+                              {phrase.count.toLocaleString()}
+                            </span>
+                          </div>
                         ))}
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
 
-                <Button onClick={() => setStep('source')} variant="outline" className="w-full h-12 border-2">
-                  <Icon name="RotateCcw" size={20} className="mr-2" />
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="p-5 bg-emerald-50 border-b border-emerald-200 flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-slate-800">Минус-слова</h3>
+                    <Button onClick={exportMinusWords} size="sm" variant="outline" className="border-slate-200 hover:bg-white">
+                      <Icon name="Download" size={16} className="mr-2" />
+                      Экспорт
+                    </Button>
+                  </div>
+                  <div className="p-5 bg-white">
+                    <div className="flex flex-wrap gap-2">
+                      {minusWords.map((word, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-lg border border-slate-200">
+                          −{word}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <Button onClick={() => setStep('source')} variant="outline" className="w-full h-12 border border-slate-200 hover:bg-slate-50 mt-6">
                   Начать заново
                 </Button>
               </CardContent>
