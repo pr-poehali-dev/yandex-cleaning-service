@@ -196,7 +196,7 @@ export default function ResultsStep({
     }
   };
 
-  const addNewCluster = async () => {
+  const addNewCluster = async (afterIndex: number) => {
     const newCluster = {
       name: `Новый кластер ${clusters.length + 1}`,
       intent: 'informational',
@@ -208,7 +208,11 @@ export default function ResultsStep({
       hovering: false
     };
 
-    const newClusters = [...clusters, newCluster];
+    const newClusters = [
+      ...clusters.slice(0, afterIndex + 1),
+      newCluster,
+      ...clusters.slice(afterIndex + 1)
+    ];
     setClusters(newClusters);
 
     if (onSaveChanges) {
@@ -306,7 +310,7 @@ export default function ResultsStep({
             >
               {cluster.hovering && (
                 <button
-                  onClick={addNewCluster}
+                  onClick={() => addNewCluster(idx)}
                   className="absolute -right-3 top-3 z-10 w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg"
                 >
                   <Icon name="Plus" size={14} />
@@ -321,12 +325,6 @@ export default function ResultsStep({
                     onChange={(e) => renameCluster(idx, e.target.value)}
                     className="font-semibold text-sm h-7 border-transparent hover:border-gray-300 focus:border-gray-400 bg-transparent flex-1"
                   />
-                  <button
-                    onClick={() => deleteCluster(idx)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Icon name="Trash2" size={14} />
-                  </button>
                 </div>
 
                 <div className="flex gap-1.5 mb-2">
@@ -351,15 +349,25 @@ export default function ResultsStep({
                   {cluster.phrases.length} фраз
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyClusterPhrases(cluster.phrases)}
-                  className="w-full text-xs h-7 hover:bg-white/80"
-                >
-                  <Icon name="Copy" size={12} className="mr-1.5" />
-                  Копировать
-                </Button>
+                <div className="flex gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyClusterPhrases(cluster.phrases)}
+                    className="flex-1 text-xs h-7 hover:bg-white/80"
+                  >
+                    <Icon name="Copy" size={12} className="mr-1.5" />
+                    Копировать
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteCluster(idx)}
+                    className="text-xs h-7 px-2 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Icon name="Trash2" size={12} />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto">
@@ -375,7 +383,7 @@ export default function ResultsStep({
                         fontWeight: 600
                       } : {}}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="text-sm text-gray-800 leading-snug mb-1">
                             {phrase.phrase}
@@ -386,9 +394,9 @@ export default function ResultsStep({
                         </div>
                         <button
                           onClick={() => removePhrase(idx, pIdx)}
-                          className="opacity-0 group-hover/phrase:opacity-100 text-red-500 hover:text-red-700 flex-shrink-0"
+                          className="w-5 h-5 rounded-full bg-gray-700 hover:bg-gray-900 text-white flex items-center justify-center flex-shrink-0"
                         >
-                          <Icon name="X" size={12} />
+                          <Icon name="X" size={10} />
                         </button>
                       </div>
                     </div>
