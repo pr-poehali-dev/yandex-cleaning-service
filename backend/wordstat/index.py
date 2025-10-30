@@ -508,13 +508,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Accept-Language': 'ru'
             }
             
-            # Прокси для обхода блокировок Яндекс API
-            proxy_url = os.environ.get('YANDEX_PROXY_URL')
-            proxies = None
-            if proxy_url:
-                proxies = {'http': proxy_url, 'https': proxy_url}
-            
-            response = requests.get(api_url, headers=headers, proxies=proxies, timeout=30)
+            response = requests.get(api_url, headers=headers, timeout=30)
             
             if response.status_code != 200:
                 return {
@@ -586,14 +580,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}')
             
-            # Прокси для обхода блокировок Яндекс API
-            proxy_url = os.environ.get('YANDEX_PROXY_URL')
-            proxies = None
-            if proxy_url:
-                proxies = {'http': proxy_url, 'https': proxy_url}
-                print(f'[WORDSTAT] Using proxy: {proxy_url[:30]}...')
-            
-            response = requests.post(api_url, json=payload, headers=headers, proxies=proxies, timeout=30)
+            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
             
             if response.status_code != 200:
                 return {
