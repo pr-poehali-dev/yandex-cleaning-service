@@ -207,13 +207,25 @@ export default function ResultsStep({
           return originalCluster !== undefined && originalCluster !== clusterIndex;
         });
 
+        const phrasesToMinusWords: Phrase[] = [];
+        
         phrasesToReturn.forEach(p => {
           const originalClusterIdx = moveHistory.get(p.phrase);
           if (originalClusterIdx !== undefined && originalClusterIdx !== clusterIndex) {
-            newClusters[originalClusterIdx].phrases.push(p);
-            newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
+            if (originalClusterIdx === -1) {
+              // Вернуть в минус-фразы
+              phrasesToMinusWords.push(p);
+            } else {
+              // Вернуть в обычный кластер
+              newClusters[originalClusterIdx].phrases.push(p);
+              newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
+            }
           }
         });
+
+        if (phrasesToMinusWords.length > 0) {
+          setMinusWords([...minusWords, ...phrasesToMinusWords].sort((a, b) => b.count - a.count));
+        }
 
         targetCluster.phrases = targetCluster.phrases.filter(p => {
           const originalCluster = moveHistory.get(p.phrase);
@@ -238,14 +250,26 @@ export default function ResultsStep({
     });
 
     if (phrasesToReturn.length > 0) {
+      const phrasesToMinusWords: Phrase[] = [];
+      
       phrasesToReturn.forEach(p => {
         const originalClusterIdx = moveHistory.get(p.phrase);
         if (originalClusterIdx !== undefined) {
-          newClusters[originalClusterIdx].phrases.push(p);
-          newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
+          if (originalClusterIdx === -1) {
+            // Вернуть в минус-фразы
+            phrasesToMinusWords.push(p);
+          } else {
+            // Вернуть в обычный кластер
+            newClusters[originalClusterIdx].phrases.push(p);
+            newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
+          }
           newHistory.delete(p.phrase);
         }
       });
+
+      if (phrasesToMinusWords.length > 0) {
+        setMinusWords([...minusWords, ...phrasesToMinusWords].sort((a, b) => b.count - a.count));
+      }
     }
 
     // 1б) Удалить перенесённые фразы, которые больше не подходят
@@ -262,6 +286,7 @@ export default function ResultsStep({
     });
 
     // ШАГ 2: Найти новые фразы, которые подходят под поиск
+    // 2а) Искать в других кластерах
     for (let i = 0; i < newClusters.length; i++) {
       if (i === clusterIndex) continue;
 
@@ -279,6 +304,18 @@ export default function ResultsStep({
         });
         movedPhrases.push(...matchingPhrases);
       }
+    }
+
+    // 2б) Искать в минус-фразах
+    const matchingMinusPhrases = minusWords.filter(p => matchesWholeWord(p.phrase, value));
+    if (matchingMinusPhrases.length > 0) {
+      setMinusWords(minusWords.filter(p => !matchesWholeWord(p.phrase, value)));
+      matchingMinusPhrases.forEach(p => {
+        if (!newHistory.has(p.phrase)) {
+          newHistory.set(p.phrase, -1); // -1 для фраз из минус-слов
+        }
+      });
+      movedPhrases.push(...matchingMinusPhrases);
     }
 
     if (movedPhrases.length > 0) {
