@@ -217,7 +217,6 @@ export default function TestClustering() {
       return;
     }
     
-    setStep('processing');
     setIsWordstatLoading(true);
     
     try {
@@ -434,10 +433,10 @@ export default function TestClustering() {
             />
           )}
 
-          {step === 'processing' && (
+          {(step === 'processing' || isWordstatLoading) && (
             <ProcessingStep
-              progress={processingProgress}
-              currentStage={currentStage}
+              progress={isWordstatLoading ? 50 : processingProgress}
+              currentStage={isWordstatLoading ? 2 : currentStage}
             />
           )}
 
