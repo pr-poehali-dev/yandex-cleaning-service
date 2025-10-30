@@ -279,7 +279,11 @@ export default function TestClustering() {
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <div className="text-4xl mb-3">📝</div>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                    source === 'manual' ? 'bg-emerald-100' : 'bg-slate-100'
+                  }`}>
+                    <Icon name="FileText" size={24} className={source === 'manual' ? 'text-emerald-600' : 'text-slate-400'} />
+                  </div>
                   <h3 className="font-semibold text-lg">Вручную</h3>
                   <p className="text-sm text-slate-500 mt-1">Вставить список ключей</p>
                 </button>
@@ -292,7 +296,11 @@ export default function TestClustering() {
                       : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <div className="text-4xl mb-3">🌐</div>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
+                    source === 'website' ? 'bg-emerald-100' : 'bg-slate-100'
+                  }`}>
+                    <Icon name="Globe" size={24} className={source === 'website' ? 'text-emerald-600' : 'text-slate-400'} />
+                  </div>
                   <h3 className="font-semibold text-lg">С сайта</h3>
                   <p className="text-sm text-slate-500 mt-1">AI соберёт ключи с сайта</p>
                 </button>
