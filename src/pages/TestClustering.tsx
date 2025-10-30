@@ -323,7 +323,7 @@ export default function TestClustering() {
 
               <Button 
                 onClick={handleNext}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
+                className="w-full py-6 text-lg"
               >
                 Далее <Icon name="ArrowRight" size={20} className="ml-2" />
               </Button>
@@ -498,7 +498,7 @@ export default function TestClustering() {
                 </Button>
                 <Button 
                   onClick={handleNext}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
+                  className="flex-1 py-6 text-lg"
                 >
                   Начать анализ <Icon name="Sparkles" size={20} className="ml-2" />
                 </Button>
@@ -553,21 +553,15 @@ export default function TestClustering() {
 
             <div className="grid gap-4">
               {clusters.map((cluster, idx) => {
-                const style = CLUSTER_STYLES[idx % CLUSTER_STYLES.length];
                 return (
-                  <Card key={cluster.name} className={`border-2 ${style.border}`}>
-                    <CardHeader className={style.headerBg}>
+                  <Card key={cluster.name} className="border">
+                    <CardHeader>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-12 h-12 ${style.bg} rounded-xl flex items-center justify-center`}>
-                            <Icon name={cluster.icon as any} size={24} className="text-white" />
-                          </div>
-                          <div>
-                            <CardTitle>{cluster.name}</CardTitle>
-                            <CardDescription>{cluster.phrases.length} фраз</CardDescription>
-                          </div>
+                        <div>
+                          <CardTitle className="text-lg">{cluster.name}</CardTitle>
+                          <CardDescription>{cluster.phrases.length} фраз</CardDescription>
                         </div>
-                        <Badge variant="secondary">
+                        <Badge variant="outline" className="text-xs">
                           {INTENT_TYPES.find(t => t.id === cluster.intent)?.label}
                         </Badge>
                       </div>
@@ -586,22 +580,17 @@ export default function TestClustering() {
                 );
               })}
 
-              <Card className="border-2 border-red-200">
-                <CardHeader className="bg-red-50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center">
-                      <Icon name="Ban" size={24} className="text-white" />
-                    </div>
-                    <div>
-                      <CardTitle>Минус-слова</CardTitle>
-                      <CardDescription>{minusWords.length} слов для исключения</CardDescription>
-                    </div>
+              <Card className="border">
+                <CardHeader>
+                  <div>
+                    <CardTitle className="text-lg">Минус-слова</CardTitle>
+                    <CardDescription>{minusWords.length} слов для исключения</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4">
                   <div className="flex flex-wrap gap-2">
                     {minusWords.map(word => (
-                      <Badge key={word} variant="destructive">
+                      <Badge key={word} variant="secondary">
                         {word}
                       </Badge>
                     ))}

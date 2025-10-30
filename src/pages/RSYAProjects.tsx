@@ -27,8 +27,13 @@ export default function RSYAProjects() {
   const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const filteredProjects = projects.filter(project =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleCreateProject = () => {
     if (!newProjectName.trim()) {
@@ -112,7 +117,22 @@ export default function RSYAProjects() {
               </Dialog>
             </div>
 
-            {projects.length === 0 ? (
+            <div className="mb-6">
+              <Input
+                placeholder="Поиск по проектам..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
+
+            {filteredProjects.length === 0 && searchQuery ? (
+              <Card className="p-12 text-center">
+                <Icon name="Search" size={64} className="mx-auto mb-4 text-slate-300" />
+                <h3 className="text-xl font-semibold mb-2">Проекты не найдены</h3>
+                <p className="text-slate-500">Попробуйте изменить запрос</p>
+              </Card>
+            ) : projects.length === 0 ? (
               <Card className="p-12 text-center">
                 <Icon name="ShieldOff" size={64} className="mx-auto mb-4 text-slate-300" />
                 <h3 className="text-xl font-semibold mb-2">Нет проектов</h3>
@@ -127,7 +147,7 @@ export default function RSYAProjects() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => (
+                {filteredProjects.map((project) => (
                   <Card
                     key={project.id}
                     className="p-6 hover:shadow-lg transition-all cursor-pointer border-2 hover:border-emerald-300"
