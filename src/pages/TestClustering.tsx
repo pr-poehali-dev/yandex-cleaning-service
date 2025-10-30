@@ -372,17 +372,23 @@ export default function TestClustering() {
               onNext={async () => {
                 const firstKeyword = manualKeywords.split('\n')[0]?.trim();
                 if (firstKeyword && selectedCities.length > 0) {
+                  console.log('🎬 Starting progress animation');
                   setLoadingProgress(0);
                   setIsWordstatLoading(true);
                   setStep('processing');
                   
                   const progressInterval = setInterval(() => {
-                    setLoadingProgress(prev => Math.min(prev + 2, 90));
+                    setLoadingProgress(prev => {
+                      const next = Math.min(prev + 2, 90);
+                      console.log('📊 Progress:', next);
+                      return next;
+                    });
                   }, 200);
                   
                   try {
                     await handleWordstatSubmit(firstKeyword, selectedCities, goal);
                   } finally {
+                    console.log('🛑 Stopping progress animation');
                     clearInterval(progressInterval);
                   }
                 }
