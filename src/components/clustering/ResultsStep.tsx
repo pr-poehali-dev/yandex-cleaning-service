@@ -96,7 +96,9 @@ export default function ResultsStep({
     return words.some(word => word.startsWith(searchLower));
   };
 
-  // Для минус-слов: без ограничения на минимум символов (можно искать "в", "на", "из")
+  // Для минус-слов: ТОЧНОЕ совпадение слова целиком
+  // "куплю" найдёт только "куплю", НЕ "купить"
+  // "как" найдёт только "как", НЕ "какую" или "какие"
   const matchesForMinus = (phrase: string, searchTerm: string): boolean => {
     const trimmed = searchTerm.trim();
     if (trimmed.length === 0) return false;
@@ -107,15 +109,8 @@ export default function ResultsStep({
     // Разбиваем фразу на слова
     const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
     
-    // Для коротких слов (1-2 символа) - ТОЧНОЕ совпадение
-    // "как" найдёт только "как", НЕ "какую" или "какие"
-    if (searchLower.length <= 2) {
-      return words.some(word => word === searchLower);
-    }
-    
-    // Для длинных слов (3+ символа) - поиск по началу
-    // "вторич" найдёт "вторичка", "вторичный"
-    return words.some(word => word.startsWith(searchLower));
+    // ВСЕГДА используем ТОЧНОЕ совпадение для минус-слов
+    return words.some(word => word === searchLower);
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
