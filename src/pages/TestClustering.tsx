@@ -278,13 +278,22 @@ export default function TestClustering() {
       
       console.log('✅ Transformed clusters:', transformedClusters.length);
       console.log('✅ Transformed minus words:', transformedMinusWords.length);
+      console.log('⏰ BEFORE setClusters');
       
       setClusters(transformedClusters);
+      console.log('⏰ AFTER setClusters');
+      
       setMinusWords(transformedMinusWords);
+      console.log('⏰ AFTER setMinusWords');
       
+      console.log('⏰ BEFORE saveResultsToAPI');
       await saveResultsToAPI(transformedClusters, transformedMinusWords);
+      console.log('⏰ AFTER saveResultsToAPI');
       
+      console.log('⏰ BEFORE setStep(results)');
       setStep('results');
+      console.log('⏰ AFTER setStep(results)');
+      
       toast.success(`Собрано ${transformedClusters.length} кластеров из Wordstat`);
     } catch (error) {
       console.error('Error fetching from Wordstat:', error);
