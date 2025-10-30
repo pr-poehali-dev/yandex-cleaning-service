@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import { RUSSIAN_CITIES, City } from '@/data/russian-cities';
+import AppSidebar from '@/components/layout/AppSidebar';
 
 type Step = 'source' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
 type Source = 'manual' | 'website';
@@ -216,7 +217,9 @@ export default function Index() {
   const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 to-white p-4 md:p-8">
+    <>
+      <AppSidebar />
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 to-white p-4 md:p-8 ml-64">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
@@ -631,5 +634,6 @@ export default function Index() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import AppSidebar from '@/components/layout/AppSidebar';
 
 interface TopRequest {
   phrase: string;
@@ -179,7 +180,9 @@ export default function WordstatNew() {
 
   if (step === 'input') {
     return (
-      <div className="min-h-screen bg-background p-6">
+      <>
+        <AppSidebar />
+        <div className="min-h-screen bg-background p-6 ml-64">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -266,11 +269,14 @@ export default function WordstatNew() {
           </Card>
         </div>
       </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <>
+      <AppSidebar />
+      <div className="min-h-screen bg-background p-6 ml-64">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -472,5 +478,6 @@ export default function WordstatNew() {
         </div>
       </div>
     </div>
+    </>
   );
 }

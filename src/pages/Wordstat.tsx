@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
+import AppSidebar from '@/components/layout/AppSidebar';
 
 interface Cluster {
   cluster_name: string;
@@ -124,7 +125,9 @@ export default function Wordstat() {
   const clusters = results[0]?.Clusters || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-indigo-100 p-8">
+    <>
+      <AppSidebar />
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-indigo-100 p-8 ml-64">
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardHeader>
@@ -238,5 +241,6 @@ export default function Wordstat() {
         </Card>
       </div>
     </div>
+    </>
   );
 }
