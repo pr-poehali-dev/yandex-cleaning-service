@@ -83,7 +83,7 @@ export default function ResultsStep({
   const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
     const trimmed = searchTerm.trim();
     
-    // Минимум 3 символа для поиска
+    // Минимум 3 символа для поиска в кластерах
     if (trimmed.length < 3) return false;
     
     const phraseLower = phrase.toLowerCase();
@@ -93,22 +93,25 @@ export default function ResultsStep({
     const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
     
     // Ищем только те слова, которые НАЧИНАЮТСЯ с поискового запроса
-    const matches = words.some(word => word.startsWith(searchLower));
+    return words.some(word => word.startsWith(searchLower));
+  };
+
+  // Для минус-слов: без ограничения на минимум символов (можно искать "в", "на", "из")
+  const matchesForMinus = (phrase: string, searchTerm: string): boolean => {
+    const trimmed = searchTerm.trim();
+    if (trimmed.length === 0) return false;
     
-    // Детальное логирование
-    if (searchLower === 'куплю') {
-      console.log(`🔍 Поиск "${searchTerm}" в "${phrase}"`);
-      console.log(`   Слова:`, words);
-      console.log(`   Совпадения:`, words.filter(w => w.startsWith(searchLower)));
-      console.log(`   Результат: ${matches ? '✅ ДА' : '❌ НЕТ'}`);
-    }
+    const phraseLower = phrase.toLowerCase();
+    const searchLower = trimmed.toLowerCase();
     
-    return matches;
+    // Разбиваем фразу на слова
+    const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
+    
+    // Ищем только те слова, которые НАЧИНАЮТСЯ с поискового запроса
+    return words.some(word => word.startsWith(searchLower));
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
-    console.log(`🔍 handleSearchChange ВЫЗВАНА! Кластер #${clusterIndex}, значение: "${value}"`);
-    
     const newClusters = [...clusters];
     const targetCluster = newClusters[clusterIndex];
     const previousSearch = targetCluster.searchText;
@@ -143,49 +146,52 @@ export default function ResultsStep({
     const movedPhrases: Phrase[] = [];
     const newHistory = new Map(moveHistory);
 
-    // Логирование поискового запроса
-    console.log(`🔍 ПОИСК НАЧАТ: "${value}"`);
-    console.log(`   Минимум символов: ${value.trim().length >= 3 ? '✅' : '❌ слишком мало'}`);
-
-    // ШАГ 1: Вернуть фразы из целевого кластера, которые больше НЕ подходят под поиск
+    // ШАГ 1: Обработать фразы в целевом кластере
+    // 1а) Вернуть ПЕРЕНЕСЁННЫЕ фразы, которые больше не подходят
     const phrasesToReturn = targetCluster.phrases.filter(p => {
       const originalCluster = moveHistory.get(p.phrase);
       const stillMatches = matchesWholeWord(p.phrase, value);
-      // Возвращаем только те, что были перенесены ранее И больше не подходят
       return originalCluster !== undefined && originalCluster !== clusterIndex && !stillMatches;
     });
 
     if (phrasesToReturn.length > 0) {
-      console.log(`\n🔙 ВОЗВРАТ ${phrasesToReturn.length} фраз, которые больше не подходят`);
       phrasesToReturn.forEach(p => {
         const originalClusterIdx = moveHistory.get(p.phrase);
-        if (originalClusterIdx !== undefined && originalClusterIdx !== clusterIndex) {
-          console.log(`   "${p.phrase}" → обратно в кластер #${originalClusterIdx}`);
+        if (originalClusterIdx !== undefined) {
           newClusters[originalClusterIdx].phrases.push(p);
           newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
           newHistory.delete(p.phrase);
         }
       });
-
-      targetCluster.phrases = targetCluster.phrases.filter(p => {
-        const originalCluster = moveHistory.get(p.phrase);
-        const stillMatches = matchesWholeWord(p.phrase, value);
-        return originalCluster === undefined || originalCluster === clusterIndex || stillMatches;
-      });
     }
+
+    // 1б) СКРЫТЬ оригинальные фразы кластера, которые не подходят под поиск
+    const originalPhrases = targetCluster.phrases.filter(p => {
+      const originalCluster = moveHistory.get(p.phrase);
+      // Это оригинальная фраза кластера (не была перенесена)
+      return originalCluster === undefined || originalCluster === clusterIndex;
+    });
+
+    // Оставляем только: перенесённые фразы (подходящие) + оригинальные фразы (подходящие)
+    targetCluster.phrases = targetCluster.phrases.filter(p => {
+      const originalCluster = moveHistory.get(p.phrase);
+      const stillMatches = matchesWholeWord(p.phrase, value);
+      
+      // Перенесённая фраза → показываем только если подходит
+      if (originalCluster !== undefined && originalCluster !== clusterIndex) {
+        return stillMatches;
+      }
+      
+      // Оригинальная фраза → показываем только если подходит
+      return stillMatches;
+    });
 
     // ШАГ 2: Найти новые фразы, которые подходят под поиск
     for (let i = 0; i < newClusters.length; i++) {
       if (i === clusterIndex) continue;
 
       const cluster = newClusters[i];
-      console.log(`\n📂 Проверяем кластер: "${cluster.name}" (${cluster.phrases.length} фраз)`);
-      
-      const matchingPhrases = cluster.phrases.filter(p => {
-        const matches = matchesWholeWord(p.phrase, value);
-        console.log(`   "${p.phrase}" → ${matches ? '✅' : '❌'}`);
-        return matches;
-      });
+      const matchingPhrases = cluster.phrases.filter(p => matchesWholeWord(p.phrase, value));
 
       if (matchingPhrases.length > 0) {
         cluster.phrases = cluster.phrases.filter(p => 
@@ -249,17 +255,9 @@ export default function ResultsStep({
     const newHistory = new Map(moveHistory);
 
     const newClusters = clusters.map((cluster, clusterIdx) => {
-      const matchingPhrases = cluster.phrases.filter(p => {
-        const matches = matchesWholeWord(p.phrase, value);
-        
-        // Детальное логирование для отладки
-        if (value.trim().toLowerCase() === 'куплю') {
-          console.log(`🔍 Кластер "${cluster.name}" → фраза "${p.phrase}"`);
-          console.log(`   Результат: ${matches ? '✅ НАЙДЕНО' : '❌ НЕ НАЙДЕНО'}`);
-        }
-        
-        return matches;
-      });
+      const matchingPhrases = cluster.phrases.filter(p => 
+        matchesForMinus(p.phrase, value)
+      );
 
       if (matchingPhrases.length > 0) {
         matchingPhrases.forEach(p => {
@@ -271,7 +269,7 @@ export default function ResultsStep({
         return {
           ...cluster,
           phrases: cluster.phrases.filter(p => 
-            !matchesWholeWord(p.phrase, value)
+            !matchesForMinus(p.phrase, value)
           )
         };
       }
