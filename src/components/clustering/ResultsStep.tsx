@@ -19,7 +19,7 @@ interface Cluster {
 
 interface ResultsStepProps {
   clusters: Cluster[];
-  minusWords: string[];
+  minusWords: Phrase[];
   onExport: () => void;
   onNewProject: () => void;
   projectId?: number;
@@ -53,9 +53,7 @@ export default function ResultsStep({
       hovering: false
     }))
   );
-  const [minusWords, setMinusWords] = useState<Phrase[]>(
-    initialMinusWords.map(word => ({ phrase: word, count: 0 }))
-  );
+  const [minusWords, setMinusWords] = useState<Phrase[]>(initialMinusWords);
   const [minusSearchText, setMinusSearchText] = useState('');
   const { toast } = useToast();
 
