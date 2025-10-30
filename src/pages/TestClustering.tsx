@@ -382,28 +382,46 @@ export default function TestClustering() {
 
     setIsWordstatLoading(true);
     try {
+      console.log('🔍 Wordstat collect request:', {
+        query: wordstatQuery,
+        regions: selectedCities.map(c => `${c.name} (${c.id})`),
+        limit: 1000
+      });
+
       const response = await fetch(WORDSTAT_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: wordstatQuery,
           regions: selectedCities.map(c => c.id),
-          mode: 'seo'
+          mode: 'seo',
+          limit: 1000
         })
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Wordstat collect response:', data);
+        
         const phrases = data.clusters.flatMap((c: any) => 
-          c.phrases.map((p: any) => p.phrase)
+          c.phrases.map((p: any) => `${p.phrase} (${p.count})`)
         );
+        
+        if (phrases.length === 0) {
+          toast.error('Ключи не найдены. Попробуйте другой запрос');
+          return;
+        }
+        
         setManualKeywords(phrases.join('\n'));
         setStep('source');
-        toast.success(`Собрано ${phrases.length} ключевых фраз`);
+        toast.success(`Собрано ${phrases.length} ключевых фраз по регионам: ${selectedCities.map(c => c.name).join(', ')}`);
       } else {
+        const errorText = await response.text();
+        console.error('❌ Wordstat error:', errorText);
         toast.error('Ошибка сбора ключей');
       }
     } catch (error) {
+      console.error('❌ Wordstat fetch error:', error);
       toast.error('Ошибка соединения');
     } finally {
       setIsWordstatLoading(false);
