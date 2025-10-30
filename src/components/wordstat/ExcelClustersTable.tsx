@@ -471,7 +471,5 @@ export default function ExcelClustersTable({
           </table>
         </div>
       </div>
-
-    </div>
   );
 }
