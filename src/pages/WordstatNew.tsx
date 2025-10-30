@@ -182,7 +182,7 @@ export default function WordstatNew() {
     return (
       <>
         <AppSidebar />
-        <div className="min-h-screen bg-background p-6 ml-64">
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-6 ml-64">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold flex items-center gap-3">
@@ -276,7 +276,7 @@ export default function WordstatNew() {
   return (
     <>
       <AppSidebar />
-      <div className="min-h-screen bg-background p-6 ml-64">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-6 ml-64">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

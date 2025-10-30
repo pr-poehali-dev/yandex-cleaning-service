@@ -219,7 +219,7 @@ export default function Index() {
   return (
     <>
       <AppSidebar />
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 to-white p-4 md:p-8 ml-64">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8 ml-64">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">

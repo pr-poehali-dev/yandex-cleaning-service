@@ -127,7 +127,7 @@ export default function Wordstat() {
   return (
     <>
       <AppSidebar />
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-indigo-100 p-8 ml-64">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-8 ml-64">
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardHeader>

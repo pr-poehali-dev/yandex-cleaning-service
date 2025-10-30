@@ -203,7 +203,7 @@ export default function RSYACleaner() {
   return (
     <>
       <AppSidebar />
-      <div className="min-h-screen bg-gradient-to-br from-green-50/50 via-emerald-50/30 to-teal-50/50 p-8 ml-64">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-8 ml-64">
         <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Чистка РСЯ</h1>
