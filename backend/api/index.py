@@ -172,13 +172,11 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         if project_id:
             cur.execute(
                 """
-                SELECT p.id, p.name, p.domain, p.intent_filter, p.status, 
-                       p.keywords_count, p.clusters_count, p.minus_words_count,
-                       p.created_at, p.updated_at,
-                       r.clusters, r.minus_words
-                FROM clustering_projects p
-                LEFT JOIN clustering_results r ON p.id = r.project_id
-                WHERE p.id = %s AND p.user_id = %s
+                SELECT id, name, domain, intent_filter, status, 
+                       keywords_count, clusters_count, minus_words_count,
+                       created_at, updated_at, results
+                FROM clustering_projects
+                WHERE id = %s AND user_id = %s
                 """,
                 (project_id, user_id)
             )
@@ -191,8 +189,7 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Project not found'})
                 }
             
-            clusters_data = json.loads(result[10]) if result[10] and isinstance(result[10], str) else (result[10] if result[10] else [])
-            minus_words_data = json.loads(result[11]) if result[11] and isinstance(result[11], str) else (result[11] if result[11] else [])
+            results_data = result[10]
             
             project = {
                 'id': result[0],
@@ -205,10 +202,7 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                 'minusWordsCount': result[7],
                 'createdAt': result[8].isoformat() if result[8] else None,
                 'updatedAt': result[9].isoformat() if result[9] else None,
-                'results': {
-                    'clusters': clusters_data,
-                    'minusWords': minus_words_data
-                } if clusters_data or minus_words_data else None
+                'results': results_data
             }
             
             return {
@@ -344,21 +338,9 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
             update_values
         )
         
-        if 'results' in body_data and body_data['results']:
-            results = body_data['results']
-            cur.execute("SELECT id FROM clustering_results WHERE project_id = %s", (project_id,))
-            existing = cur.fetchone()
-            
-            if existing:
-                cur.execute(
-                    "UPDATE clustering_results SET clusters = %s, minus_words = %s WHERE project_id = %s",
-                    (json.dumps(results.get('clusters', [])), json.dumps(results.get('minusWords', [])), project_id)
-                )
-            else:
-                cur.execute(
-                    "INSERT INTO clustering_results (project_id, clusters, minus_words) VALUES (%s, %s, %s)",
-                    (project_id, json.dumps(results.get('clusters', [])), json.dumps(results.get('minusWords', [])))
-                )
+        if 'results' in body_data:
+            update_fields.append('results = %s')
+            update_values.insert(-2, json.dumps(body_data['results']))
         
         conn.commit()
         
