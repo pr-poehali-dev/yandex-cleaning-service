@@ -42,6 +42,13 @@ const PROCESSING_STAGES = [
   { label: 'Финализация результатов...', duration: 1000 }
 ];
 
+const CLUSTER_STYLES = [
+  { bg: 'bg-gradient-to-br from-blue-500 to-indigo-500', border: 'border-blue-200', headerBg: 'bg-blue-50' },
+  { bg: 'bg-gradient-to-br from-emerald-500 to-teal-500', border: 'border-emerald-200', headerBg: 'bg-emerald-50' },
+  { bg: 'bg-gradient-to-br from-purple-500 to-fuchsia-500', border: 'border-purple-200', headerBg: 'bg-purple-50' },
+  { bg: 'bg-gradient-to-br from-orange-500 to-amber-500', border: 'border-orange-200', headerBg: 'bg-orange-50' },
+];
+
 const mockClusters: Cluster[] = [
   {
     name: 'Вторичный рынок',
@@ -534,17 +541,26 @@ export default function Index() {
               </CardHeader>
               <CardContent className="p-8" key={`results-${renderKey}`}>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <div className="text-3xl font-semibold text-emerald-600 mb-1">{clusters.length}</div>
-                    <div className="text-sm text-slate-600">Кластеров</div>
+                  <div className="relative overflow-hidden p-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl shadow-lg">
+                    <div className="relative z-10">
+                      <div className="text-4xl font-bold text-white mb-2">{clusters.length}</div>
+                      <div className="text-sm text-white/90 font-medium">Кластеров</div>
+                    </div>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12"></div>
                   </div>
-                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <div className="text-3xl font-semibold text-emerald-600 mb-1">{totalPhrases}</div>
-                    <div className="text-sm text-slate-600">Фраз</div>
+                  <div className="relative overflow-hidden p-6 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl shadow-lg">
+                    <div className="relative z-10">
+                      <div className="text-4xl font-bold text-white mb-2">{totalPhrases}</div>
+                      <div className="text-sm text-white/90 font-medium">Фраз</div>
+                    </div>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12"></div>
                   </div>
-                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl">
-                    <div className="text-3xl font-semibold text-emerald-600 mb-1">{minusWords.length}</div>
-                    <div className="text-sm text-slate-600">Минус-слов</div>
+                  <div className="relative overflow-hidden p-6 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-2xl shadow-lg">
+                    <div className="relative z-10">
+                      <div className="text-4xl font-bold text-white mb-2">{minusWords.length}</div>
+                      <div className="text-sm text-white/90 font-medium">Минус-слов</div>
+                    </div>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12"></div>
                   </div>
                 </div>
 
@@ -557,37 +573,48 @@ export default function Index() {
                     </Button>
                   </div>
                   
-                  {clusters.map((cluster, idx) => (
-                    <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
-                      <div className="p-5 bg-emerald-50 border-b border-emerald-200">
-                        <h4 className="font-semibold text-lg text-slate-800">{cluster.name}</h4>
-                      </div>
-                      <div className="p-5 space-y-2 bg-white">
-                        {cluster.phrases.map((phrase, pidx) => (
-                          <div key={pidx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                            <span className="text-sm text-slate-700">{phrase.phrase}</span>
-                            <span className="text-xs text-slate-500 font-mono ml-3">
-                              {phrase.count.toLocaleString()}
-                            </span>
+                  {clusters.map((cluster, idx) => {
+                    const style = CLUSTER_STYLES[idx % CLUSTER_STYLES.length];
+                    return (
+                      <div key={idx} className="rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+                        <div className={`p-6 ${style.bg} relative overflow-hidden`}>
+                          <div className="relative z-10">
+                            <h4 className="font-bold text-xl text-white mb-1">{cluster.name}</h4>
+                            <div className="text-sm text-white/80">{cluster.phrases.length} фраз</div>
                           </div>
-                        ))}
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+                        </div>
+                        <div className="p-5 space-y-2 bg-white">
+                          {cluster.phrases.map((phrase, pidx) => (
+                            <div key={pidx} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all group border border-transparent hover:border-slate-200">
+                              <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{phrase.phrase}</span>
+                              <span className="text-sm text-slate-500 font-semibold ml-3 px-2 py-1 bg-white rounded-lg group-hover:bg-slate-200 transition-colors">
+                                {phrase.count.toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="p-5 bg-emerald-50 border-b border-emerald-200 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-slate-800">Минус-слова</h3>
-                    <Button onClick={exportMinusWords} size="sm" variant="outline" className="border-slate-200 hover:bg-white">
+                <div className="rounded-2xl overflow-hidden shadow-lg">
+                  <div className="p-6 bg-gradient-to-br from-rose-500 to-pink-500 relative overflow-hidden flex items-center justify-between">
+                    <div className="relative z-10">
+                      <h3 className="text-xl font-bold text-white mb-1">Минус-слова</h3>
+                      <div className="text-sm text-white/80">{minusWords.length} слов</div>
+                    </div>
+                    <Button onClick={exportMinusWords} size="sm" className="relative z-10 bg-white/20 hover:bg-white/30 text-white border-0">
                       <Icon name="Download" size={16} className="mr-2" />
                       Экспорт
                     </Button>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
                   </div>
-                  <div className="p-5 bg-white">
+                  <div className="p-6 bg-white">
                     <div className="flex flex-wrap gap-2">
                       {minusWords.map((word, idx) => (
-                        <span key={idx} className="px-3 py-1 bg-slate-100 text-slate-700 text-sm rounded-lg border border-slate-200">
+                        <span key={idx} className="px-4 py-2 bg-rose-50 text-rose-700 text-sm font-medium rounded-xl border border-rose-200 hover:bg-rose-100 transition-colors">
                           −{word}
                         </span>
                       ))}
