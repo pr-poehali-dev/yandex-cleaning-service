@@ -80,6 +80,35 @@ export default function ResultsStep({
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  const generateRandomColor = () => {
+    const colors = [
+      '#E0F2FE', '#DBEAFE', '#E0E7FF', '#EDE9FE', '#FAE8FF', '#FCE7F3', 
+      '#FFE4E6', '#FEE2E2', '#FFEDD5', '#FEF3C7', '#FEF9C3', '#ECFCCB',
+      '#D1FAE5', '#CCFBF1', '#CFFAFE', '#E0F2FE', '#F0F9FF'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
+  const createNewCluster = () => {
+    const newCluster: Cluster & { bgColor: string; searchText: string } = {
+      name: `Новый кластер ${clusters.length + 1}`,
+      intent: 'informational',
+      color: 'gray',
+      icon: 'Folder',
+      phrases: [],
+      bgColor: generateRandomColor(),
+      searchText: ''
+    };
+    
+    setClusters([...clusters, newCluster]);
+    setHasChanges(true);
+    
+    toast({
+      title: '✨ Кластер создан',
+      description: 'Используйте поиск для добавления фраз'
+    });
+  };
+
   const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
     const trimmed = searchTerm.trim();
     
@@ -464,6 +493,10 @@ export default function ResultsStep({
             </p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={createNewCluster} size="sm" variant="outline" className="gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+              <Icon name="FolderPlus" size={14} />
+              Новый кластер
+            </Button>
             {hasChanges && (
               <>
                 <Button onClick={handleReset} size="sm" variant="outline" className="gap-1.5">
