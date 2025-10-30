@@ -172,36 +172,84 @@ def cosine_similarity_simple(vec1: Dict[str, float], vec2: Dict[str, float]) -> 
     
     return dot_product / (norm1 * norm2)
 
-def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context') -> List[Dict[str, Any]]:
+def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context') -> tuple:
     '''
     Кластеризация через OpenAI GPT-4o-mini с прокси
+    Returns: (clusters, minus_words)
     '''
     openai_key = os.environ.get('OPENAI_API_KEY')
     if not openai_key:
         print('[OPENAI] API key not found - using TF-IDF clustering')
-        return smart_clusterize(phrases, mode)
+        clusters = smart_clusterize(phrases, mode)
+        minus_words = detect_minus_words(phrases) if mode == 'context' else {}
+        return clusters, minus_words
     
     phrases_text = '\n'.join([f"{p['phrase']} ({p['count']} показов)" for p in phrases[:200]])
     
-    prompt = f"""Ты эксперт по кластеризации поисковых запросов для {'контекстной рекламы' if mode == 'context' else 'SEO'}.
+    if mode == 'context':
+        prompt = f"""Ты эксперт по контекстной рекламе. Кластеризуй запросы для Яндекс.Директ.
 
-Проанализируй фразы и раздели их на кластеры по смыслу и интенту пользователя.
+🚫 КРИТИЧЕСКИ ВАЖНО:
+1. ЗАПРЕЩЕНО придумывать фразы от себя - используй ТОЛЬКО фразы из списка
+2. НЕ добавляй новые слова, синонимы или вариации
+3. ТОЛЬКО группировка существующих фраз
 
-Правила:
-- {'Узкие кластеры (5-15 фраз) для точного таргетинга' if mode == 'context' else 'Широкие кластеры (10-30 фраз) для контента'}
-- Название кластера отражает главный интент
-- Каждая фраза только в одном кластере
+📊 Правила кластеризации:
+- Узкие кластеры (3-10 фраз) для точного таргетинга
+- Разделяй по конкретным признакам: количество комнат (1к, 2к, 3к), тип (студия, новостройка), район
+- Название кластера = 2-3 слова из самых частотных фраз кластера
+- Каждая фраза ТОЛЬКО в одном кластере
 
-Фразы:
+🗑️ Минус-слова (для mode=context):
+Определи нецелевые запросы и раздели их на категории:
+- free: бесплатно, даром, халява
+- info: как сделать, инструкция, своими руками, отзывы
+- competitors: авито, циан, домклик, юла
+- irrelevant: работа вакансии, курсы обучение
+
+Фразы для кластеризации:
 {phrases_text}
 
 Верни JSON:
 {{
   "clusters": [
     {{
-      "cluster_name": "Название",
-      "intent": "commercial/informational/navigational",
-      "phrases": [{{"phrase": "текст", "count": число}}]
+      "cluster_name": "Название из фраз",
+      "intent": "commercial/informational",
+      "phrases": [{{"phrase": "точная фраза из списка", "count": число}}]
+    }}
+  ],
+  "minus_words": {{
+    "free": [{{"phrase": "...", "count": ...}}],
+    "info": [{{"phrase": "...", "count": ...}}],
+    "competitors": [{{"phrase": "...", "count": ...}}],
+    "irrelevant": [{{"phrase": "...", "count": ...}}]
+  }}
+}}"""
+    else:
+        prompt = f"""Ты эксперт по SEO. Кластеризуй запросы для создания посадочных страниц.
+
+🚫 КРИТИЧЕСКИ ВАЖНО:
+1. ЗАПРЕЩЕНО придумывать фразы от себя - используй ТОЛЬКО фразы из списка
+2. НЕ добавляй новые слова, синонимы или вариации
+3. ТОЛЬКО группировка существующих фраз
+
+📊 Правила кластеризации:
+- Средние кластеры (10-30 фраз) для контентных страниц
+- Группируй по интенту: покупка, аренда, информация
+- Название = главное ключевое слово из кластера (2-4 слова)
+- Каждая фраза ТОЛЬКО в одном кластере
+
+Фразы для кластеризации:
+{phrases_text}
+
+Верни JSON:
+{{
+  "clusters": [
+    {{
+      "cluster_name": "Название из фраз",
+      "intent": "commercial/informational",
+      "phrases": [{{"phrase": "точная фраза из списка", "count": число}}]
     }}
   ]
 }}"""
@@ -240,15 +288,23 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context')
             content = data['choices'][0]['message']['content']
             result = json.loads(content)
             clusters = result.get('clusters', [])
+            minus_words = result.get('minus_words', {})
             print(f'[OPENAI] Created {len(clusters)} clusters via GPT-4o-mini')
-            return clusters
+            if minus_words:
+                total_minus = sum(len(v) for v in minus_words.values() if isinstance(v, list))
+                print(f'[OPENAI] Detected {total_minus} minus-words')
+            return clusters, minus_words
         else:
             print(f'[OPENAI] API error {response.status_code}: {response.text}, falling back to TF-IDF')
-            return smart_clusterize(phrases, mode)
+            clusters = smart_clusterize(phrases, mode)
+            minus_words = detect_minus_words(phrases) if mode == 'context' else {}
+            return clusters, minus_words
             
     except Exception as e:
         print(f'[OPENAI] Error: {str(e)}, falling back to TF-IDF')
-        return smart_clusterize(phrases, mode)
+        clusters = smart_clusterize(phrases, mode)
+        minus_words = detect_minus_words(phrases) if mode == 'context' else {}
+        return clusters, minus_words
 
 def smart_clusterize(phrases: List[Dict[str, Any]], mode: str = 'seo') -> List[Dict[str, Any]]:
     '''
@@ -614,17 +670,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if use_openai:
                 print('[WORDSTAT] Using OpenAI GPT-4o-mini for clustering')
-                clusters = clusterize_with_openai(top_requests, mode=clustering_mode)
+                clusters, minus_words = clusterize_with_openai(top_requests, mode=clustering_mode)
             else:
                 print('[WORDSTAT] Using TF-IDF for clustering')
                 clusters = smart_clusterize(top_requests, mode=clustering_mode)
+                minus_words = {}
+                if clustering_mode == 'context':
+                    minus_words = detect_minus_words(top_requests)
             
             print(f'[WORDSTAT] Created {len(clusters)} smart clusters ({clustering_mode} mode)')
-            
-            minus_words = {}
-            if clustering_mode == 'context':
-                minus_words = detect_minus_words(top_requests)
-                print(f'[WORDSTAT] Detected {sum(v["count"] for v in minus_words.values())} minus-words')
+            if minus_words:
+                total_minus = sum(v.get('count', 0) if isinstance(v, dict) else len(v) if isinstance(v, list) else 0 for v in minus_words.values())
+                print(f'[WORDSTAT] Detected {total_minus} minus-words')
             
             # Добавляем геоключи, если указан адрес объекта
             geo_cluster = None
