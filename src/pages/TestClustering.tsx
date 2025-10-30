@@ -164,51 +164,9 @@ export default function TestClustering() {
     }
   }, [projectId]);
 
-  useEffect(() => {
-    console.log('🔍 useEffect check:', { step, isWordstatLoading });
-    if (step === 'processing' && !isWordstatLoading) {
-      console.log('⚠️ GENERATING FAKE DATA (this should not happen!)');
-      let totalDuration = 0;
-      let currentProgress = 0;
 
-      PROCESSING_STAGES.forEach((stage, idx) => {
-        setTimeout(() => {
-          setCurrentStage(idx);
-          const increment = 100 / PROCESSING_STAGES.length;
-          currentProgress += increment;
-          setProcessingProgress(Math.min(currentProgress, 100));
-
-          if (idx === PROCESSING_STAGES.length - 1) {
-            setTimeout(async () => {
-              const keywords = manualKeywords
-                .split('\n')
-                .map(k => k.trim())
-                .filter(k => k.length > 0);
-
-              const generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
-              const generatedMinusWords = generateMinusWords(keywords);
-              
-              console.log('🎯 Generated clusters:', generatedClusters);
-              console.log('🎯 Generated minus words:', generatedMinusWords);
-              
-              setClusters(generatedClusters);
-              setMinusWords(generatedMinusWords);
-              
-              await saveResultsToAPI(generatedClusters, generatedMinusWords);
-              
-              setStep('results');
-              toast.success('Готово! Кластеры созданы, минус-слова выделены');
-            }, stage.duration);
-          }
-        }, totalDuration);
-        totalDuration += stage.duration;
-      });
-    }
-  }, [step, isWordstatLoading, manualKeywords, selectedIntents, saveResultsToAPI]);
 
   const handleWordstatSubmit = async (query: string, cities: City[], mode: string) => {
-    console.log('🚀 handleWordstatSubmit called:', { query, cities, mode });
-    
     if (!query || !query.trim()) {
       toast.error('Введите поисковый запрос');
       setIsWordstatLoading(false);
@@ -221,6 +179,8 @@ export default function TestClustering() {
       return;
     }
     
+    setStep('processing');
+    
     try {
       const regionIds = cities.map(c => c.id);
       
@@ -230,8 +190,6 @@ export default function TestClustering() {
         mode: mode,
         use_openai: true
       };
-      
-      console.log('📤 Sending to Wordstat API:', requestBody);
       
       const response = await fetch(WORDSTAT_API_URL, {
         method: 'POST',
@@ -246,7 +204,6 @@ export default function TestClustering() {
       }
 
       const data = await response.json();
-      console.log('📦 Full response:', data);
       
       const searchQuery = data.data?.SearchQuery?.[0];
       if (!searchQuery || !searchQuery.Clusters) {
@@ -255,9 +212,6 @@ export default function TestClustering() {
       
       const clusters = searchQuery.Clusters;
       const minusWords = searchQuery.MinusWords || {};
-      
-      console.log('✅ Received clusters from Wordstat:', clusters.length);
-      console.log('🔍 First cluster:', clusters[0]);
       
       const transformedClusters = clusters.map((cluster: any, idx: number) => ({
         name: cluster.cluster_name || 'Кластер ' + (idx + 1),
@@ -278,24 +232,12 @@ export default function TestClustering() {
         return [];
       });
       
-      console.log('✅ Transformed clusters:', transformedClusters.length);
-      console.log('✅ Transformed minus words:', transformedMinusWords.length);
-      console.log('⏰ BEFORE setClusters');
-      
       setClusters(transformedClusters);
-      console.log('⏰ AFTER setClusters');
-      
       setMinusWords(transformedMinusWords);
-      console.log('⏰ AFTER setMinusWords');
       
-      console.log('⏰ BEFORE saveResultsToAPI');
       await saveResultsToAPI(transformedClusters, transformedMinusWords);
-      console.log('⏰ AFTER saveResultsToAPI');
       
-      console.log('⏰ BEFORE setStep(results)');
       setStep('results');
-      console.log('⏰ AFTER setStep(results)');
-      
       toast.success(`Собрано ${transformedClusters.length} кластеров из Wordstat`);
     } catch (error) {
       console.error('Error fetching from Wordstat:', error);
