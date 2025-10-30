@@ -11,6 +11,8 @@ interface Phrase {
   sourceColor?: string;
   isTemporary?: boolean;
   removedPhrases?: Phrase[];
+  isMinusWord?: boolean;
+  minusTerm?: string;
 }
 
 interface Cluster {
@@ -175,38 +177,63 @@ export default function ResultsStep({
 
   const handleMinusSearchChange = (value: string) => {
     setMinusSearchText(value);
+    
+    const searchTerm = value.toLowerCase().trim();
+    if (!searchTerm) {
+      const newClusters = clusters.map(cluster => ({
+        ...cluster,
+        phrases: cluster.phrases.map(p => ({
+          ...p,
+          isMinusWord: false,
+          minusTerm: undefined
+        })).sort((a, b) => b.count - a.count)
+      }));
+      setClusters(newClusters);
+      return;
+    }
+    
+    const newClusters = clusters.map(cluster => {
+      const normalPhrases = cluster.phrases
+        .filter(p => !p.phrase.toLowerCase().includes(searchTerm))
+        .map(p => ({ ...p, isMinusWord: false, minusTerm: undefined }));
+      
+      const minusPhrases = cluster.phrases
+        .filter(p => p.phrase.toLowerCase().includes(searchTerm))
+        .map(p => ({ ...p, isMinusWord: true, minusTerm: searchTerm }));
+      
+      return {
+        ...cluster,
+        phrases: [...normalPhrases, ...minusPhrases]
+      };
+    });
+    
+    setClusters(newClusters);
   };
 
   const handleConfirmMinusSearch = async () => {
     const searchTerm = minusSearchText.toLowerCase().trim();
     if (!searchTerm) return;
 
-    const newClusters = [...clusters];
-    const removedPhrases: Phrase[] = [];
+    const affectedPhrases: Phrase[] = [];
+    const newClusters = clusters.map(cluster => {
+      const matching = cluster.phrases.filter(p => p.phrase.toLowerCase().includes(searchTerm));
+      affectedPhrases.push(...matching);
+      return cluster;
+    });
 
-    for (const cluster of newClusters) {
-      const matchingPhrases = cluster.phrases.filter(p =>
-        p.phrase.toLowerCase().includes(searchTerm)
-      );
-
-      if (matchingPhrases.length > 0) {
-        cluster.phrases = cluster.phrases.filter(p =>
-          !p.phrase.toLowerCase().includes(searchTerm)
-        );
-        removedPhrases.push(...matchingPhrases);
-      }
-    }
-
-    if (removedPhrases.length > 0) {
+    if (affectedPhrases.length > 0) {
       const newMinusWord: Phrase = {
         phrase: searchTerm,
         count: 0,
-        removedPhrases: removedPhrases
+        removedPhrases: affectedPhrases.map(p => ({
+          ...p,
+          isMinusWord: false,
+          minusTerm: undefined
+        }))
       };
       
       const newMinusWords = [...minusWords, newMinusWord].sort((a, b) => b.count - a.count);
       setMinusWords(newMinusWords);
-      setClusters(newClusters);
       setMinusSearchText('');
 
       if (onSaveChanges) {
@@ -218,7 +245,7 @@ export default function ResultsStep({
 
       toast({
         title: '🚫 Добавлено в минус-слова',
-        description: `${removedPhrases.length} фраз удалено`
+        description: `${affectedPhrases.length} фраз помечено`
       });
     }
   };
@@ -309,49 +336,32 @@ export default function ResultsStep({
   const removeMinusWord = async (minusIndex: number) => {
     const minusWord = minusWords[minusIndex];
     const newMinusWords = minusWords.filter((_, idx) => idx !== minusIndex);
+    const minusTerm = minusWord.phrase.toLowerCase();
     
-    if (minusWord.removedPhrases && minusWord.removedPhrases.length > 0) {
-      const newClusters = [...clusters];
-      
-      minusWord.removedPhrases.forEach(phrase => {
-        const originalCluster = newClusters.find(c => 
-          c.name === phrase.sourceCluster || 
-          (!phrase.sourceCluster && c.phrases.length === 0)
-        );
-        
-        if (originalCluster) {
-          originalCluster.phrases.push(phrase);
-          originalCluster.phrases.sort((a, b) => b.count - a.count);
-        } else if (newClusters[0]) {
-          newClusters[0].phrases.push(phrase);
-          newClusters[0].phrases.sort((a, b) => b.count - a.count);
+    const newClusters = clusters.map(cluster => ({
+      ...cluster,
+      phrases: cluster.phrases.map(p => {
+        if (p.phrase.toLowerCase().includes(minusTerm)) {
+          return { ...p, isMinusWord: false, minusTerm: undefined };
         }
-      });
-      
-      setClusters(newClusters);
-      setMinusWords(newMinusWords);
-      
-      if (onSaveChanges) {
-        await onSaveChanges(
-          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
-          newMinusWords
-        );
-      }
-      
-      toast({
-        title: '↩️ Фразы возвращены',
-        description: `${minusWord.removedPhrases.length} фраз`
-      });
-    } else {
-      setMinusWords(newMinusWords);
-      
-      if (onSaveChanges) {
-        await onSaveChanges(
-          clusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
-          newMinusWords
-        );
-      }
+        return p;
+      }).sort((a, b) => b.count - a.count)
+    }));
+    
+    setClusters(newClusters);
+    setMinusWords(newMinusWords);
+    
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        newMinusWords
+      );
     }
+    
+    toast({
+      title: '↩️ Фразы восстановлены',
+      description: 'Минус-слово удалено'
+    });
   };
 
   const copyMinusPhrases = () => {
@@ -496,24 +506,29 @@ export default function ResultsStep({
                   return (
                     <div
                       key={pIdx}
-                      className="px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/phrase"
-                      style={phrase.sourceColor ? {
+                      className={`px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/phrase ${phrase.isMinusWord ? 'bg-red-50 border-l-4 border-l-red-500' : ''}`}
+                      style={!phrase.isMinusWord && phrase.sourceColor ? {
                         backgroundColor: phrase.sourceColor,
                         borderLeft: `3px solid ${phrase.sourceColor}`
                       } : {}}
                     >
                       <div className="flex items-center gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm text-gray-800 leading-snug mb-1">
+                          <div className={`text-sm leading-snug mb-1 ${phrase.isMinusWord ? 'text-red-700 line-through' : 'text-gray-800'}`}>
                             {phrase.phrase}
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="text-xs text-gray-500 font-mono">
+                            <div className={`text-xs font-mono ${phrase.isMinusWord ? 'text-red-600' : 'text-gray-500'}`}>
                               {phrase.count.toLocaleString()}
                             </div>
-                            {phrase.sourceCluster && (
+                            {phrase.sourceCluster && !phrase.isMinusWord && (
                               <div className="text-xs text-gray-600 italic">
                                 из "{phrase.sourceCluster}"
+                              </div>
+                            )}
+                            {phrase.isMinusWord && (
+                              <div className="text-xs text-red-600 italic">
+                                минус-слово
                               </div>
                             )}
                           </div>
