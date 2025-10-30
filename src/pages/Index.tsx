@@ -23,6 +23,7 @@ interface Cluster {
   name: string;
   intent: string;
   color: string;
+  icon: string;
   phrases: Phrase[];
 }
 
@@ -45,7 +46,8 @@ const mockClusters: Cluster[] = [
   {
     name: 'Вторичный рынок',
     intent: 'commercial',
-    color: 'bg-green-100 text-green-800 border-green-300',
+    color: 'bg-blue-50 text-blue-700 border-blue-200',
+    icon: 'Home',
     phrases: [
       { phrase: 'купить квартиру вторичку', count: 12000 },
       { phrase: 'купить квартиру вторичный рынок', count: 3800 },
@@ -56,7 +58,8 @@ const mockClusters: Cluster[] = [
   {
     name: 'Новостройки от застройщика',
     intent: 'commercial',
-    color: 'bg-green-100 text-green-800 border-green-300',
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    icon: 'Building2',
     phrases: [
       { phrase: 'купить квартиру от застройщика', count: 8500 },
       { phrase: 'купить квартиру новостройка', count: 15000 },
@@ -67,7 +70,8 @@ const mockClusters: Cluster[] = [
   {
     name: 'Агрегаторы и площадки',
     intent: 'navigational',
-    color: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    color: 'bg-purple-50 text-purple-700 border-purple-200',
+    icon: 'Globe',
     phrases: [
       { phrase: 'купить квартиру авито', count: 19000 },
       { phrase: 'купить квартиру циан', count: 16500 },
@@ -566,22 +570,43 @@ export default function Index() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
-                    <CardContent className="p-6 text-center">
-                      <div className="text-4xl font-bold text-emerald-600 mb-1">{clusters.length}</div>
-                      <div className="text-sm text-muted-foreground">Кластеров</div>
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500 rounded-lg">
+                          <Icon name="Layers" size={24} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-900">{clusters.length}</div>
+                          <div className="text-sm text-blue-700">Кластеров</div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200">
-                    <CardContent className="p-6 text-center">
-                      <div className="text-4xl font-bold text-green-600 mb-1">{totalPhrases}</div>
-                      <div className="text-sm text-muted-foreground">Ключевых фраз</div>
+                  <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-500 rounded-lg">
+                          <Icon name="FileText" size={24} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-emerald-900">{totalPhrases}</div>
+                          <div className="text-sm text-emerald-700">Фраз</div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
-                  <Card className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200">
-                    <CardContent className="p-6 text-center">
-                      <div className="text-4xl font-bold text-red-600 mb-1">{minusWords.length}</div>
-                      <div className="text-sm text-muted-foreground">Минус-слов</div>
+                  <Card className="bg-gradient-to-br from-rose-50 to-rose-100/50 border-rose-200">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-rose-500 rounded-lg">
+                          <Icon name="XCircle" size={24} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-rose-900">{minusWords.length}</div>
+                          <div className="text-sm text-rose-700">Минус-слов</div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
@@ -596,19 +621,29 @@ export default function Index() {
                   </div>
                   
                   {clusters.map((cluster, idx) => (
-                    <Card key={idx} className="border-2 hover:shadow-lg transition-all">
-                      <CardContent className="p-5">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-bold text-lg">{cluster.name}</h4>
-                          <Badge className={cluster.color}>{cluster.intent}</Badge>
+                    <Card key={idx} className="border-2 hover:shadow-lg transition-all overflow-hidden">
+                      <CardContent className="p-0">
+                        <div className={`p-5 ${cluster.color.replace('text-', 'bg-').replace('-700', '-100').replace('border-', 'bg-')}`}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className={`p-2 rounded-lg ${cluster.color.split(' ')[0].replace('50', '500')}`}>
+                              <Icon name={cluster.icon as any} size={24} className="text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-bold text-lg">{cluster.name}</h4>
+                              <Badge variant={cluster.intent === 'commercial' ? 'default' : 'secondary'} className="mt-1">
+                                {cluster.intent === 'commercial' ? 'Коммерческий' : cluster.intent === 'navigational' ? 'Навигационный' : 'Инфо'}
+                              </Badge>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
+                        <div className="p-5 space-y-2 bg-white">
                           {cluster.phrases.map((phrase, pidx) => (
-                            <div key={pidx} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                              <span className="text-sm">{phrase.phrase}</span>
-                              <span className="text-xs text-muted-foreground font-mono">
+                            <div key={pidx} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                              <span className="text-sm font-medium">{phrase.phrase}</span>
+                              <Badge variant="outline" className="ml-2">
+                                <Icon name="TrendingUp" size={12} className="mr-1" />
                                 {phrase.count.toLocaleString()}
-                              </span>
+                              </Badge>
                             </div>
                           ))}
                         </div>
@@ -617,22 +652,31 @@ export default function Index() {
                   ))}
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-red-600">Минус-слова</h3>
-                    <Button onClick={exportMinusWords} size="sm" variant="outline" className="border-red-200">
-                      <Icon name="Download" size={16} className="mr-2" />
-                      Экспорт
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 p-4 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 rounded-xl">
-                    {minusWords.map((word, idx) => (
-                      <Badge key={idx} className="bg-red-600 text-white px-3 py-1.5 font-mono">
-                        {word}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+                <Card className="border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-rose-100/50 overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="p-5 bg-rose-100/50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-rose-500 rounded-lg">
+                          <Icon name="ShieldX" size={24} className="text-white" />
+                        </div>
+                        <h3 className="text-xl font-bold text-rose-900">Минус-слова для Директа</h3>
+                      </div>
+                      <Button onClick={exportMinusWords} size="sm" variant="outline" className="border-rose-300 bg-white">
+                        <Icon name="Download" size={16} className="mr-2" />
+                        Экспорт
+                      </Button>
+                    </div>
+                    <div className="p-5 bg-white">
+                      <div className="flex flex-wrap gap-2">
+                        {minusWords.map((word, idx) => (
+                          <Badge key={idx} variant="secondary" className="bg-rose-100 text-rose-900 border-rose-200 px-3 py-1">
+                            -{word}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 <Button onClick={() => setStep('source')} variant="outline" className="w-full h-12 border-2">
                   <Icon name="RotateCcw" size={20} className="mr-2" />
