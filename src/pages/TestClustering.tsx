@@ -252,7 +252,7 @@ export default function TestClustering() {
 
   const handleNextFromSource = () => {
     if (manualKeywords.trim()) {
-      setStep('goal');
+      setStep('cities');
     } else {
       toast.error('Введите ключевые слова или соберите из Wordstat');
     }
@@ -260,7 +260,7 @@ export default function TestClustering() {
 
   const handleBack = () => {
     if (step === 'cities') setStep('source');
-    else if (step === 'goal') setStep('source');
+    else if (step === 'goal') setStep('cities');
     else if (step === 'intents') setStep('goal');
     else if (step === 'results') setStep('intents');
   };
@@ -341,11 +341,18 @@ export default function TestClustering() {
           {step === 'cities' && (
             <CitiesStep
               selectedCities={selectedCities}
-              setSelectedCities={setSelectedCities}
               citySearch={citySearch}
               setCitySearch={setCitySearch}
+              addCity={(city) => {
+                setSelectedCities([...selectedCities, city]);
+                setCitySearch('');
+              }}
+              removeCity={(cityId) => {
+                setSelectedCities(selectedCities.filter(c => c.id !== cityId));
+              }}
               onNext={() => setStep('goal')}
               onBack={handleBack}
+              hasManualKeywords={manualKeywords.trim().length > 0}
             />
           )}
 
