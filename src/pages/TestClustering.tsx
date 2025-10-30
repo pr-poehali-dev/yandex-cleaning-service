@@ -209,15 +209,15 @@ export default function TestClustering() {
     
     if (!query || !query.trim()) {
       toast.error('Введите поисковый запрос');
+      setIsWordstatLoading(false);
       return;
     }
     
     if (cities.length === 0) {
       toast.error('Выберите хотя бы один регион');
+      setIsWordstatLoading(false);
       return;
     }
-    
-    setIsWordstatLoading(true);
     
     try {
       const regionIds = cities.map(c => c.id);
@@ -433,6 +433,7 @@ export default function TestClustering() {
               onNext={async () => {
                 const firstKeyword = manualKeywords.split('\n')[0]?.trim();
                 if (firstKeyword && selectedCities.length > 0) {
+                  setIsWordstatLoading(true);
                   await handleWordstatSubmit(firstKeyword, selectedCities, goal);
                 } else {
                   setStep('processing');
