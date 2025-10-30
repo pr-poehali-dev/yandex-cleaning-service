@@ -88,14 +88,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     regions_data = data if isinstance(data, list) else data.get('regions', [])
     all_regions = flatten_regions(regions_data)
     
-    major_regions = [r for r in all_regions if r.get('parent_id') is None or r['id'] in [1, 213, 2, 10174]]
-    
     return {
         'statusCode': 200,
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         },
-        'body': json.dumps({'regions': major_regions}),
+        'body': json.dumps({'regions': all_regions}),
         'isBase64Encoded': False
     }
