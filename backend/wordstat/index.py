@@ -181,6 +181,8 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context')
         print('[OPENAI] API key not found, falling back to TF-IDF')
         return smart_clusterize(phrases, mode)
     
+    print(f'[OPENAI] API key found: {openai_key[:10]}...')
+    
     phrases_text = '\n'.join([f"{p['phrase']} ({p['count']} показов)" for p in phrases[:200]])
     
     prompt = f"""Ты эксперт по кластеризации поисковых запросов для {'контекстной рекламы' if mode == 'context' else 'SEO'}.
@@ -233,7 +235,7 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context')
             print(f'[OPENAI] Created {len(clusters)} clusters via GPT-4o-mini')
             return clusters
         else:
-            print(f'[OPENAI] API error {response.status_code}, falling back to TF-IDF')
+            print(f'[OPENAI] API error {response.status_code}: {response.text}, falling back to TF-IDF')
             return smart_clusterize(phrases, mode)
             
     except Exception as e:
