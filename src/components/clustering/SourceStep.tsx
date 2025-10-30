@@ -15,8 +15,6 @@ interface SourceStepProps {
   setWebsiteUrl: (url: string) => void;
   objectAddress: string;
   setObjectAddress: (address: string) => void;
-  wordstatToken: string;
-  setWordstatToken: (token: string) => void;
   onNext: () => void;
 }
 
@@ -29,8 +27,6 @@ export default function SourceStep({
   setWebsiteUrl,
   objectAddress,
   setObjectAddress,
-  wordstatToken,
-  setWordstatToken,
   onNext
 }: SourceStepProps) {
   const handleNext = () => {
@@ -48,30 +44,6 @@ export default function SourceStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
-          <div className="flex items-start gap-2">
-            <Icon name="Key" className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-medium text-amber-900 mb-1">Яндекс Вордстат OAuth токен</h3>
-              <p className="text-sm text-amber-700 mb-3">
-                Получите токен через <a href="https://oauth.yandex.ru/authorize?response_type=token&client_id=4f93051bafae4b50a1928d1121b71379" target="_blank" rel="noopener noreferrer" className="underline font-medium">oauth.yandex.ru</a>
-              </p>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="wordstat-token" className="text-slate-700">OAuth Token</Label>
-            <Input
-              id="wordstat-token"
-              type="password"
-              value={wordstatToken}
-              onChange={(e) => setWordstatToken(e.target.value)}
-              placeholder="y0__xCtvb3CARj4lTsgpbS28xQwgPzDiwj..."
-              className="border-slate-200 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-sm"
-            />
-          </div>
-        </div>
-
         <div className="space-y-3">
           <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
           <textarea
