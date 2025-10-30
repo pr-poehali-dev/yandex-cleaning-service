@@ -63,6 +63,8 @@ export default function ResultsStep({
   const [clusters, setClusters] = useState(initialClusters);
   const [minusWords, setMinusWords] = useState<Phrase[]>(propsMinusWords);
   const [minusSearchText, setMinusSearchText] = useState('');
+  const [draggedCluster, setDraggedCluster] = useState<number | null>(null);
+  const [draggedPhrase, setDraggedPhrase] = useState<{clusterIdx: number, phraseIdx: number} | null>(null);
   const { toast } = useToast();
 
   const clustersDataKey = propsClusters.map(c => c.name).join(',');
@@ -396,8 +398,88 @@ export default function ResultsStep({
 
   const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0) + minusWords.length;
 
+  const handleClusterDragStart = (clusterIdx: number) => {
+    setDraggedCluster(clusterIdx);
+  };
+
+  const handleClusterDragOver = (e: React.DragEvent, targetIdx: number) => {
+    e.preventDefault();
+    if (draggedCluster === null || draggedCluster === targetIdx) return;
+  };
+
+  const handleClusterDrop = async (targetIdx: number) => {
+    if (draggedCluster === null || draggedCluster === targetIdx) {
+      setDraggedCluster(null);
+      return;
+    }
+
+    const newClusters = [...clusters];
+    const [movedCluster] = newClusters.splice(draggedCluster, 1);
+    newClusters.splice(targetIdx, 0, movedCluster);
+    
+    setClusters(newClusters.map((c, idx) => ({
+      ...c,
+      bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length]
+    })));
+    setDraggedCluster(null);
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        minusWords
+      );
+    }
+
+    toast({
+      title: '✅ Кластер перемещён',
+      description: 'Позиция изменена'
+    });
+  };
+
+  const handlePhraseDragStart = (clusterIdx: number, phraseIdx: number) => {
+    setDraggedPhrase({ clusterIdx, phraseIdx });
+  };
+
+  const handlePhraseDrop = async (targetClusterIdx: number) => {
+    if (!draggedPhrase) return;
+    
+    const { clusterIdx: sourceClusterIdx, phraseIdx } = draggedPhrase;
+    
+    if (sourceClusterIdx === targetClusterIdx) {
+      setDraggedPhrase(null);
+      return;
+    }
+
+    const newClusters = [...clusters];
+    const sourceCluster = newClusters[sourceClusterIdx];
+    const targetCluster = newClusters[targetClusterIdx];
+    
+    const [movedPhrase] = sourceCluster.phrases.splice(phraseIdx, 1);
+    
+    movedPhrase.sourceCluster = movedPhrase.sourceCluster || sourceCluster.name;
+    movedPhrase.sourceColor = movedPhrase.sourceColor || sourceCluster.bgColor;
+    
+    targetCluster.phrases.push(movedPhrase);
+    targetCluster.phrases.sort((a, b) => b.count - a.count);
+    
+    setClusters(newClusters);
+    setDraggedPhrase(null);
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        minusWords
+      );
+    }
+
+    toast({
+      title: '✅ Фраза перемещена',
+      description: `→ "${targetCluster.name}"`
+    });
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="flex-shrink-0 border-b bg-white shadow-sm">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-4">
@@ -450,12 +532,16 @@ export default function ResultsStep({
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto">
-        <div className="flex h-full px-6">
+      <div className="flex-1 overflow-x-auto overflow-y-visible">
+        <div className="flex min-h-[calc(100vh-200px)] px-6 py-4 pb-32">
           {clusters.map((cluster, idx) => (
             <div
               key={idx}
-              className="flex-shrink-0 border-r border-gray-300 flex flex-col group relative"
+              draggable
+              onDragStart={() => handleClusterDragStart(idx)}
+              onDragOver={(e) => handleClusterDragOver(e, idx)}
+              onDrop={() => handleClusterDrop(idx)}
+              className={`flex-shrink-0 border-r border-gray-300 flex flex-col group relative cursor-move ${draggedCluster === idx ? 'opacity-50' : ''}`}
               style={{ 
                 width: '280px',
                 backgroundColor: cluster.bgColor
@@ -482,6 +568,7 @@ export default function ResultsStep({
 
               <div className="p-3 border-b border-gray-200" style={{ backgroundColor: cluster.bgColor }}>
                 <div className="flex items-center gap-2 mb-2">
+                  <Icon name="GripVertical" size={14} className="text-gray-400 flex-shrink-0 cursor-move" />
                   <Icon name={cluster.icon as any} size={18} className="text-gray-700" />
                   <Input
                     value={cluster.name}
@@ -533,18 +620,30 @@ export default function ResultsStep({
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto pb-20">
+              <div 
+                className="flex-1 overflow-y-auto pb-20"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                }}
+                onDrop={() => handlePhraseDrop(idx)}
+              >
                 {getFilteredPhrases(idx, cluster.searchText).map((phrase, pIdx) => {
+                  const actualPhraseIdx = cluster.phrases.findIndex(p => p.phrase === phrase.phrase);
                   return (
                     <div
                       key={pIdx}
-                      className={`px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/phrase ${phrase.isMinusWord ? 'bg-red-50 border-l-4 border-l-red-500' : ''}`}
+                      draggable={!phrase.isTemporary && !phrase.isMinusWord}
+                      onDragStart={() => handlePhraseDragStart(idx, actualPhraseIdx)}
+                      className={`px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/phrase ${phrase.isMinusWord ? 'bg-red-50 border-l-4 border-l-red-500' : ''} ${!phrase.isTemporary && !phrase.isMinusWord ? 'cursor-move' : ''}`}
                       style={!phrase.isMinusWord && phrase.sourceColor ? {
                         backgroundColor: phrase.sourceColor,
                         borderLeft: `3px solid ${phrase.sourceColor}`
                       } : {}}
                     >
                       <div className="flex items-center gap-2">
+                        {!phrase.isTemporary && !phrase.isMinusWord && (
+                          <Icon name="GripVertical" size={12} className="text-gray-400 flex-shrink-0" />
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm leading-snug mb-1 ${phrase.isMinusWord ? 'text-red-700 line-through' : 'text-gray-800'}`}>
                             {phrase.phrase}
