@@ -191,6 +191,9 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Project not found'})
                 }
             
+            clusters_data = json.loads(result[10]) if result[10] and isinstance(result[10], str) else (result[10] if result[10] else [])
+            minus_words_data = json.loads(result[11]) if result[11] and isinstance(result[11], str) else (result[11] if result[11] else [])
+            
             project = {
                 'id': result[0],
                 'name': result[1],
@@ -203,9 +206,9 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                 'createdAt': result[8].isoformat() if result[8] else None,
                 'updatedAt': result[9].isoformat() if result[9] else None,
                 'results': {
-                    'clusters': result[10] if result[10] else [],
-                    'minusWords': result[11] if result[11] else []
-                } if result[10] or result[11] else None
+                    'clusters': clusters_data,
+                    'minusWords': minus_words_data
+                } if clusters_data or minus_words_data else None
             }
             
             return {
