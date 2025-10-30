@@ -538,7 +538,7 @@ export default function ResultsStep({
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto pb-20">
                 {getFilteredPhrases(idx, cluster.searchText).map((phrase, pIdx) => {
                   return (
                     <div
@@ -640,7 +640,7 @@ export default function ResultsStep({
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto pb-20">
               {minusWords.map((phrase, pIdx) => (
                 <div
                   key={pIdx}
