@@ -30,7 +30,7 @@ export default function CitiesStep({
   hasManualKeywords = false
 }: CitiesStepProps) {
   const filteredCities = RUSSIAN_CITIES.filter(city => 
-    city.name.toLowerCase().includes(citySearch.toLowerCase()) &&
+    city.name.toLowerCase().startsWith(citySearch.toLowerCase()) &&
     !selectedCities.find(c => c.id === city.id)
   );
 
