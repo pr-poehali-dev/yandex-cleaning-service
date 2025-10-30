@@ -61,7 +61,9 @@ export default function ResultsStep({
   }));
   
   const [clusters, setClusters] = useState(initialClusters);
-  const [minusWords, setMinusWords] = useState<Phrase[]>(propsMinusWords);
+  const [minusWords, setMinusWords] = useState<Phrase[]>(
+    propsMinusWords.filter(p => p.phrase && p.phrase.trim() !== '')
+  );
   const [minusSearchText, setMinusSearchText] = useState('');
   const [draggedCluster, setDraggedCluster] = useState<number | null>(null);
   const [draggedPhrase, setDraggedPhrase] = useState<{clusterIdx: number, phraseIdx: number} | null>(null);
@@ -79,7 +81,7 @@ export default function ResultsStep({
         hovering: false
       }))
     );
-    setMinusWords(propsMinusWords);
+    setMinusWords(propsMinusWords.filter(p => p.phrase && p.phrase.trim() !== ''));
   }, [clustersDataKey]);
 
   const matchesSearch = (phrase: string, searchTerm: string): boolean => {
