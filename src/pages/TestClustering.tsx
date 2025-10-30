@@ -342,10 +342,13 @@ export default function TestClustering() {
                       console.log('🔍 Raw clusters from API:', allClusters);
                       
                       generatedClusters = allClusters.map((cluster: any, idx: number) => {
-                        const phrases = cluster.phrases.map((p: any) => ({
-                          phrase: p.phrase,
-                          count: p.count
-                        }));
+                        const phrases = cluster.phrases.map((p: any) => {
+                          console.log(`🔎 Raw phrase object:`, p);
+                          return {
+                            phrase: p.phrase,
+                            count: p.count
+                          };
+                        });
                         
                         console.log(`📊 Cluster "${cluster.cluster_name}":`, phrases.slice(0, 3));
                         
