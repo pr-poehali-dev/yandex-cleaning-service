@@ -82,16 +82,18 @@ export default function ResultsStep({
 
   const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
     const trimmed = searchTerm.trim();
-    if (trimmed.length < 3) return false;
+    if (trimmed.length === 0) return false;
     
     const phraseLower = phrase.toLowerCase();
     const searchLower = trimmed.toLowerCase();
     
-    // Разбиваем фразу на слова (разделители: пробелы, дефисы, точки)
-    const words = phraseLower.split(/[\s\-\.]+/);
+    // Разбиваем фразу на слова (разделители: пробелы, дефисы, точки, запятые)
+    const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
     
-    // Проверяем: есть ли слово, которое НАЧИНАЕТСЯ с искомого текста
-    return words.some(word => word.startsWith(searchLower));
+    // Ищем точное вхождение поискового запроса в любое слово
+    // "куплю" найдёт только "куплю", но НЕ "купить"
+    // "вторич" найдёт "вторичка", "вторичный", "вторична"
+    return words.some(word => word.includes(searchLower));
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
