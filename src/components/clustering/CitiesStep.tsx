@@ -62,7 +62,9 @@ export default function CitiesStep({
                   className="p-3 hover:bg-slate-50 cursor-pointer transition-colors"
                 >
                   <div className="font-medium text-slate-800">{city.name}</div>
-                  <div className="text-sm text-slate-500">{city.region}</div>
+                  {city.region && (
+                    <div className="text-sm text-slate-500">{city.region}</div>
+                  )}
                 </div>
               ))}
               {filteredCities.length === 0 && (
