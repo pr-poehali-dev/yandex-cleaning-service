@@ -34,6 +34,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     oauth_token = os.environ.get('YANDEX_WORDSTAT_TOKEN')
+    print(f'[DEBUG] Token exists: {bool(oauth_token)}, length: {len(oauth_token) if oauth_token else 0}')
+    
     if not oauth_token:
         return {
             'statusCode': 500,
@@ -51,6 +53,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     response = requests.post(url, headers=headers, json={}, timeout=30)
     
+    print(f'[DEBUG] API response status: {response.status_code}')
+    print(f'[DEBUG] API response body: {response.text[:500]}')
+    
     if response.status_code != 200:
         return {
             'statusCode': response.status_code,
@@ -66,18 +71,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     def flatten_regions(regions_tree, parent_id=None):
         result = []
         for region in regions_tree:
-            region_id = region.get('regionId') or region.get('id')
-            region_name = region.get('regionName') or region.get('name')
+            region_id = region.get('value') or region.get('id')
+            region_name = region.get('label') or region.get('name')
             
             result.append({
-                'id': region_id,
+                'id': int(region_id) if region_id else None,
                 'name': region_name,
                 'parent_id': parent_id
             })
             
-            children = region.get('children') or region.get('items') or []
-            if children:
-                result.extend(flatten_regions(children, region_id))
+            children = region.get('children')
+            if children and isinstance(children, list):
+                result.extend(flatten_regions(children, int(region_id) if region_id else None))
         return result
     
     regions_data = data if isinstance(data, list) else data.get('regions', [])
