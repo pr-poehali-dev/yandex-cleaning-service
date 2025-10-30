@@ -211,9 +211,17 @@ export default function ResultsStep({
     const newHistory = new Map(moveHistory);
 
     const newClusters = clusters.map((cluster, clusterIdx) => {
-      const matchingPhrases = cluster.phrases.filter(p => 
-        matchesWholeWord(p.phrase, value)
-      );
+      const matchingPhrases = cluster.phrases.filter(p => {
+        const matches = matchesWholeWord(p.phrase, value);
+        
+        // Детальное логирование для отладки
+        if (value.trim().toLowerCase() === 'куплю') {
+          console.log(`🔍 Кластер "${cluster.name}" → фраза "${p.phrase}"`);
+          console.log(`   Результат: ${matches ? '✅ НАЙДЕНО' : '❌ НЕ НАЙДЕНО'}`);
+        }
+        
+        return matches;
+      });
 
       if (matchingPhrases.length > 0) {
         matchingPhrases.forEach(p => {
