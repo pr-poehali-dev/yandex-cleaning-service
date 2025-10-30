@@ -160,8 +160,8 @@ export default function ResultsStep({
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto px-6 py-4">
-        <div className="flex h-full max-w-[1400px] mx-auto">
+      <div className="flex-1 overflow-x-auto">
+        <div className="flex h-full px-6">
           {clusters.map((cluster, idx) => (
             <div
               key={idx}
