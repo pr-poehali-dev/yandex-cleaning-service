@@ -141,19 +141,19 @@ export default function ResultsStep({
     const movedPhrases: Phrase[] = [];
     const newHistory = new Map(moveHistory);
 
+    // Логирование поискового запроса
+    console.log(`🔍 ПОИСК НАЧАТ: "${value}"`);
+    console.log(`   Минимум символов: ${value.trim().length >= 3 ? '✅' : '❌ слишком мало'}`);
+
     for (let i = 0; i < newClusters.length; i++) {
       if (i === clusterIndex) continue;
 
       const cluster = newClusters[i];
+      console.log(`\n📂 Проверяем кластер: "${cluster.name}" (${cluster.phrases.length} фраз)`);
+      
       const matchingPhrases = cluster.phrases.filter(p => {
         const matches = matchesWholeWord(p.phrase, value);
-        
-        // Детальное логирование
-        if (value.trim().toLowerCase() === 'куплю') {
-          console.log(`🔍 Кластер "${cluster.name}" → фраза "${p.phrase}"`);
-          console.log(`   Результат: ${matches ? '✅ НАЙДЕНО' : '❌ НЕ НАЙДЕНО'}`);
-        }
-        
+        console.log(`   "${p.phrase}" → ${matches ? '✅' : '❌'}`);
         return matches;
       });
 
