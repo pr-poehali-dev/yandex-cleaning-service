@@ -81,11 +81,17 @@ export default function ResultsStep({
   const { toast } = useToast();
 
   const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
-    if (searchTerm.trim().length < 2) return false;
+    const trimmed = searchTerm.trim();
+    if (trimmed.length < 3) return false;
+    
     const phraseLower = phrase.toLowerCase();
-    const searchLower = searchTerm.toLowerCase().trim();
-    const words = phraseLower.split(/\s+/);
-    return words.some(word => word.includes(searchLower));
+    const searchLower = trimmed.toLowerCase();
+    
+    // Разбиваем фразу на слова (разделители: пробелы, дефисы, точки)
+    const words = phraseLower.split(/[\s\-\.]+/);
+    
+    // Проверяем: есть ли слово, которое НАЧИНАЕТСЯ с искомого текста
+    return words.some(word => word.startsWith(searchLower));
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
