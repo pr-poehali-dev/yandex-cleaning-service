@@ -37,6 +37,12 @@ const CLUSTER_COLORS = [
   '#E1F5FE',
 ];
 
+interface PhraseMove {
+  phrase: Phrase;
+  fromCluster: number;
+  toCluster: number | 'minus';
+}
+
 export default function ResultsStep({
   clusters: initialClusters,
   minusWords: initialMinusWords,
@@ -60,42 +66,80 @@ export default function ResultsStep({
     initialClusters.map((c, idx) => ({
       ...c,
       bgColor: CLUSTER_COLORS[idx % CLUSTER_COLORS.length],
-      searchText: ''
+      searchText: '',
+      previousSearchText: ''
     }))
   );
   const [minusWords, setMinusWords] = useState<Phrase[]>(
     initialMinusWords.map(word => ({ phrase: word, count: 0 }))
   );
   const [minusSearchText, setMinusSearchText] = useState('');
+  const [previousMinusSearchText, setPreviousMinusSearchText] = useState('');
+  const [moveHistory, setMoveHistory] = useState<Map<string, number>>(new Map());
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
+    if (searchTerm.trim().length < 2) return false;
+    const phraseLower = phrase.toLowerCase();
+    const searchLower = searchTerm.toLowerCase().trim();
+    const words = phraseLower.split(/\s+/);
+    return words.some(word => word.includes(searchLower));
+  };
+
   const handleSearchChange = (clusterIndex: number, value: string) => {
     const newClusters = [...clusters];
     const targetCluster = newClusters[clusterIndex];
+    const previousSearch = targetCluster.searchText;
     targetCluster.searchText = value;
 
     if (!value.trim()) {
+      if (previousSearch.trim()) {
+        const phrasesToReturn = targetCluster.phrases.filter(p => {
+          const originalCluster = moveHistory.get(p.phrase);
+          return originalCluster !== undefined && originalCluster !== clusterIndex;
+        });
+
+        phrasesToReturn.forEach(p => {
+          const originalClusterIdx = moveHistory.get(p.phrase);
+          if (originalClusterIdx !== undefined && originalClusterIdx !== clusterIndex) {
+            newClusters[originalClusterIdx].phrases.push(p);
+            newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
+          }
+        });
+
+        targetCluster.phrases = targetCluster.phrases.filter(p => {
+          const originalCluster = moveHistory.get(p.phrase);
+          return originalCluster === undefined || originalCluster === clusterIndex;
+        });
+
+        phrasesToReturn.forEach(p => moveHistory.delete(p.phrase));
+      }
       setClusters(newClusters);
       return;
     }
 
-    const searchLower = value.toLowerCase();
     const movedPhrases: Phrase[] = [];
+    const newHistory = new Map(moveHistory);
 
     for (let i = 0; i < newClusters.length; i++) {
       if (i === clusterIndex) continue;
 
       const cluster = newClusters[i];
       const matchingPhrases = cluster.phrases.filter(p => 
-        p.phrase.toLowerCase().includes(searchLower)
+        matchesWholeWord(p.phrase, value)
       );
 
       if (matchingPhrases.length > 0) {
         cluster.phrases = cluster.phrases.filter(p => 
-          !p.phrase.toLowerCase().includes(searchLower)
+          !matchesWholeWord(p.phrase, value)
         );
+        matchingPhrases.forEach(p => {
+          if (!newHistory.has(p.phrase)) {
+            newHistory.set(p.phrase, i);
+          }
+        });
         movedPhrases.push(...matchingPhrases);
       }
     }
@@ -104,6 +148,7 @@ export default function ResultsStep({
       targetCluster.phrases = [...targetCluster.phrases, ...movedPhrases]
         .sort((a, b) => b.count - a.count);
       
+      setMoveHistory(newHistory);
       setHasChanges(true);
       
       toast({
@@ -116,24 +161,53 @@ export default function ResultsStep({
   };
 
   const handleMinusSearchChange = (value: string) => {
+    const previousSearch = minusSearchText;
     setMinusSearchText(value);
 
-    if (!value.trim()) return;
+    if (!value.trim()) {
+      if (previousSearch.trim()) {
+        const phrasesToReturn = minusWords.filter(p => {
+          const originalCluster = moveHistory.get(p.phrase);
+          return originalCluster !== undefined;
+        });
 
-    const searchLower = value.toLowerCase();
+        if (phrasesToReturn.length > 0) {
+          const newClusters = [...clusters];
+          phrasesToReturn.forEach(p => {
+            const originalClusterIdx = moveHistory.get(p.phrase);
+            if (originalClusterIdx !== undefined) {
+              newClusters[originalClusterIdx].phrases.push(p);
+              newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
+              moveHistory.delete(p.phrase);
+            }
+          });
+
+          setMinusWords(prev => prev.filter(p => !moveHistory.has(p.phrase) || moveHistory.get(p.phrase) === undefined));
+          setClusters(newClusters);
+        }
+      }
+      return;
+    }
+
     const movedPhrases: Phrase[] = [];
+    const newHistory = new Map(moveHistory);
 
-    const newClusters = clusters.map(cluster => {
+    const newClusters = clusters.map((cluster, clusterIdx) => {
       const matchingPhrases = cluster.phrases.filter(p => 
-        p.phrase.toLowerCase().includes(searchLower)
+        matchesWholeWord(p.phrase, value)
       );
 
       if (matchingPhrases.length > 0) {
+        matchingPhrases.forEach(p => {
+          if (!newHistory.has(p.phrase)) {
+            newHistory.set(p.phrase, clusterIdx);
+          }
+        });
         movedPhrases.push(...matchingPhrases);
         return {
           ...cluster,
           phrases: cluster.phrases.filter(p => 
-            !p.phrase.toLowerCase().includes(searchLower)
+            !matchesWholeWord(p.phrase, value)
           )
         };
       }
@@ -144,6 +218,7 @@ export default function ResultsStep({
     if (movedPhrases.length > 0) {
       setMinusWords(prev => [...prev, ...movedPhrases].sort((a, b) => b.count - a.count));
       setClusters(newClusters);
+      setMoveHistory(newHistory);
       setHasChanges(true);
       
       toast({
