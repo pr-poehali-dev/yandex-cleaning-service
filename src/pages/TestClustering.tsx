@@ -16,7 +16,7 @@ import StepIndicator from '@/components/clustering/StepIndicator';
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 
 type Step = 'source' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
-type Source = 'manual' | 'website';
+type Source = 'manual' | 'website' | 'wordstat';
 type Goal = 'context' | 'seo';
 
 interface Phrase {
@@ -87,6 +87,7 @@ export default function TestClustering() {
   const [source, setSource] = useState<Source>('manual');
   const [manualKeywords, setManualKeywords] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
+  const [wordstatQuery, setWordstatQuery] = useState('');
   const [selectedCities, setSelectedCities] = useState<City[]>([RUSSIAN_CITIES[0]]);
   const [citySearch, setCitySearch] = useState('');
   const [goal, setGoal] = useState<Goal>('context');
@@ -311,7 +312,7 @@ export default function TestClustering() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
             <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
-              {projectName || 'AI сбор ключей'}
+              AI сбор ключевых фраз
             </h1>
             <p className="text-lg text-slate-500">
               Автоматическая кластеризация ключевых слов с помощью ИИ
@@ -336,6 +337,8 @@ export default function TestClustering() {
               setManualKeywords={setManualKeywords}
               websiteUrl={websiteUrl}
               setWebsiteUrl={setWebsiteUrl}
+              wordstatQuery={wordstatQuery}
+              setWordstatQuery={setWordstatQuery}
               onNext={() => setStep('cities')}
             />
           )}
