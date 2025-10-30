@@ -113,6 +113,33 @@ export default function ResultsStep({
     return words.some(word => word === searchLower);
   };
 
+  const handleConfirmClusterSearch = (clusterIndex: number) => {
+    // Фиксируем перемещение: удаляем из истории все перенесённые фразы
+    const newClusters = [...clusters];
+    const targetCluster = newClusters[clusterIndex];
+    const newHistory = new Map(moveHistory);
+    
+    targetCluster.phrases.forEach(p => {
+      const originalCluster = newHistory.get(p.phrase);
+      if (originalCluster !== undefined && originalCluster !== clusterIndex) {
+        // Это перенесённая фраза - делаем её постоянной
+        newHistory.delete(p.phrase);
+      }
+    });
+    
+    // Очищаем поле поиска БЕЗ вызова handleSearchChange
+    targetCluster.searchText = '';
+    
+    setClusters(newClusters);
+    setMoveHistory(newHistory);
+    setHasChanges(true);
+    
+    toast({
+      title: '✅ Добавлено',
+      description: `Фразы зафиксированы в "${targetCluster.name}"`
+    });
+  };
+
   const handleSearchChange = (clusterIndex: number, value: string) => {
     const newClusters = [...clusters];
     const targetCluster = newClusters[clusterIndex];
@@ -222,6 +249,29 @@ export default function ResultsStep({
     }
 
     setClusters(newClusters);
+  };
+
+  const handleConfirmMinusSearch = () => {
+    // Фиксируем перемещение в минус-слова
+    const newHistory = new Map(moveHistory);
+    
+    minusWords.forEach(p => {
+      const originalCluster = newHistory.get(p.phrase);
+      if (originalCluster !== undefined) {
+        // Это перенесённая фраза - делаем её постоянной
+        newHistory.delete(p.phrase);
+      }
+    });
+    
+    // Очищаем поле поиска
+    setMinusSearchText('');
+    setMoveHistory(newHistory);
+    setHasChanges(true);
+    
+    toast({
+      title: '✅ Добавлено',
+      description: `Фразы зафиксированы в минус-словах`
+    });
   };
 
   const handleMinusSearchChange = (value: string) => {
@@ -460,32 +510,7 @@ export default function ResultsStep({
                       {cluster.searchText && cluster.searchText.trim().length >= 3 && (
                         <Button
                           size="sm"
-                          onClick={() => {
-                            // Фиксируем перемещение: удаляем из истории все перенесённые фразы
-                            const newClusters = [...clusters];
-                            const targetCluster = newClusters[idx];
-                            const newHistory = new Map(moveHistory);
-                            
-                            targetCluster.phrases.forEach(p => {
-                              const originalCluster = newHistory.get(p.phrase);
-                              if (originalCluster !== undefined && originalCluster !== idx) {
-                                // Это перенесённая фраза - делаем её постоянной
-                                newHistory.delete(p.phrase);
-                              }
-                            });
-                            
-                            // Очищаем поле поиска
-                            targetCluster.searchText = '';
-                            
-                            setClusters(newClusters);
-                            setMoveHistory(newHistory);
-                            setHasChanges(true);
-                            
-                            toast({
-                              title: '✅ Добавлено',
-                              description: `Фразы зафиксированы в "${targetCluster.name}"`
-                            });
-                          }}
+                          onClick={() => handleConfirmClusterSearch(idx)}
                           className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
                           <Icon name="Plus" size={14} />
@@ -523,28 +548,7 @@ export default function ResultsStep({
                     {minusSearchText && minusSearchText.trim().length > 0 && (
                       <Button
                         size="sm"
-                        onClick={() => {
-                          // Фиксируем перемещение в минус-слова
-                          const newHistory = new Map(moveHistory);
-                          
-                          minusWords.forEach(p => {
-                            const originalCluster = newHistory.get(p.phrase);
-                            if (originalCluster !== undefined) {
-                              // Это перенесённая фраза - делаем её постоянной
-                              newHistory.delete(p.phrase);
-                            }
-                          });
-                          
-                          // Очищаем поле поиска
-                          setMinusSearchText('');
-                          setMoveHistory(newHistory);
-                          setHasChanges(true);
-                          
-                          toast({
-                            title: '✅ Добавлено',
-                            description: `Фразы зафиксированы в минус-словах`
-                          });
-                        }}
+                        onClick={handleConfirmMinusSearch}
                         className="h-8 px-3 bg-red-600 hover:bg-red-700 text-white"
                       >
                         <Icon name="Plus" size={14} />
