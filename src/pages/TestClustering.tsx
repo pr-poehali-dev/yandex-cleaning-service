@@ -165,7 +165,7 @@ export default function TestClustering() {
   }, [projectId]);
 
   useEffect(() => {
-    if (step === 'processing') {
+    if (step === 'processing' && !isWordstatLoading) {
       let totalDuration = 0;
       let currentProgress = 0;
 
@@ -202,7 +202,7 @@ export default function TestClustering() {
         totalDuration += stage.duration;
       });
     }
-  }, [step, manualKeywords, selectedIntents, saveResultsToAPI]);
+  }, [step, isWordstatLoading, manualKeywords, selectedIntents, saveResultsToAPI]);
 
   const handleWordstatSubmit = async (query: string, cities: City[], mode: string) => {
     console.log('🚀 handleWordstatSubmit called:', { query, cities, mode });
@@ -217,6 +217,7 @@ export default function TestClustering() {
       return;
     }
     
+    setStep('processing');
     setIsWordstatLoading(true);
     
     try {
@@ -424,7 +425,6 @@ export default function TestClustering() {
               onNext={async () => {
                 const firstKeyword = manualKeywords.split('\n')[0]?.trim();
                 if (firstKeyword && selectedCities.length > 0) {
-                  setStep('processing');
                   await handleWordstatSubmit(firstKeyword, selectedCities, goal);
                 } else {
                   setStep('processing');
