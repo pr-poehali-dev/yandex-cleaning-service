@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/icon';
 import Header from '@/components/Header';
@@ -16,8 +19,8 @@ import StepIndicator from '@/components/clustering/StepIndicator';
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 const WORDSTAT_API_URL = 'https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8';
 
-type Step = 'source' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
-type Source = 'manual' | 'website' | 'wordstat';
+type Step = 'source' | 'wordstat-dialog' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
+type Source = 'manual' | 'website';
 type Goal = 'context' | 'seo';
 
 interface Phrase {
@@ -142,6 +145,7 @@ export default function TestClustering() {
   const [manualKeywords, setManualKeywords] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [wordstatQuery, setWordstatQuery] = useState('');
+  const [isWordstatLoading, setIsWordstatLoading] = useState(false);
   const [selectedCities, setSelectedCities] = useState<City[]>([RUSSIAN_CITIES[0]]);
   const [citySearch, setCitySearch] = useState('');
   const [goal, setGoal] = useState<Goal>('context');
@@ -299,19 +303,21 @@ export default function TestClustering() {
 
           if (idx === PROCESSING_STAGES.length - 1) {
             setTimeout(async () => {
-              console.log('✨ PROCESSING COMPLETE, CALLING SAVE...');
+              console.log('✨ PROCESSING COMPLETE, CALLING WORDSTAT API...');
               
               let generatedClusters: Cluster[] = [];
               let generatedMinusWords: string[] = [];
               
-              if (source === 'wordstat' && wordstatQuery.trim()) {
+              const keywords = manualKeywords.split('\n').filter(k => k.trim());
+              
+              if (keywords.length > 0) {
                 try {
-                  console.log('🔍 Calling Wordstat API...');
+                  console.log('🔍 Calling Wordstat API with keywords:', keywords);
                   const response = await fetch(WORDSTAT_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                      query: wordstatQuery,
+                      keywords: keywords,
                       regions: selectedCities.map(c => c.id),
                       mode: goal
                     })
@@ -323,7 +329,7 @@ export default function TestClustering() {
                     
                     generatedClusters = (data.clusters || []).map((cluster: any, idx: number) => ({
                       name: cluster.cluster_name,
-                      intent: cluster.intent || 'commercial',
+                      intent: cluster.intent || selectedIntents[0] || 'commercial',
                       color: ['blue', 'emerald', 'purple', 'orange'][idx % 4],
                       icon: ['Home', 'Building2', 'Globe', 'ShoppingCart'][idx % 4],
                       phrases: cluster.phrases.map((p: any) => ({
@@ -338,19 +344,14 @@ export default function TestClustering() {
                     ).slice(0, 20);
                   } else {
                     console.error('❌ Wordstat API error');
-                    toast.error('Ошибка API Wordstat');
+                    generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
+                    generatedMinusWords = generateMinusWords(keywords);
                   }
                 } catch (error) {
                   console.error('❌ Wordstat fetch error:', error);
-                  toast.error('Ошибка соединения с Wordstat');
+                  generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
+                  generatedMinusWords = generateMinusWords(keywords);
                 }
-              } else {
-                const keywords = source === 'manual' 
-                  ? manualKeywords.split('\n').filter(k => k.trim())
-                  : [];
-                
-                generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
-                generatedMinusWords = generateMinusWords(keywords);
               }
               
               if (generatedClusters.length === 0) {
@@ -372,6 +373,42 @@ export default function TestClustering() {
       });
     }
   }, [step, projectId, saveResultsToAPI]);
+
+  const handleWordstatCollect = async () => {
+    if (!wordstatQuery.trim()) {
+      toast.error('Введите запрос для сбора');
+      return;
+    }
+
+    setIsWordstatLoading(true);
+    try {
+      const response = await fetch(WORDSTAT_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: wordstatQuery,
+          regions: selectedCities.map(c => c.id),
+          mode: 'seo'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const phrases = data.clusters.flatMap((c: any) => 
+          c.phrases.map((p: any) => p.phrase)
+        );
+        setManualKeywords(phrases.join('\n'));
+        setStep('source');
+        toast.success(`Собрано ${phrases.length} ключевых фраз`);
+      } else {
+        toast.error('Ошибка сбора ключей');
+      }
+    } catch (error) {
+      toast.error('Ошибка соединения');
+    } finally {
+      setIsWordstatLoading(false);
+    }
+  };
 
   const exportResults = () => {
     const data = {
@@ -449,10 +486,56 @@ export default function TestClustering() {
               setManualKeywords={setManualKeywords}
               websiteUrl={websiteUrl}
               setWebsiteUrl={setWebsiteUrl}
-              wordstatQuery={wordstatQuery}
-              setWordstatQuery={setWordstatQuery}
               onNext={() => setStep('cities')}
+              onWordstatCollect={() => setStep('wordstat-dialog')}
             />
+          )}
+
+          {step === 'wordstat-dialog' && (
+            <Card className="border-slate-200 shadow-lg">
+              <CardHeader className="border-b bg-gradient-to-br from-slate-50 to-white">
+                <CardTitle className="text-2xl text-slate-800">Сбор ключей из Wordstat</CardTitle>
+                <CardDescription>Введите запрос для автоматического сбора связанных ключевых фраз</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <Label htmlFor="wordstat-query">Ключевой запрос</Label>
+                  <Input
+                    id="wordstat-query"
+                    value={wordstatQuery}
+                    onChange={(e) => setWordstatQuery(e.target.value)}
+                    placeholder="купить квартиру"
+                    className="mt-2"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep('source')}
+                    className="flex-1"
+                  >
+                    Отмена
+                  </Button>
+                  <Button
+                    onClick={handleWordstatCollect}
+                    disabled={isWordstatLoading || !wordstatQuery.trim()}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                  >
+                    {isWordstatLoading ? (
+                      <>
+                        <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
+                        Собираем...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="Download" className="mr-2 h-4 w-4" />
+                        Собрать ключи
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {step === 'cities' && (

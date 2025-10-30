@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 
-type Source = 'manual' | 'website' | 'wordstat';
+type Source = 'manual' | 'website';
 
 interface SourceStepProps {
   source: Source;
@@ -13,9 +13,8 @@ interface SourceStepProps {
   setManualKeywords: (keywords: string) => void;
   websiteUrl: string;
   setWebsiteUrl: (url: string) => void;
-  wordstatQuery: string;
-  setWordstatQuery: (query: string) => void;
   onNext: () => void;
+  onWordstatCollect?: () => void;
 }
 
 export default function SourceStep({
@@ -25,9 +24,8 @@ export default function SourceStep({
   setManualKeywords,
   websiteUrl,
   setWebsiteUrl,
-  wordstatQuery,
-  setWordstatQuery,
-  onNext
+  onNext,
+  onWordstatCollect
 }: SourceStepProps) {
   const handleNext = () => {
     if (source === 'manual' && !manualKeywords.trim()) {
@@ -36,16 +34,12 @@ export default function SourceStep({
     if (source === 'website' && !websiteUrl.trim()) {
       return;
     }
-    if (source === 'wordstat' && !wordstatQuery.trim()) {
-      return;
-    }
     onNext();
   };
 
   const isNextDisabled = 
     (source === 'manual' && !manualKeywords.trim()) ||
-    (source === 'website' && !websiteUrl.trim()) ||
-    (source === 'wordstat' && !wordstatQuery.trim());
+    (source === 'website' && !websiteUrl.trim());
 
   return (
     <Card className="border-slate-200 shadow-lg">
@@ -56,7 +50,7 @@ export default function SourceStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div
             onClick={() => setSource('manual')}
             className={`p-6 rounded-xl border-2 cursor-pointer transition-all ${
@@ -65,13 +59,13 @@ export default function SourceStep({
                 : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                 source === 'manual' ? 'bg-emerald-500' : 'bg-slate-100'
               }`}>
                 <Icon 
                   name="FileText" 
-                  className={`h-6 w-6 ${source === 'manual' ? 'text-white' : 'text-slate-600'}`}
+                  className={`h-5 w-5 ${source === 'manual' ? 'text-white' : 'text-slate-600'}`}
                 />
               </div>
               <div>
@@ -89,13 +83,13 @@ export default function SourceStep({
                 : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
             }`}
           >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                 source === 'website' ? 'bg-emerald-500' : 'bg-slate-100'
               }`}>
                 <Icon 
                   name="Globe" 
-                  className={`h-6 w-6 ${source === 'website' ? 'text-white' : 'text-slate-600'}`}
+                  className={`h-5 w-5 ${source === 'website' ? 'text-white' : 'text-slate-600'}`}
                 />
               </div>
               <div>
@@ -104,40 +98,30 @@ export default function SourceStep({
               </div>
             </div>
           </div>
-
-          <div
-            onClick={() => setSource('wordstat')}
-            className={`p-6 rounded-xl border-2 cursor-pointer transition-all ${
-              source === 'wordstat'
-                ? 'border-emerald-500 bg-emerald-50/50 shadow-md'
-                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                source === 'wordstat' ? 'bg-emerald-500' : 'bg-slate-100'
-              }`}>
-                <Icon 
-                  name="Search" 
-                  className={`h-6 w-6 ${source === 'wordstat' ? 'text-white' : 'text-slate-600'}`}
-                />
-              </div>
-              <div>
-                <div className="font-semibold text-slate-800">Wordstat</div>
-                <div className="text-sm text-slate-500">Сбор из метрики</div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {source === 'manual' && (
-          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-            <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
+              {onWordstatCollect && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onWordstatCollect}
+                  className="text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                >
+                  <Icon name="Download" className="h-4 w-4 mr-2" />
+                  Собрать из Wordstat
+                </Button>
+              )}
+            </div>
             <textarea
               id="keywords"
               value={manualKeywords}
               onChange={(e) => setManualKeywords(e.target.value)}
-              placeholder="Введите ключевые слова (каждое с новой строки)&#10;купить квартиру москва&#10;купить квартиру от застройщика&#10;купить квартиру вторичка"
+              placeholder="Введите ключевые слова (каждое с новой строки) или соберите из Wordstat&#10;купить квартиру москва&#10;купить квартиру от застройщика&#10;купить квартиру вторичка"
               className="w-full h-48 p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
             />
             <p className="text-xs text-slate-500">
@@ -159,23 +143,6 @@ export default function SourceStep({
             />
             <p className="text-xs text-slate-500">
               Мы соберем все ключевые слова, по которым ранжируется ваш сайт
-            </p>
-          </div>
-        )}
-
-        {source === 'wordstat' && (
-          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-            <Label htmlFor="wordstat" className="text-slate-700">Ключевой запрос</Label>
-            <Input
-              id="wordstat"
-              type="text"
-              value={wordstatQuery}
-              onChange={(e) => setWordstatQuery(e.target.value)}
-              placeholder="купить квартиру"
-              className="border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-            <p className="text-xs text-slate-500">
-              Соберём все связанные запросы из Яндекс Wordstat с частотностью
             </p>
           </div>
         )}
