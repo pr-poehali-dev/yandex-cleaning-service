@@ -159,23 +159,35 @@ export default function ResultsStep({
         </Card>
       )}
 
-      <div className="flex gap-4">
-        <Button 
-          onClick={onExport}
-          size="lg"
-          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg"
-        >
-          <Icon name="Download" className="mr-2 h-5 w-5" />
-          Экспортировать результаты
-        </Button>
+      <div className="space-y-4">
+        <div className="flex gap-4">
+          <Button 
+            onClick={onExport}
+            size="lg"
+            className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg"
+          >
+            <Icon name="Download" className="mr-2 h-5 w-5" />
+            Экспортировать результаты
+          </Button>
+          <Button 
+            onClick={onNewProject}
+            size="lg"
+            variant="outline"
+            className="flex-1 border-2 border-slate-200 hover:bg-slate-50 shadow-lg"
+          >
+            <Icon name="Plus" className="mr-2 h-5 w-5" />
+            Новый проект
+          </Button>
+        </div>
+        
         <Button 
           onClick={onNewProject}
           size="lg"
-          variant="outline"
-          className="flex-1 border-2 border-slate-200 hover:bg-slate-50 shadow-lg"
+          variant="ghost"
+          className="w-full text-slate-600 hover:text-slate-800 hover:bg-slate-100"
         >
-          <Icon name="Plus" className="mr-2 h-5 w-5" />
-          Новый проект
+          <Icon name="ArrowLeft" className="mr-2 h-5 w-5" />
+          К проектам
         </Button>
       </div>
     </div>
