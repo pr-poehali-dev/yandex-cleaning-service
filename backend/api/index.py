@@ -172,8 +172,7 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         if project_id:
             cur.execute(
                 """
-                SELECT id, name, domain, intent_filter, status, 
-                       keywords_count, clusters_count, minus_words_count,
+                SELECT id, name, keywords_count, clusters_count, minus_words_count,
                        created_at, updated_at, results
                 FROM clustering_projects
                 WHERE id = %s AND user_id = %s
@@ -194,15 +193,12 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
             project = {
                 'id': result[0],
                 'name': result[1],
-                'domain': result[2],
-                'intentFilter': result[3],
-                'status': result[4],
-                'keywordsCount': result[5],
-                'clustersCount': result[6],
-                'minusWordsCount': result[7],
-                'createdAt': result[8].isoformat() if result[8] else None,
-                'updatedAt': result[9].isoformat() if result[9] else None,
-                'results': results_data
+                'keywordsCount': result[2],
+                'clustersCount': result[3],
+                'minusWordsCount': result[4],
+                'createdAt': result[5].isoformat() if result[5] else None,
+                'updatedAt': result[6].isoformat() if result[6] else None,
+                'results': result[7]
             }
             
             return {
@@ -227,14 +223,11 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                 projects.append({
                     'id': row[0],
                     'name': row[1],
-                    'domain': row[2],
-                    'intentFilter': row[3],
-                    'status': row[4],
-                    'keywordsCount': row[5],
-                    'clustersCount': row[6],
-                    'minusWordsCount': row[7],
-                    'createdAt': row[8].isoformat() if row[8] else None,
-                    'updatedAt': row[9].isoformat() if row[9] else None
+                    'keywordsCount': row[2],
+                    'clustersCount': row[3],
+                    'minusWordsCount': row[4],
+                    'createdAt': row[5].isoformat() if row[5] else None,
+                    'updatedAt': row[6].isoformat() if row[6] else None
                 })
             
             return {
@@ -258,11 +251,11 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         
         cur.execute(
             """
-            INSERT INTO clustering_projects (user_id, name, domain, intent_filter)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO clustering_projects (user_id, name)
+            VALUES (%s, %s)
             RETURNING id, created_at, updated_at
             """,
-            (user_id, name, domain, intent_filter)
+            (user_id, name)
         )
         result = cur.fetchone()
         conn.commit()
@@ -273,9 +266,6 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
             'body': json.dumps({
                 'id': result[0],
                 'name': name,
-                'domain': domain,
-                'intentFilter': intent_filter,
-                'status': 'draft',
                 'keywordsCount': 0,
                 'clustersCount': 0,
                 'minusWordsCount': 0,
@@ -309,15 +299,6 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         if 'name' in body_data:
             update_fields.append('name = %s')
             update_values.append(body_data['name'])
-        if 'domain' in body_data:
-            update_fields.append('domain = %s')
-            update_values.append(body_data['domain'])
-        if 'intentFilter' in body_data:
-            update_fields.append('intent_filter = %s')
-            update_values.append(body_data['intentFilter'])
-        if 'status' in body_data:
-            update_fields.append('status = %s')
-            update_values.append(body_data['status'])
         if 'keywordsCount' in body_data:
             update_fields.append('keywords_count = %s')
             update_values.append(body_data['keywordsCount'])
