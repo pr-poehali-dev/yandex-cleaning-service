@@ -14,6 +14,8 @@ interface CitiesStepProps {
   removeCity: (cityId: number) => void;
   onNext: () => void;
   onBack: () => void;
+  onWordstatCollect?: () => void;
+  hasManualKeywords?: boolean;
 }
 
 export default function CitiesStep({
@@ -23,7 +25,9 @@ export default function CitiesStep({
   addCity,
   removeCity,
   onNext,
-  onBack
+  onBack,
+  onWordstatCollect,
+  hasManualKeywords = false
 }: CitiesStepProps) {
   const filteredCities = RUSSIAN_CITIES.filter(city => 
     city.name.toLowerCase().includes(citySearch.toLowerCase()) &&
@@ -91,6 +95,30 @@ export default function CitiesStep({
             <p className="text-sm text-slate-500 mt-2">Выберите хотя бы один город</p>
           )}
         </div>
+
+        {onWordstatCollect && !hasManualKeywords && selectedCities.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Icon name="Info" className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900 mb-1">
+                  Нет ключевых слов?
+                </p>
+                <p className="text-sm text-blue-700 mb-3">
+                  Соберите ключевые фразы из Яндекс Вордстат для выбранных регионов
+                </p>
+                <Button
+                  onClick={onWordstatCollect}
+                  variant="outline"
+                  className="border-blue-300 hover:bg-blue-100 text-blue-700"
+                >
+                  <Icon name="Download" className="mr-2 h-4 w-4" />
+                  Собрать из Wordstat
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-3">
           <Button 

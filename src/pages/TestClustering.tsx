@@ -146,7 +146,7 @@ export default function TestClustering() {
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [wordstatQuery, setWordstatQuery] = useState('');
   const [isWordstatLoading, setIsWordstatLoading] = useState(false);
-  const [selectedCities, setSelectedCities] = useState<City[]>([RUSSIAN_CITIES[0]]);
+  const [selectedCities, setSelectedCities] = useState<City[]>([]);
   const [citySearch, setCitySearch] = useState('');
   const [goal, setGoal] = useState<Goal>('context');
   const [selectedIntents, setSelectedIntents] = useState<string[]>(['commercial', 'transactional']);
@@ -436,7 +436,7 @@ export default function TestClustering() {
         }
         
         setManualKeywords(phrases.join('\n'));
-        setStep('source');
+        setStep('cities');
         toast.success(`Собрано ${phrases.length} ключевых фраз по регионам: ${selectedCities.map(c => c.name).join(', ')}`);
       } else {
         const errorText = await response.text();
@@ -528,7 +528,6 @@ export default function TestClustering() {
               websiteUrl={websiteUrl}
               setWebsiteUrl={setWebsiteUrl}
               onNext={() => setStep('cities')}
-              onWordstatCollect={() => setStep('wordstat-dialog')}
             />
           )}
 
@@ -552,7 +551,7 @@ export default function TestClustering() {
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
-                    onClick={() => setStep('source')}
+                    onClick={() => setStep('cities')}
                     className="flex-1"
                   >
                     Отмена
@@ -588,6 +587,8 @@ export default function TestClustering() {
               removeCity={removeCity}
               onNext={() => setStep('goal')}
               onBack={() => setStep('source')}
+              onWordstatCollect={() => setStep('wordstat-dialog')}
+              hasManualKeywords={manualKeywords.trim().length > 0}
             />
           )}
 

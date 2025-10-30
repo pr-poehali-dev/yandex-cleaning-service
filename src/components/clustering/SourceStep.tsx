@@ -14,7 +14,6 @@ interface SourceStepProps {
   websiteUrl: string;
   setWebsiteUrl: (url: string) => void;
   onNext: () => void;
-  onWordstatCollect?: () => void;
 }
 
 export default function SourceStep({
@@ -24,22 +23,16 @@ export default function SourceStep({
   setManualKeywords,
   websiteUrl,
   setWebsiteUrl,
-  onNext,
-  onWordstatCollect
+  onNext
 }: SourceStepProps) {
   const handleNext = () => {
-    if (source === 'manual' && !manualKeywords.trim()) {
-      return;
-    }
     if (source === 'website' && !websiteUrl.trim()) {
       return;
     }
     onNext();
   };
 
-  const isNextDisabled = 
-    (source === 'manual' && !manualKeywords.trim()) ||
-    (source === 'website' && !websiteUrl.trim());
+  const isNextDisabled = (source === 'website' && !websiteUrl.trim());
 
   return (
     <Card className="border-slate-200 shadow-lg">
@@ -102,26 +95,12 @@ export default function SourceStep({
 
         {source === 'manual' && (
           <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
-              {onWordstatCollect && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={onWordstatCollect}
-                  className="text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                >
-                  <Icon name="Download" className="h-4 w-4 mr-2" />
-                  Собрать из Wordstat
-                </Button>
-              )}
-            </div>
+            <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
             <textarea
               id="keywords"
               value={manualKeywords}
               onChange={(e) => setManualKeywords(e.target.value)}
-              placeholder="Введите ключевые слова (каждое с новой строки) или соберите из Wordstat&#10;купить квартиру москва&#10;купить квартиру от застройщика&#10;купить квартиру вторичка"
+              placeholder="Введите ключевые слова (каждое с новой строки)&#10;купить квартиру москва&#10;купить квартиру от застройщика&#10;купить квартиру вторичка&#10;&#10;Или оставьте пустым и соберите из Wordstat на следующем шаге"
               className="w-full h-48 p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
             />
             <p className="text-xs text-slate-500">
