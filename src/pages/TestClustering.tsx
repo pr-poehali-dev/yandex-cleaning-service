@@ -312,20 +312,27 @@ export default function TestClustering() {
               
               if (keywords.length > 0) {
                 try {
-                  console.log('🔍 Calling Wordstat API with keywords:', keywords);
+                  const requestPayload = {
+                    keywords: keywords,
+                    regions: selectedCities.map(c => c.id),
+                    mode: goal
+                  };
+                  console.log('🔍 Calling Wordstat API with:', requestPayload);
+                  console.log('🌐 API URL:', WORDSTAT_API_URL);
+                  
                   const response = await fetch(WORDSTAT_API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      keywords: keywords,
-                      regions: selectedCities.map(c => c.id),
-                      mode: goal
-                    })
+                    body: JSON.stringify(requestPayload)
                   });
+                  
+                  console.log('📡 Response status:', response.status);
                   
                   if (response.ok) {
                     const data = await response.json();
                     console.log('✅ Wordstat response:', data);
+                    console.log('📊 data.data:', data.data);
+                    console.log('📋 SearchQuery:', data.data?.SearchQuery);
                     
                     const searchResults = data.data?.SearchQuery || [];
                     
@@ -360,12 +367,15 @@ export default function TestClustering() {
                       generatedMinusWords = generateMinusWords(keywords);
                     }
                   } else {
-                    console.error('❌ Wordstat API error');
+                    const errorText = await response.text();
+                    console.error('❌ Wordstat API error:', response.status, errorText);
+                    toast.error(`Ошибка API: ${response.status}`);
                     generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
                     generatedMinusWords = generateMinusWords(keywords);
                   }
                 } catch (error) {
                   console.error('❌ Wordstat fetch error:', error);
+                  toast.error(`Ошибка сети: ${error}`);
                   generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
                   generatedMinusWords = generateMinusWords(keywords);
                 }
