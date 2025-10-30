@@ -44,6 +44,7 @@ export default function TestClustering() {
   const [useGeoKeys, setUseGeoKeys] = useState(false);
   const [wordstatQuery, setWordstatQuery] = useState('');
   const [isWordstatLoading, setIsWordstatLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [selectedCities, setSelectedCities] = useState<City[]>([]);
   const [citySearch, setCitySearch] = useState('');
   const [goal, setGoal] = useState<Goal>('context');
@@ -175,6 +176,11 @@ export default function TestClustering() {
     }
     
     try {
+      setLoadingProgress(0);
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => Math.min(prev + 2, 90));
+      }, 200);
+      
       const regionIds = cities.map(c => c.id);
       
       const requestBody = {
@@ -193,10 +199,13 @@ export default function TestClustering() {
       });
 
       if (!response.ok) {
+        clearInterval(progressInterval);
         throw new Error('Wordstat request failed');
       }
 
       const data = await response.json();
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
       
       const searchQuery = data.data?.SearchQuery?.[0];
       if (!searchQuery || !searchQuery.Clusters) {
@@ -381,8 +390,8 @@ export default function TestClustering() {
 
           {(step === 'processing' || isWordstatLoading) && (
             <ProcessingStep
-              progress={50}
-              currentStage={2}
+              progress={loadingProgress}
+              currentStage={Math.floor(loadingProgress / 20)}
             />
           )}
 
