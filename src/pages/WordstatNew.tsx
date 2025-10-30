@@ -44,7 +44,10 @@ export default function WordstatNew() {
     { id: '11316', name: 'Новосибирск' },
     { id: '54', name: 'Екатеринбург' },
     { id: '63', name: 'Казань' },
-    { id: '65', name: 'Нижний Новгород' }
+    { id: '65', name: 'Нижний Новгород' },
+    { id: '26', name: 'Ставропольский край' },
+    { id: '239', name: 'Адыгея' },
+    { id: '181', name: 'Краснодарский край' }
   ];
 
   const toggleCluster = (clusterName: string) => {
