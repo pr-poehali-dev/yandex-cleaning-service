@@ -417,10 +417,7 @@ export default function ResultsStep({
     const [movedCluster] = newClusters.splice(draggedCluster, 1);
     newClusters.splice(targetIdx, 0, movedCluster);
     
-    setClusters(newClusters.map((c, idx) => ({
-      ...c,
-      bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length]
-    })));
+    setClusters(newClusters);
     setDraggedCluster(null);
 
     if (onSaveChanges) {
@@ -537,14 +534,13 @@ export default function ResultsStep({
           {clusters.map((cluster, idx) => (
             <div
               key={idx}
-              draggable
-              onDragStart={() => handleClusterDragStart(idx)}
               onDragOver={(e) => handleClusterDragOver(e, idx)}
               onDrop={() => handleClusterDrop(idx)}
-              className={`flex-shrink-0 border-r border-gray-300 flex flex-col group relative cursor-move ${draggedCluster === idx ? 'opacity-50' : ''}`}
+              className={`flex-shrink-0 border-r border-gray-300 flex flex-col group relative ${draggedCluster === idx ? 'opacity-50' : ''}`}
               style={{ 
                 width: '280px',
-                backgroundColor: cluster.bgColor
+                backgroundColor: cluster.bgColor,
+                maxHeight: 'calc(100vh - 250px)'
               }}
               onMouseEnter={() => {
                 const newClusters = [...clusters];
@@ -568,7 +564,16 @@ export default function ResultsStep({
 
               <div className="p-3 border-b border-gray-200" style={{ backgroundColor: cluster.bgColor }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Icon name="GripVertical" size={14} className="text-gray-400 flex-shrink-0 cursor-move" />
+                  <div
+                    draggable
+                    onDragStart={(e) => {
+                      e.stopPropagation();
+                      handleClusterDragStart(idx);
+                    }}
+                    className="cursor-move"
+                  >
+                    <Icon name="GripVertical" size={14} className="text-gray-400 flex-shrink-0" />
+                  </div>
                   <Icon name={cluster.icon as any} size={18} className="text-gray-700" />
                   <Input
                     value={cluster.name}
@@ -621,11 +626,14 @@ export default function ResultsStep({
               </div>
 
               <div 
-                className="flex-1 overflow-y-auto pb-20"
+                className="flex-1 overflow-y-auto"
                 onDragOver={(e) => {
                   e.preventDefault();
                 }}
-                onDrop={() => handlePhraseDrop(idx)}
+                onDrop={(e) => {
+                  e.stopPropagation();
+                  handlePhraseDrop(idx);
+                }}
               >
                 {getFilteredPhrases(idx, cluster.searchText).map((phrase, pIdx) => {
                   const actualPhraseIdx = cluster.phrases.findIndex(p => p.phrase === phrase.phrase);
@@ -687,7 +695,8 @@ export default function ResultsStep({
             className="flex-shrink-0 border-r border-gray-300 flex flex-col"
             style={{ 
               width: '280px',
-              backgroundColor: '#FFE8E8'
+              backgroundColor: '#FFE8E8',
+              maxHeight: 'calc(100vh - 250px)'
             }}
           >
             <div className="p-3 border-b border-gray-200 bg-white/60">
@@ -734,7 +743,7 @@ export default function ResultsStep({
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto pb-20">
+            <div className="flex-1 overflow-y-auto">
               {minusWords.map((phrase, pIdx) => (
                 <div
                   key={pIdx}
