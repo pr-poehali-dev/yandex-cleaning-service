@@ -81,7 +81,7 @@ export default function RSYAProjects() {
                 <DialogTrigger asChild>
                   <Button 
                     size="lg"
-                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     <Icon name="Plus" size={20} className="mr-2" />
                     Создать проект
@@ -108,7 +108,7 @@ export default function RSYAProjects() {
                     </div>
                     <Button 
                       onClick={handleCreateProject}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       Создать проект
                     </Button>
@@ -139,7 +139,7 @@ export default function RSYAProjects() {
                 <p className="text-slate-500 mb-6">Создайте первый проект для начала работы</p>
                 <Button 
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   <Icon name="Plus" size={20} className="mr-2" />
                   Создать проект
@@ -154,11 +154,11 @@ export default function RSYAProjects() {
                     onClick={() => handleOpenProject(project.id)}
                   >
                     <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
-                        <Icon name="ShieldOff" size={24} className="text-white" />
+                      <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                        <Icon name="ShieldOff" size={24} className="text-emerald-600" />
                       </div>
-                      <span className="text-xs text-slate-500">
-                        {new Date(project.createdAt).toLocaleDateString('ru-RU')}
+                      <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                        {new Date(project.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
                     

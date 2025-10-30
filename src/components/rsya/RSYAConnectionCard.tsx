@@ -47,20 +47,20 @@ export default function RSYAConnectionCard({
   }
 
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+    <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-blue-900">
-          <Icon name="Link" className="h-5 w-5 text-blue-600" />
+        <CardTitle className="flex items-center gap-2 text-emerald-900">
+          <Icon name="Link" className="h-5 w-5 text-emerald-600" />
           Подключение к Яндекс.Директ
         </CardTitle>
-        <CardDescription className="text-blue-700">
+        <CardDescription className="text-emerald-700">
           Для работы с площадками необходимо авторизоваться
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!showCodeInput ? (
           <div className="flex gap-2">
-            <Button onClick={onConnect} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={onConnect} className="bg-emerald-600 hover:bg-emerald-700 text-white">
               <Icon name="Key" className="h-4 w-4 mr-2" />
               Авторизоваться через OAuth
             </Button>

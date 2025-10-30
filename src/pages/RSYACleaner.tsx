@@ -242,13 +242,13 @@ export default function RSYACleaner() {
             )}
 
             {campaigns.length > 0 && (
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+              <Card>
                 <CardContent className="pt-6">
                   <Button
                     onClick={handleClean}
                     disabled={loading || selectedCampaigns.length === 0 || filters.length === 0}
                     size="lg"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     {loading ? (
                       <>

@@ -89,7 +89,7 @@ export default function ClusteringProjects() {
                 <DialogTrigger asChild>
                   <Button 
                     size="lg"
-                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     <Icon name="Plus" size={20} className="mr-2" />
                     Создать проект
@@ -116,7 +116,7 @@ export default function ClusteringProjects() {
                     </div>
                     <Button 
                       onClick={handleCreateProject}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       Создать проект
                     </Button>
@@ -147,7 +147,7 @@ export default function ClusteringProjects() {
                 <p className="text-slate-500 mb-6">Создайте первый проект для начала работы</p>
                 <Button 
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   <Icon name="Plus" size={20} className="mr-2" />
                   Создать проект
@@ -158,15 +158,15 @@ export default function ClusteringProjects() {
                 {filteredProjects.map((project, idx) => (
                   <Card
                     key={project.id}
-                    className="group relative overflow-hidden hover:shadow-xl transition-all cursor-pointer border-0"
+                    className="group relative overflow-hidden hover:shadow-xl transition-all cursor-pointer"
                     onClick={() => handleOpenProject(project.id)}
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${PROJECT_COLORS[idx % PROJECT_COLORS.length]} opacity-5 group-hover:opacity-10 transition-opacity`} />
-                    
-                    <div className="relative p-6">
+                    <div className="p-6">
                       <div className="flex items-start justify-between mb-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${PROJECT_COLORS[idx % PROJECT_COLORS.length]} rounded-xl shadow-lg`} />
-                        <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-full">
+                        <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                          <Icon name="FolderOpen" size={24} className="text-emerald-600" />
+                        </div>
+                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
                           {new Date(project.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                         </span>
                       </div>

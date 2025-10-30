@@ -44,10 +44,10 @@ const PROCESSING_STAGES = [
 ];
 
 const CLUSTER_STYLES = [
-  { bg: 'bg-gradient-to-br from-blue-500 to-indigo-500', border: 'border-blue-200', headerBg: 'bg-blue-50' },
-  { bg: 'bg-gradient-to-br from-emerald-500 to-teal-500', border: 'border-emerald-200', headerBg: 'bg-emerald-50' },
-  { bg: 'bg-gradient-to-br from-purple-500 to-fuchsia-500', border: 'border-purple-200', headerBg: 'bg-purple-50' },
-  { bg: 'bg-gradient-to-br from-orange-500 to-amber-500', border: 'border-orange-200', headerBg: 'bg-orange-50' },
+  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
+  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
+  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
+  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
 ];
 
 const mockClusters: Cluster[] = [
@@ -323,7 +323,7 @@ export default function TestClustering() {
 
               <Button 
                 onClick={handleNext}
-                className="w-full py-6 text-lg"
+                className="w-full py-6 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Далее <Icon name="ArrowRight" size={20} className="ml-2" />
               </Button>
@@ -498,7 +498,7 @@ export default function TestClustering() {
                 </Button>
                 <Button 
                   onClick={handleNext}
-                  className="flex-1 py-6 text-lg"
+                  className="flex-1 py-6 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   Начать анализ <Icon name="Sparkles" size={20} className="ml-2" />
                 </Button>

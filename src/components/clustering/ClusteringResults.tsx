@@ -15,12 +15,12 @@ interface ClusteringResultsProps {
 }
 
 const CLUSTER_COLORS = [
-  { bg: 'from-blue-500 to-indigo-600', light: 'from-blue-50 to-indigo-50', icon: 'text-blue-600', border: 'border-blue-200' },
-  { bg: 'from-emerald-500 to-teal-600', light: 'from-emerald-50 to-teal-50', icon: 'text-emerald-600', border: 'border-emerald-200' },
-  { bg: 'from-purple-500 to-fuchsia-600', light: 'from-purple-50 to-fuchsia-50', icon: 'text-purple-600', border: 'border-purple-200' },
-  { bg: 'from-orange-500 to-amber-600', light: 'from-orange-50 to-amber-50', icon: 'text-orange-600', border: 'border-orange-200' },
-  { bg: 'from-rose-500 to-pink-600', light: 'from-rose-50 to-pink-50', icon: 'text-rose-600', border: 'border-rose-200' },
-  { bg: 'from-cyan-500 to-sky-600', light: 'from-cyan-50 to-sky-50', icon: 'text-cyan-600', border: 'border-cyan-200' },
+  { bg: 'bg-slate-100', light: 'bg-white', icon: 'text-emerald-600', border: 'border-slate-200' },
+  { bg: 'bg-slate-100', light: 'bg-white', icon: 'text-emerald-600', border: 'border-slate-200' },
+  { bg: 'bg-slate-100', light: 'bg-white', icon: 'text-emerald-600', border: 'border-slate-200' },
+  { bg: 'bg-slate-100', light: 'bg-white', icon: 'text-emerald-600', border: 'border-slate-200' },
+  { bg: 'bg-slate-100', light: 'bg-white', icon: 'text-emerald-600', border: 'border-slate-200' },
+  { bg: 'bg-slate-100', light: 'bg-white', icon: 'text-emerald-600', border: 'border-slate-200' },
 ];
 
 export default function ClusteringResults({
@@ -57,7 +57,7 @@ export default function ClusteringResults({
               exportMinusWords();
             }}
             size="lg"
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             <Icon name="Download" className="mr-2 h-5 w-5" />
             Экспортировать всё
@@ -66,39 +66,35 @@ export default function ClusteringResults({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="relative overflow-hidden border-0 shadow-lg">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 rounded-full -mr-16 -mt-16" />
-          <div className="relative p-6 bg-gradient-to-br from-blue-500 to-indigo-600">
-            <Icon name="Layers" className="h-8 w-8 text-white/80 mb-3" />
-            <div className="text-4xl font-bold text-white mb-2">{clusters.length}</div>
-            <div className="text-sm text-white/90 font-medium">Кластеров</div>
+        <Card className="relative overflow-hidden shadow-lg">
+          <div className="relative p-6 bg-white">
+            <Icon name="Layers" className="h-8 w-8 text-emerald-600 mb-3" />
+            <div className="text-4xl font-bold text-slate-900 mb-2">{clusters.length}</div>
+            <div className="text-sm text-slate-600 font-medium">Кластеров</div>
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden border-0 shadow-lg">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 rounded-full -mr-16 -mt-16" />
-          <div className="relative p-6 bg-gradient-to-br from-emerald-500 to-teal-600">
-            <Icon name="Hash" className="h-8 w-8 text-white/80 mb-3" />
-            <div className="text-4xl font-bold text-white mb-2">{totalPhrases.toLocaleString()}</div>
-            <div className="text-sm text-white/90 font-medium">Ключевых фраз</div>
+        <Card className="relative overflow-hidden shadow-lg">
+          <div className="relative p-6 bg-white">
+            <Icon name="Hash" className="h-8 w-8 text-emerald-600 mb-3" />
+            <div className="text-4xl font-bold text-slate-900 mb-2">{totalPhrases.toLocaleString()}</div>
+            <div className="text-sm text-slate-600 font-medium">Ключевых фраз</div>
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden border-0 shadow-lg">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-200/20 to-fuchsia-200/20 rounded-full -mr-16 -mt-16" />
-          <div className="relative p-6 bg-gradient-to-br from-purple-500 to-fuchsia-600">
-            <Icon name="TrendingUp" className="h-8 w-8 text-white/80 mb-3" />
-            <div className="text-4xl font-bold text-white mb-2">{totalVolume.toLocaleString()}</div>
-            <div className="text-sm text-white/90 font-medium">Общий объём</div>
+        <Card className="relative overflow-hidden shadow-lg">
+          <div className="relative p-6 bg-white">
+            <Icon name="TrendingUp" className="h-8 w-8 text-emerald-600 mb-3" />
+            <div className="text-4xl font-bold text-slate-900 mb-2">{totalVolume.toLocaleString()}</div>
+            <div className="text-sm text-slate-600 font-medium">Общий объём</div>
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden border-0 shadow-lg">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-200/20 to-pink-200/20 rounded-full -mr-16 -mt-16" />
-          <div className="relative p-6 bg-gradient-to-br from-rose-500 to-pink-600">
-            <Icon name="Ban" className="h-8 w-8 text-white/80 mb-3" />
-            <div className="text-4xl font-bold text-white mb-2">{minusWords.length}</div>
-            <div className="text-sm text-white/90 font-medium">Минус-слов</div>
+        <Card className="relative overflow-hidden shadow-lg">
+          <div className="relative p-6 bg-white">
+            <Icon name="Ban" className="h-8 w-8 text-slate-500 mb-3" />
+            <div className="text-4xl font-bold text-slate-900 mb-2">{minusWords.length}</div>
+            <div className="text-sm text-slate-600 font-medium">Минус-слов</div>
           </div>
         </Card>
       </div>
@@ -110,8 +106,8 @@ export default function ClusteringResults({
           const clusterVolume = cluster.phrases.reduce((sum, p) => sum + p.count, 0);
           
           return (
-            <Card key={idx} className={`overflow-hidden border-2 ${colorScheme.border} hover:shadow-xl transition-all duration-300`}>
-              <div className={`p-5 bg-gradient-to-br ${colorScheme.light} border-b ${colorScheme.border}`}>
+            <Card key={idx} className={`overflow-hidden border ${colorScheme.border} hover:shadow-xl transition-all duration-300`}>
+              <div className={`p-5 ${colorScheme.light} border-b ${colorScheme.border}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-start gap-3 flex-1">
                     <div className="p-3 bg-white rounded-xl shadow-sm border border-white/50">

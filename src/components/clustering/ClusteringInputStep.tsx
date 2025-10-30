@@ -45,7 +45,7 @@ export default function ClusteringInputStep({
               onClick={onAnalyze}
               disabled={loading || !keywords.trim()}
               size="lg"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {loading ? (
                 <>
@@ -64,10 +64,10 @@ export default function ClusteringInputStep({
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100">
+        <Card className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Icon name="Brain" className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <Icon name="Brain" className="h-6 w-6 text-emerald-600" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900 mb-1">AI-группировка</h3>
@@ -78,7 +78,7 @@ export default function ClusteringInputStep({
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100">
+        <Card className="p-6">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-emerald-100 rounded-xl">
               <Icon name="Filter" className="h-6 w-6 text-emerald-600" />
@@ -92,10 +92,10 @@ export default function ClusteringInputStep({
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-purple-50 to-fuchsia-50 border-purple-100">
+        <Card className="p-6">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-purple-100 rounded-xl">
-              <Icon name="Download" className="h-6 w-6 text-purple-600" />
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <Icon name="Download" className="h-6 w-6 text-emerald-600" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900 mb-1">Экспорт</h3>
