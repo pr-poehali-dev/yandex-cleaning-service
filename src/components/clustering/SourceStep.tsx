@@ -60,26 +60,14 @@ export default function SourceStep({
           </p>
         </div>
 
-        <div className="flex gap-3">
-          {onWordstatClick && (
-            <Button 
-              onClick={onWordstatClick}
-              variant="outline"
-              className="flex-1 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-            >
-              <Icon name="Sparkles" className="mr-2 h-4 w-4" />
-              Собрать из Wordstat
-            </Button>
-          )}
-          <Button 
-            onClick={handleNext}
-            disabled={isNextDisabled}
-            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
-          >
-            Далее
-            <Icon name="ArrowRight" className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
+        <Button 
+          onClick={handleNext}
+          disabled={isNextDisabled}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+        >
+          Далее
+          <Icon name="ArrowRight" className="ml-2 h-4 w-4" />
+        </Button>
       </CardContent>
     </Card>
   );

@@ -396,9 +396,21 @@ export default function TestClustering() {
               removeCity={(cityId) => {
                 setSelectedCities(selectedCities.filter(c => c.id !== cityId));
               }}
-              onNext={() => setStep('goal')}
+              onNext={async () => {
+                if (manualKeywords.trim()) {
+                  const firstKeyword = manualKeywords.split('\n')[0].trim();
+                  if (firstKeyword && selectedCities.length > 0) {
+                    await handleWordstatSubmit(firstKeyword, selectedCities, 'seo');
+                  } else {
+                    setStep('goal');
+                  }
+                } else {
+                  setStep('goal');
+                }
+              }}
               onBack={handleBack}
               hasManualKeywords={manualKeywords.trim().length > 0}
+              manualKeyword={manualKeywords.split('\n')[0]?.trim() || ''}
             />
           )}
 
