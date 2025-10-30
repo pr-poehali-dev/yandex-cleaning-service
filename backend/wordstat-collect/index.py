@@ -5,10 +5,10 @@ import requests
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Получение списка регионов из Wordstat API
-    Args: event - dict с httpMethod (GET)
+    Business: Сбор ключевых фраз из Wordstat API v1
+    Args: event - dict с httpMethod (POST), body с phrase, regions[]
           context - объект с атрибутами request_id, function_name
-    Returns: HTTP response с массивом регионов {id, name}
+    Returns: HTTP response с массивом phrases [{phrase, count}]
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -17,15 +17,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
             'isBase64Encoded': False
         }
     
-    if method != 'GET':
+    if method != 'POST':
         return {
             'statusCode': 405,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -42,14 +42,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    url = 'https://api.wordstat.yandex.net/v1/getRegionsTree'
+    body_data = json.loads(event.get('body', '{}'))
+    phrase = body_data.get('phrase', '')
+    regions = body_data.get('regions', [213])
+    
+    if not phrase:
+        return {
+            'statusCode': 400,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Phrase is required'}),
+            'isBase64Encoded': False
+        }
+    
+    url = 'https://api.wordstat.yandex.net/v1/getKeywordsSuggestion'
     
     headers = {
         'Authorization': f'Bearer {oauth_token}',
         'Content-Type': 'application/json;charset=utf-8'
     }
     
-    response = requests.post(url, headers=headers, json={}, timeout=30)
+    payload = {
+        'phrase': phrase,
+        'geo': regions if isinstance(regions, list) else [regions],
+        'limit': 500
+    }
+    
+    response = requests.post(url, headers=headers, json=payload, timeout=60)
     
     if response.status_code != 200:
         return {
@@ -61,29 +79,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     data = response.json()
     
-    print(f'[DEBUG] Raw API response: {json.dumps(data)[:500]}')
-    
-    def flatten_regions(regions_tree, parent_id=None):
-        result = []
-        for region in regions_tree:
-            region_id = region.get('regionId') or region.get('id')
-            region_name = region.get('regionName') or region.get('name')
-            
-            result.append({
-                'id': region_id,
-                'name': region_name,
-                'parent_id': parent_id
+    phrases = []
+    if 'phrases' in data:
+        for item in data['phrases']:
+            phrases.append({
+                'phrase': item.get('phrase', ''),
+                'count': item.get('shows', 0)
             })
-            
-            children = region.get('children') or region.get('items') or []
-            if children:
-                result.extend(flatten_regions(children, region_id))
-        return result
-    
-    regions_data = data if isinstance(data, list) else data.get('regions', [])
-    all_regions = flatten_regions(regions_data)
-    
-    major_regions = [r for r in all_regions if r.get('parent_id') is None or r['id'] in [1, 213, 2, 10174]]
     
     return {
         'statusCode': 200,
@@ -91,6 +93,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         },
-        'body': json.dumps({'regions': major_regions}),
+        'body': json.dumps({'phrases': phrases}),
         'isBase64Encoded': False
     }

@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "Test keyword collection",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "phrase": "купить квартиру",
+        "regions": [213]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "phrases": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
