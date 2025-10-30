@@ -380,6 +380,7 @@ export default function TestClustering() {
               objectAddress={objectAddress}
               setObjectAddress={setObjectAddress}
               onNext={handleNextFromSource}
+              onWordstatClick={() => setStep('wordstat-dialog')}
             />
           )}
 
