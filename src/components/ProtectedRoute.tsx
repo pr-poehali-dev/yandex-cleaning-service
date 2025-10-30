@@ -6,9 +6,10 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const isAuth = localStorage.getItem('directkit_auth') === 'true';
+  const userId = localStorage.getItem('userId');
 
-  if (!isAuth) {
-    return <Navigate to="/auth" replace />;
+  if (!isAuth && !userId) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

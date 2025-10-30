@@ -7,10 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import Icon from '@/components/ui/icon';
 import { RUSSIAN_CITIES, City } from '@/data/russian-cities';
 import AppSidebar from '@/components/layout/AppSidebar';
+
+const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 
 type Step = 'source' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
 type Source = 'manual' | 'website';
@@ -45,10 +47,11 @@ const PROCESSING_STAGES = [
 ];
 
 const CLUSTER_STYLES = [
-  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
-  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
-  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
-  { bg: 'bg-slate-100', border: 'border-slate-200', headerBg: 'bg-white' },
+  { bg: 'bg-gradient-to-br from-emerald-50 to-teal-50', border: 'border-emerald-200', headerBg: 'bg-gradient-to-r from-emerald-500 to-teal-500', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+  { bg: 'bg-gradient-to-br from-blue-50 to-cyan-50', border: 'border-blue-200', headerBg: 'bg-gradient-to-r from-blue-500 to-cyan-500', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+  { bg: 'bg-gradient-to-br from-purple-50 to-pink-50', border: 'border-purple-200', headerBg: 'bg-gradient-to-r from-purple-500 to-pink-500', iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
+  { bg: 'bg-gradient-to-br from-orange-50 to-amber-50', border: 'border-orange-200', headerBg: 'bg-gradient-to-r from-orange-500 to-amber-500', iconBg: 'bg-orange-100', iconColor: 'text-orange-600' },
+  { bg: 'bg-gradient-to-br from-rose-50 to-red-50', border: 'border-rose-200', headerBg: 'bg-gradient-to-r from-rose-500 to-red-500', iconBg: 'bg-rose-100', iconColor: 'text-rose-600' },
 ];
 
 const mockClusters: Cluster[] = [
@@ -108,28 +111,98 @@ export default function TestClustering() {
   const [minusWords, setMinusWords] = useState<string[]>([]);
   const [renderKey, setRenderKey] = useState(0);
   const [projectName, setProjectName] = useState('');
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (projectId) {
-      const savedData = localStorage.getItem(`clustering_project_${projectId}`);
-      if (savedData) {
-        const data = JSON.parse(savedData);
-        if (data.clusters && data.clusters.length > 0) {
-          setClusters(data.clusters);
-          setMinusWords(data.minusWords || []);
-          setStep('results');
+    const fetchProject = async () => {
+      if (!projectId) {
+        setIsLoading(false);
+        return;
+      }
+
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        toast.error('Ошибка: пользователь не авторизован');
+        navigate('/');
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${API_URL}?endpoint=projects&id=${projectId}`, {
+          headers: {
+            'X-User-Id': userId
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch project');
         }
-        setProjectName(data.projectName || '');
+
+        const project = await response.json();
+        
+        if (project) {
+          setProjectName(project.name || '');
+          
+          // Check if results exist
+          if (project.results && project.results.clusters && project.results.clusters.length > 0) {
+            setClusters(project.results.clusters);
+            setMinusWords(project.results.minusWords || []);
+            setStep('results');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching project:', error);
+        toast.error('Не удалось загрузить проект');
+      } finally {
+        setIsLoading(false);
       }
-      
-      const projects = JSON.parse(localStorage.getItem('clustering_projects') || '[]');
-      const project = projects.find((p: any) => p.id === projectId);
-      if (project) {
-        setProjectName(project.name);
-      }
+    };
+
+    fetchProject();
+  }, [projectId, navigate]);
+
+  const saveResultsToAPI = async (clustersData: Cluster[], minusWordsData: string[]) => {
+    if (!projectId) return;
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      toast.error('Ошибка: пользователь не авторизован');
+      return;
     }
-  }, [projectId]);
+
+    try {
+      const totalPhrases = clustersData.reduce((sum, c) => sum + c.phrases.length, 0);
+      
+      const response = await fetch(`${API_URL}?endpoint=projects`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId
+        },
+        body: JSON.stringify({
+          id: projectId,
+          results: {
+            clusters: clustersData,
+            minusWords: minusWordsData
+          },
+          keywordsCount: totalPhrases,
+          clustersCount: clustersData.length,
+          minusWordsCount: minusWordsData.length
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save results');
+      }
+
+      const result = await response.json();
+      console.log('Results saved successfully:', result);
+    } catch (error) {
+      console.error('Error saving results:', error);
+      toast.error('Не удалось сохранить результаты');
+    }
+  };
 
   const filteredCities = RUSSIAN_CITIES.filter(city => 
     city.name.toLowerCase().includes(citySearch.toLowerCase()) &&
@@ -166,64 +239,38 @@ export default function TestClustering() {
           setProcessingProgress(Math.min(currentProgress, 100));
 
           if (idx === PROCESSING_STAGES.length - 1) {
-            setTimeout(() => {
+            setTimeout(async () => {
               setClusters(mockClusters);
               setMinusWords(mockMinusWords);
               setRenderKey(prev => prev + 1);
               setStep('results');
               
-              // Сохраняем результаты в localStorage
-              if (projectId) {
-                const projectData = {
-                  projectName,
-                  clusters: mockClusters,
-                  minusWords: mockMinusWords,
-                  updatedAt: new Date().toISOString()
-                };
-                localStorage.setItem(`clustering_project_${projectId}`, JSON.stringify(projectData));
-                
-                // Обновляем счётчики в списке проектов
-                const projects = JSON.parse(localStorage.getItem('clustering_projects') || '[]');
-                const updatedProjects = projects.map((p: any) => {
-                  if (p.id === projectId) {
-                    const totalPhrases = mockClusters.reduce((sum, c) => sum + c.phrases.length, 0);
-                    return {
-                      ...p,
-                      keywordsCount: totalPhrases,
-                      clustersCount: mockClusters.length
-                    };
-                  }
-                  return p;
-                });
-                localStorage.setItem('clustering_projects', JSON.stringify(updatedProjects));
-              }
+              // Save results to API
+              await saveResultsToAPI(mockClusters, mockMinusWords);
               
-              toast({ 
-                title: '✅ Готово!', 
-                description: 'Кластеры созданы, минус-слова выделены' 
-              });
+              toast.success('Готово! Кластеры созданы, минус-слова выделены');
             }, stage.duration);
           }
         }, totalDuration);
         totalDuration += stage.duration;
       });
     }
-  }, [step, toast]);
+  }, [step]);
 
   const handleNext = () => {
     if (step === 'source') {
       if (source === 'manual' && !manualKeywords.trim()) {
-        toast({ title: 'Введите ключевые слова', variant: 'destructive' });
+        toast.error('Введите ключевые слова');
         return;
       }
       if (source === 'website' && !websiteUrl.trim()) {
-        toast({ title: 'Введите URL сайта', variant: 'destructive' });
+        toast.error('Введите URL сайта');
         return;
       }
       setStep('cities');
     } else if (step === 'cities') {
       if (selectedCities.length === 0) {
-        toast({ title: 'Выберите хотя бы один город', variant: 'destructive' });
+        toast.error('Выберите хотя бы один город');
         return;
       }
       setStep('goal');
@@ -231,11 +278,9 @@ export default function TestClustering() {
       setStep('intents');
     } else if (step === 'intents') {
       if (selectedIntents.length === 0) {
-        toast({ title: 'Выберите хотя бы один тип запросов', variant: 'destructive' });
+        toast.error('Выберите хотя бы один тип интента');
         return;
       }
-      setProcessingProgress(0);
-      setCurrentStage(0);
       setStep('processing');
     }
   };
@@ -244,448 +289,470 @@ export default function TestClustering() {
     if (step === 'cities') setStep('source');
     else if (step === 'goal') setStep('cities');
     else if (step === 'intents') setStep('goal');
-    else if (step === 'results') {
-      navigate('/clustering');
+  };
+
+  const handleExport = (type: 'csv' | 'excel') => {
+    if (type === 'csv') {
+      let csv = 'Кластер,Интент,Фраза,Частотность\n';
+      clusters.forEach(cluster => {
+        cluster.phrases.forEach(phrase => {
+          csv += `"${cluster.name}","${cluster.intent}","${phrase.phrase}",${phrase.count}\n`;
+        });
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `clusters_${projectId || 'export'}.csv`;
+      link.click();
+      toast.success('CSV файл скачан');
+    } else {
+      toast.info('Excel экспорт в разработке');
     }
   };
 
-  const exportClusters = () => {
-    const text = clusters.map(c => 
-      `${c.name}\n${c.phrases.map(p => `${p.phrase} - ${p.count}`).join('\n')}`
-    ).join('\n\n');
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `кластеры_${new Date().toISOString().split('T')[0]}.txt`;
-    link.click();
+  const copyMinusWords = () => {
+    navigator.clipboard.writeText(minusWords.join(' '));
+    toast.success('Минус-слова скопированы в буфер обмена');
   };
 
-  const exportMinusWords = () => {
-    const blob = new Blob([minusWords.join('\n')], { type: 'text/plain;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `минус-слова_${new Date().toISOString().split('T')[0]}.txt`;
-    link.click();
-  };
-
-  const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
-
-  return (
-    <>
-      <AppSidebar />
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8 ml-64">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/clustering')}
-            className="mb-4"
-          >
-            <Icon name="ArrowLeft" size={20} className="mr-2" />
-            К проектам
-          </Button>
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
-              {projectName || 'AI сбор ключей'}
-            </h1>
-            <p className="text-lg text-slate-500">
-              Автоматическая кластеризация и минус-слова за 30 секунд
-            </p>
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <AppSidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка проекта...</p>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {step !== 'processing' && step !== 'results' && (
-          <div className="flex justify-center gap-4 mb-12">
-            {[
-              { key: 'source', num: 1, label: 'Источник' },
-              { key: 'cities', num: 2, label: 'География' },
-              { key: 'goal', num: 3, label: 'Цель' },
-              { key: 'intents', num: 4, label: 'Интенты' }
-            ].map(({ key, num, label }) => {
-              const stepKeys = ['source', 'cities', 'goal', 'intents'];
-              const currentIdx = stepKeys.indexOf(step);
-              const itemIdx = stepKeys.indexOf(key);
-              const isActive = itemIdx === currentIdx;
-              const isComplete = itemIdx < currentIdx;
-              
-              return (
-                <div key={key} className="flex items-center gap-2">
-                  <div className={`
-                    w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all
-                    ${isComplete ? 'bg-emerald-500 text-white' : 
-                      isActive ? 'bg-emerald-500 text-white ring-4 ring-emerald-100' : 
-                      'bg-slate-200 text-slate-500'}
-                  `}>
-                    {isComplete ? '✓' : num}
-                  </div>
-                  {itemIdx < 3 && (
-                    <div className={`w-12 md:w-20 h-0.5 ${isComplete ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {step === 'source' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Источник ключевых слов</CardTitle>
-              <CardDescription>Откуда берём ключевые слова для анализа?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setSource('manual')}
-                  className={`p-6 rounded-xl border-2 transition-all ${
-                    source === 'manual'
-                      ? 'border-emerald-400 bg-emerald-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
-                    source === 'manual' ? 'bg-emerald-100' : 'bg-slate-100'
-                  }`}>
-                    <Icon name="FileText" size={24} className={source === 'manual' ? 'text-emerald-600' : 'text-slate-400'} />
-                  </div>
-                  <h3 className="font-semibold text-lg">Вручную</h3>
-                  <p className="text-sm text-slate-500 mt-1">Вставить список ключей</p>
-                </button>
-
-                <button
-                  onClick={() => setSource('website')}
-                  className={`p-6 rounded-xl border-2 transition-all ${
-                    source === 'website'
-                      ? 'border-emerald-400 bg-emerald-50'
-                      : 'border-slate-200 hover:border-slate-300 bg-white'
-                  }`}
-                >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${
-                    source === 'website' ? 'bg-emerald-100' : 'bg-slate-100'
-                  }`}>
-                    <Icon name="Globe" size={24} className={source === 'website' ? 'text-emerald-600' : 'text-slate-400'} />
-                  </div>
-                  <h3 className="font-semibold text-lg">С сайта</h3>
-                  <p className="text-sm text-slate-500 mt-1">AI соберёт ключи с сайта</p>
-                </button>
-              </div>
-
-              {source === 'manual' && (
-                <div className="space-y-2">
-                  <Label>Ключевые слова (каждое с новой строки)</Label>
-                  <textarea
-                    className="w-full h-32 p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-                    placeholder="купить квартиру&#10;купить дом&#10;снять квартиру"
-                    value={manualKeywords}
-                    onChange={(e) => setManualKeywords(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {source === 'website' && (
-                <div className="space-y-2">
-                  <Label>URL сайта</Label>
-                  <Input
-                    placeholder="https://example.com"
-                    value={websiteUrl}
-                    onChange={(e) => setWebsiteUrl(e.target.value)}
-                  />
-                </div>
-              )}
-
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <AppSidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <Button 
-                onClick={handleNext}
-                className="w-full py-6 text-lg bg-emerald-500 hover:bg-emerald-600 text-white"
+                variant="ghost" 
+                size="icon"
+                onClick={() => navigate('/clustering')}
               >
-                Далее <Icon name="ArrowRight" size={20} className="ml-2" />
+                <Icon name="ArrowLeft" className="h-5 w-5" />
               </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {step === 'cities' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">География</CardTitle>
-              <CardDescription>Для каких регионов собираем ключи?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label>Выбранные города ({selectedCities.length})</Label>
-                <div className="flex flex-wrap gap-2 p-3 bg-emerald-50/50 rounded-lg min-h-[60px]">
-                  {selectedCities.map(city => (
-                    <Badge 
-                      key={city.id}
-                      variant="secondary"
-                      className="bg-emerald-100 text-emerald-800 px-3 py-1 text-sm"
-                    >
-                      {city.name}
-                      <button
-                        onClick={() => removeCity(city.id)}
-                        className="ml-2 hover:text-emerald-950"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  {projectName || 'Новый проект'}
+                </h1>
+                <p className="text-sm text-gray-500">Кластеризация ключевых запросов</p>
               </div>
+            </div>
+            {step !== 'processing' && step !== 'results' && (
+              <div className="flex gap-2">
+                {step !== 'source' && (
+                  <Button variant="outline" onClick={handleBack}>
+                    Назад
+                  </Button>
+                )}
+                <Button onClick={handleNext}>
+                  Далее
+                  <Icon name="ArrowRight" className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </header>
 
-              <div className="space-y-2">
-                <Label>Добавить город</Label>
-                <Input
-                  placeholder="Начните вводить название города..."
-                  value={citySearch}
-                  onChange={(e) => setCitySearch(e.target.value)}
-                />
-                {citySearch && filteredCities.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto bg-white border border-slate-200 rounded-lg">
-                    {filteredCities.slice(0, 10).map(city => (
-                      <button
-                        key={city.id}
-                        onClick={() => addCity(city)}
-                        className="w-full px-4 py-2 text-left hover:bg-slate-50 transition-colors"
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {/* Source Step */}
+          {step === 'source' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Источник данных</CardTitle>
+                  <CardDescription>Выберите откуда взять ключевые запросы</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setSource('manual')}
+                      className={`p-4 border-2 rounded-lg transition-all ${
+                        source === 'manual' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Icon name="FileText" className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                      <div className="font-medium">Вручную</div>
+                      <div className="text-sm text-gray-500">Ввести список запросов</div>
+                    </button>
+                    
+                    <button
+                      onClick={() => setSource('website')}
+                      className={`p-4 border-2 rounded-lg transition-all ${
+                        source === 'website' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Icon name="Globe" className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                      <div className="font-medium">С сайта</div>
+                      <div className="text-sm text-gray-500">Парсинг конкурентов</div>
+                    </button>
+                  </div>
+
+                  {source === 'manual' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="keywords">Ключевые запросы</Label>
+                      <textarea
+                        id="keywords"
+                        className="w-full min-h-[200px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Введите ключевые запросы (по одному на строку)&#10;&#10;Например:&#10;купить квартиру&#10;купить квартиру москва&#10;купить квартиру недорого"
+                        value={manualKeywords}
+                        onChange={(e) => setManualKeywords(e.target.value)}
+                      />
+                      <p className="text-sm text-gray-500">
+                        {manualKeywords.split('\n').filter(k => k.trim()).length} запросов
+                      </p>
+                    </div>
+                  )}
+
+                  {source === 'website' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="website">URL сайта конкурента</Label>
+                      <Input
+                        id="website"
+                        type="url"
+                        placeholder="https://example.com"
+                        value={websiteUrl}
+                        onChange={(e) => setWebsiteUrl(e.target.value)}
+                      />
+                      <p className="text-sm text-gray-500">
+                        Мы проанализируем сайт и соберём релевантные запросы
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Cities Step */}
+          {step === 'cities' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Регионы</CardTitle>
+                  <CardDescription>Выберите регионы для анализа запросов</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city-search">Поиск города</Label>
+                    <Input
+                      id="city-search"
+                      type="text"
+                      placeholder="Начните вводить название города..."
+                      value={citySearch}
+                      onChange={(e) => setCitySearch(e.target.value)}
+                    />
+                  </div>
+
+                  {citySearch && filteredCities.length > 0 && (
+                    <div className="border border-gray-200 rounded-md max-h-48 overflow-y-auto">
+                      {filteredCities.slice(0, 10).map(city => (
+                        <button
+                          key={city.id}
+                          onClick={() => addCity(city)}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                        >
+                          <div className="font-medium">{city.name}</div>
+                          <div className="text-sm text-gray-500">{city.region}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>Выбранные города ({selectedCities.length})</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCities.map(city => (
+                        <Badge 
+                          key={city.id} 
+                          variant="secondary"
+                          className="pl-3 pr-1 py-1"
+                        >
+                          {city.name}
+                          <button
+                            onClick={() => removeCity(city.id)}
+                            className="ml-2 hover:text-red-600"
+                          >
+                            <Icon name="X" className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Goal Step */}
+          {step === 'goal' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Цель кластеризации</CardTitle>
+                  <CardDescription>Выберите, для чего нужна кластеризация</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      onClick={() => setGoal('context')}
+                      className={`p-6 border-2 rounded-lg transition-all text-left ${
+                        goal === 'context' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Icon name="Target" className="h-8 w-8 mb-3 text-blue-600" />
+                      <div className="font-medium text-lg mb-2">Контекстная реклама</div>
+                      <div className="text-sm text-gray-500">
+                        Группировка для Яндекс.Директ и Google Ads. Создание релевантных групп объявлений.
+                      </div>
+                    </button>
+                    
+                    <button
+                      onClick={() => setGoal('seo')}
+                      className={`p-6 border-2 rounded-lg transition-all text-left ${
+                        goal === 'seo' 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <Icon name="TrendingUp" className="h-8 w-8 mb-3 text-blue-600" />
+                      <div className="font-medium text-lg mb-2">SEO продвижение</div>
+                      <div className="text-sm text-gray-500">
+                        Структура сайта и семантическое ядро. Распределение запросов по страницам.
+                      </div>
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Intents Step */}
+          {step === 'intents' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Типы интентов</CardTitle>
+                  <CardDescription>Выберите какие интенты нужно выделить</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {INTENT_TYPES.map(intent => (
+                      <div
+                        key={intent.id}
+                        onClick={() => toggleIntent(intent.id)}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          selectedIntents.includes(intent.id)
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
                       >
-                        <span className="font-medium">{city.name}</span>
-                        <span className="text-sm text-slate-500 ml-2">({city.region})</span>
-                      </button>
+                        <div className="flex items-start gap-3">
+                          <Checkbox 
+                            checked={selectedIntents.includes(intent.id)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xl">{intent.emoji}</span>
+                              <span className="font-medium">{intent.label}</span>
+                            </div>
+                            <p className="text-sm text-gray-500">{intent.description}</p>
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleBack}
-                  variant="outline"
-                  className="flex-1 py-6 text-lg"
-                >
-                  <Icon name="ArrowLeft" size={20} className="mr-2" /> Назад
-                </Button>
-                <Button 
-                  onClick={handleNext}
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg"
-                >
-                  Далее <Icon name="ArrowRight" size={20} className="ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {step === 'goal' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Цель сбора</CardTitle>
-              <CardDescription>Для чего собираем семантику?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setGoal('context')}
-                  className={`p-6 rounded-xl border-2 transition-all ${
-                    goal === 'context'
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <Icon name="Target" size={32} className={goal === 'context' ? 'text-emerald-600' : 'text-slate-400'} />
-                  <h3 className="font-semibold mt-3 text-lg">Контекст</h3>
-                  <p className="text-sm text-slate-500 mt-1">Яндекс.Директ, Google Ads</p>
-                </button>
-
-                <button
-                  onClick={() => setGoal('seo')}
-                  className={`p-6 rounded-xl border-2 transition-all ${
-                    goal === 'seo'
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <Icon name="TrendingUp" size={32} className={goal === 'seo' ? 'text-emerald-600' : 'text-slate-400'} />
-                  <h3 className="font-semibold mt-3 text-lg">SEO</h3>
-                  <p className="text-sm text-slate-500 mt-1">Продвижение в поиске</p>
-                </button>
-              </div>
-
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleBack}
-                  variant="outline"
-                  className="flex-1 py-6 text-lg"
-                >
-                  <Icon name="ArrowLeft" size={20} className="mr-2" /> Назад
-                </Button>
-                <Button 
-                  onClick={handleNext}
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg"
-                >
-                  Далее <Icon name="ArrowRight" size={20} className="ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {step === 'intents' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Типы запросов</CardTitle>
-              <CardDescription>Какие интенты включить в анализ?</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                {INTENT_TYPES.map(intent => (
-                  <label
-                    key={intent.id}
-                    className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedIntents.includes(intent.id)
-                        ? 'border-emerald-400 bg-emerald-50'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <Checkbox
-                      checked={selectedIntents.includes(intent.id)}
-                      onCheckedChange={() => toggleIntent(intent.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{intent.label}</h3>
-                      <p className="text-sm text-slate-500 mt-1">{intent.description}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleBack}
-                  variant="outline"
-                  className="flex-1 py-6 text-lg"
-                >
-                  <Icon name="ArrowLeft" size={20} className="mr-2" /> Назад
-                </Button>
-                <Button 
-                  onClick={handleNext}
-                  className="flex-1 py-6 text-lg bg-emerald-500 hover:bg-emerald-600 text-white"
-                >
-                  Начать анализ <Icon name="Sparkles" size={20} className="ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {step === 'processing' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl text-center">Обработка запроса...</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-8 py-8">
-              <div className="flex justify-center">
-                <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center animate-pulse">
-                  <Icon name="Sparkles" size={48} className="text-emerald-600" />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Progress value={processingProgress} className="h-3" />
-                <p className="text-center text-lg font-medium text-slate-700">
-                  {PROCESSING_STAGES[currentStage]?.label}
-                </p>
-                <p className="text-center text-sm text-slate-500">
-                  {Math.round(processingProgress)}% завершено
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {step === 'results' && (
-          <div key={renderKey} className="space-y-6">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-3xl font-bold text-slate-800">Результаты</h2>
-                <p className="text-slate-500 mt-1">
-                  Анализ завершён
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={exportClusters} variant="outline">
-                  <Icon name="Download" size={18} className="mr-2" /> Кластеры
-                </Button>
-                <Button onClick={exportMinusWords} variant="outline">
-                  <Icon name="Download" size={18} className="mr-2" /> Минус-слова
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="relative overflow-hidden shadow-lg">
-                <div className="relative p-6 bg-white">
-                  <Icon name="Layers" className="h-8 w-8 text-emerald-500 mb-3" />
-                  <div className="text-4xl font-bold text-slate-900 mb-2">{clusters.length}</div>
-                  <div className="text-sm text-slate-600 font-medium">Кластеров</div>
-                </div>
-              </Card>
-
-              <Card className="relative overflow-hidden shadow-lg">
-                <div className="relative p-6 bg-white">
-                  <Icon name="Hash" className="h-8 w-8 text-emerald-500 mb-3" />
-                  <div className="text-4xl font-bold text-slate-900 mb-2">{totalPhrases}</div>
-                  <div className="text-sm text-slate-600 font-medium">Ключевых фраз</div>
-                </div>
-              </Card>
-
-              <Card className="relative overflow-hidden shadow-lg">
-                <div className="relative p-6 bg-white">
-                  <Icon name="Ban" className="h-8 w-8 text-slate-500 mb-3" />
-                  <div className="text-4xl font-bold text-slate-900 mb-2">{minusWords.length}</div>
-                  <div className="text-sm text-slate-600 font-medium">Минус-слов</div>
-                </div>
+                </CardContent>
               </Card>
             </div>
+          )}
 
-            <div className="grid gap-4">
-              {clusters.map((cluster, idx) => {
-                return (
-                  <Card key={cluster.name} className="border">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{cluster.name}</CardTitle>
-                          <CardDescription>{cluster.phrases.length} фраз</CardDescription>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {INTENT_TYPES.find(t => t.id === cluster.intent)?.label}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <div className="space-y-2">
-                        {cluster.phrases.map(phrase => (
-                          <div key={phrase.phrase} className="flex justify-between items-center py-2 px-3 hover:bg-slate-50 rounded">
-                            <span className="text-sm">{phrase.phrase}</span>
-                            <Badge variant="outline">{phrase.count.toLocaleString()}</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-
-              <Card className="border">
+          {/* Processing Step */}
+          {step === 'processing' && (
+            <div className="max-w-2xl mx-auto space-y-6">
+              <Card>
                 <CardHeader>
-                  <div>
-                    <CardTitle className="text-lg">Минус-слова</CardTitle>
-                    <CardDescription>{minusWords.length} слов для исключения</CardDescription>
+                  <CardTitle>Обработка данных</CardTitle>
+                  <CardDescription>Это может занять несколько минут</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">
+                        {PROCESSING_STAGES[currentStage]?.label}
+                      </span>
+                      <span className="font-medium">{Math.round(processingProgress)}%</span>
+                    </div>
+                    <Progress value={processingProgress} className="h-2" />
+                  </div>
+
+                  <div className="space-y-2">
+                    {PROCESSING_STAGES.map((stage, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-center gap-3 p-3 rounded-lg ${
+                          idx < currentStage
+                            ? 'bg-green-50 text-green-700'
+                            : idx === currentStage
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'bg-gray-50 text-gray-400'
+                        }`}
+                      >
+                        {idx < currentStage ? (
+                          <Icon name="CheckCircle2" className="h-5 w-5" />
+                        ) : idx === currentStage ? (
+                          <div className="animate-spin">
+                            <Icon name="Loader2" className="h-5 w-5" />
+                          </div>
+                        ) : (
+                          <Icon name="Circle" className="h-5 w-5" />
+                        )}
+                        <span className="text-sm">{stage.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Results Step */}
+          {step === 'results' && (
+            <div key={renderKey} className="space-y-6 pb-8">
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="relative overflow-hidden shadow-lg border-2 border-emerald-200">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-bl-full" />
+                  <div className="relative p-6 bg-gradient-to-br from-emerald-50 to-white">
+                    <Icon name="Grid3x3" className="h-8 w-8 text-emerald-500 mb-3" />
+                    <div className="text-4xl font-bold text-slate-900 mb-2">{clusters.length}</div>
+                    <div className="text-sm text-slate-600 font-medium">Кластеров</div>
+                  </div>
+                </Card>
+                <Card className="relative overflow-hidden shadow-lg border-2 border-blue-200">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-bl-full" />
+                  <div className="relative p-6 bg-gradient-to-br from-blue-50 to-white">
+                    <Icon name="Hash" className="h-8 w-8 text-blue-500 mb-3" />
+                    <div className="text-4xl font-bold text-slate-900 mb-2">
+                      {clusters.reduce((sum, c) => sum + c.phrases.length, 0)}
+                    </div>
+                    <div className="text-sm text-slate-600 font-medium">Ключевых фраз</div>
+                  </div>
+                </Card>
+                <Card className="relative overflow-hidden shadow-lg border-2 border-rose-200">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-red-500/10 rounded-bl-full" />
+                  <div className="relative p-6 bg-gradient-to-br from-rose-50 to-white">
+                    <Icon name="Ban" className="h-8 w-8 text-rose-500 mb-3" />
+                    <div className="text-4xl font-bold text-slate-900 mb-2">{minusWords.length}</div>
+                    <div className="text-sm text-slate-600 font-medium">Минус-слов</div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button onClick={() => handleExport('csv')}>
+                  <Icon name="Download" className="mr-2 h-4 w-4" />
+                  Экспорт CSV
+                </Button>
+                <Button variant="outline" onClick={() => handleExport('excel')}>
+                  <Icon name="FileSpreadsheet" className="mr-2 h-4 w-4" />
+                  Экспорт Excel
+                </Button>
+                <Button variant="outline" onClick={copyMinusWords}>
+                  <Icon name="Copy" className="mr-2 h-4 w-4" />
+                  Копировать минус-слова
+                </Button>
+              </div>
+
+              {/* Clusters */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold">Кластеры</h2>
+                {clusters.map((cluster, idx) => {
+                  const style = CLUSTER_STYLES[idx % CLUSTER_STYLES.length];
+                  const intentType = INTENT_TYPES.find(i => i.id === cluster.intent);
+                  
+                  return (
+                    <Card key={idx} className={`border-2 ${style.border} shadow-lg hover:shadow-xl transition-shadow overflow-hidden`}>
+                      <CardHeader className={`${style.headerBg} text-white`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                              <Icon name={cluster.icon as any} className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-xl text-white">{cluster.name}</CardTitle>
+                              <CardDescription className="text-white/90">
+                                {intentType?.emoji} {intentType?.label} • {cluster.phrases.length} фраз
+                              </CardDescription>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className={`${style.bg} pt-4`}>
+                        <div className="space-y-2">
+                          {cluster.phrases.map((phrase, pIdx) => (
+                            <div
+                              key={pIdx}
+                              className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-slate-100 hover:border-slate-300 transition-colors shadow-sm"
+                            >
+                              <span className="text-sm font-medium text-slate-700">{phrase.phrase}</span>
+                              <Badge variant="secondary" className="font-mono text-xs bg-slate-100 hover:bg-slate-200">
+                                {phrase.count.toLocaleString()}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Minus Words */}
+              <Card className="border-2 border-rose-200 shadow-lg bg-gradient-to-br from-rose-50 to-white">
+                <CardHeader className="bg-gradient-to-r from-rose-500 to-red-500 text-white">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <Icon name="Ban" className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl text-white">Минус-слова</CardTitle>
+                        <CardDescription className="text-white/90">Слова для исключения из показов • {minusWords.length} слов</CardDescription>
+                      </div>
+                    </div>
+                    <Button variant="secondary" size="sm" onClick={copyMinusWords} className="bg-white/20 hover:bg-white/30 text-white border-white/30">
+                      <Icon name="Copy" className="mr-2 h-4 w-4" />
+                      Копировать
+                    </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-4">
+                <CardContent className="pt-6">
                   <div className="flex flex-wrap gap-2">
-                    {minusWords.map(word => (
-                      <Badge key={word} variant="secondary">
+                    {minusWords.map((word, idx) => (
+                      <Badge key={idx} className="bg-gradient-to-r from-rose-500 to-red-500 text-white px-3 py-1 text-sm font-medium shadow-md hover:shadow-lg transition-shadow">
                         {word}
                       </Badge>
                     ))}
@@ -693,18 +760,9 @@ export default function TestClustering() {
                 </CardContent>
               </Card>
             </div>
-
-            <Button 
-              onClick={handleBack}
-              variant="outline"
-              className="w-full py-6 text-lg"
-            >
-              <Icon name="ArrowLeft" size={20} className="mr-2" /> К списку проектов
-            </Button>
-          </div>
-        )}
+          )}
+        </main>
       </div>
-      </div>
-    </>
+    </div>
   );
 }
