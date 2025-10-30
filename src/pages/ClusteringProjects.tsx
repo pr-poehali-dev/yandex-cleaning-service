@@ -53,6 +53,17 @@ export default function ClusteringProjects() {
       return;
     }
 
+    const cacheKey = `clustering_projects_${userId}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    const cacheTime = localStorage.getItem(`${cacheKey}_time`);
+    const now = Date.now();
+    
+    if (cachedData && cacheTime && (now - parseInt(cacheTime)) < 60000) {
+      setProjects(JSON.parse(cachedData));
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}?endpoint=projects`, {
@@ -66,6 +77,8 @@ export default function ClusteringProjects() {
       if (res.ok) {
         const data = await res.json();
         setProjects(data.projects || []);
+        localStorage.setItem(cacheKey, JSON.stringify(data.projects || []));
+        localStorage.setItem(`${cacheKey}_time`, now.toString());
       } else {
         toast.error('Ошибка загрузки проектов');
       }
