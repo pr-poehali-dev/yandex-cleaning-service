@@ -397,7 +397,11 @@ export default function TestClustering() {
               removeCity={(cityId) => {
                 setSelectedCities(selectedCities.filter(c => c.id !== cityId));
               }}
-              onNext={() => setStep('goal')}
+              onNext={() => {
+                console.log('🔵 Cities step: onNext clicked');
+                setStep('goal');
+                console.log('🔵 Cities step: setStep(goal) called');
+              }}
               onBack={handleBack}
               hasManualKeywords={manualKeywords.trim().length > 0}
               manualKeyword={manualKeywords.split('\n')[0]?.trim() || ''}
