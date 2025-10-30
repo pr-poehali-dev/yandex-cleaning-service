@@ -205,22 +205,38 @@ export default function TestClustering() {
   }, [step, manualKeywords, selectedIntents, saveResultsToAPI]);
 
   const handleWordstatSubmit = async (query: string, cities: City[], mode: string) => {
+    console.log('🚀 handleWordstatSubmit called:', { query, cities, mode });
+    
+    if (!query || !query.trim()) {
+      toast.error('Введите поисковый запрос');
+      return;
+    }
+    
+    if (cities.length === 0) {
+      toast.error('Выберите хотя бы один регион');
+      return;
+    }
+    
     setIsWordstatLoading(true);
     
     try {
       const regionIds = cities.map(c => c.id);
+      
+      const requestBody = {
+        keywords: [query.trim()],
+        regions: regionIds,
+        mode: mode,
+        use_openai: true
+      };
+      
+      console.log('📤 Sending to Wordstat API:', requestBody);
       
       const response = await fetch(WORDSTAT_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          keywords: [query],
-          regions: regionIds,
-          mode: mode,
-          use_openai: true
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {

@@ -585,8 +585,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         object_address: str = body_data.get('objectAddress', '')
         
         print(f'[WORDSTAT] Request params: keywords={keywords}, regions={regions}, use_openai={use_openai}')
+        print(f'[WORDSTAT] Body data: {body_data}')
         
-        if not keywords:
+        if not keywords or len(keywords) == 0 or not keywords[0].strip():
             return {
                 'statusCode': 400,
                 'headers': {
