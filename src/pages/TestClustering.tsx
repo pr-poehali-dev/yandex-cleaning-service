@@ -55,7 +55,7 @@ export default function TestClustering() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
   const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [minusWords, setMinusWords] = useState<string[]>([]);
+  const [minusWords, setMinusWords] = useState<Phrase[]>([]);
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -115,7 +115,7 @@ export default function TestClustering() {
     fetchProject();
   }, [projectId, navigate]);
 
-  const saveResultsToAPI = useCallback(async (clustersData: Cluster[], minusWordsData: string[]) => {
+  const saveResultsToAPI = useCallback(async (clustersData: Cluster[], minusWordsData: Phrase[]) => {
     console.log('🔥 saveResultsToAPI CALLED', {
       projectId,
       clustersCount: clustersData.length,
@@ -322,7 +322,8 @@ export default function TestClustering() {
   };
 
   const exportMinusWords = () => {
-    const blob = new Blob([minusWords.join('\n')], { type: 'text/plain;charset=utf-8;' });
+    const text = minusWords.map(p => `${p.phrase} - ${p.count}`).join('\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `минус-слова_${new Date().toISOString().split('T')[0]}.txt`;

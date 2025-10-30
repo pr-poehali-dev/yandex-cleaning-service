@@ -49,7 +49,18 @@ export const mockClusters: Cluster[] = [
   }
 ];
 
-export const mockMinusWords = ['бесплатно', 'даром', 'игра', 'в игре', 'скачать', 'торрент', 'порно', 'xxx', 'вакансия', 'работа'];
+export const mockMinusWords: Phrase[] = [
+  { phrase: 'бесплатно', count: 0 },
+  { phrase: 'даром', count: 0 },
+  { phrase: 'игра', count: 0 },
+  { phrase: 'в игре', count: 0 },
+  { phrase: 'скачать', count: 0 },
+  { phrase: 'торрент', count: 0 },
+  { phrase: 'порно', count: 0 },
+  { phrase: 'xxx', count: 0 },
+  { phrase: 'вакансия', count: 0 },
+  { phrase: 'работа', count: 0 }
+];
 
 export function generateClustersFromKeywords(keywords: string[], intents: string[]): Cluster[] {
   if (keywords.length === 0) return mockClusters;
@@ -90,7 +101,7 @@ export function generateClustersFromKeywords(keywords: string[], intents: string
   return clusters.length > 0 ? clusters : mockClusters;
 }
 
-export function generateMinusWords(keywords: string[]): string[] {
+export function generateMinusWords(keywords: string[]): Phrase[] {
   const commonMinusWords = ['бесплатно', 'даром', 'скачать', 'торрент', 'игра', 'вакансия', 'работа'];
   const keywordWords = keywords.flatMap(kw => kw.toLowerCase().split(' '));
   
@@ -101,7 +112,8 @@ export function generateMinusWords(keywords: string[]): string[] {
     Math.random() > 0.7
   );
   
-  return [...new Set([...commonMinusWords, ...minusWords])].slice(0, 15);
+  const allMinusWords = [...new Set([...commonMinusWords, ...minusWords])].slice(0, 15);
+  return allMinusWords.map(phrase => ({ phrase, count: 0 }));
 }
 
 export const PROCESSING_STAGES = [
