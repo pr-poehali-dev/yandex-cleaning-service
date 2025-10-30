@@ -379,6 +379,7 @@ export default function TestClustering() {
               onNext={async () => {
                 const firstKeyword = manualKeywords.split('\n')[0]?.trim();
                 if (firstKeyword && selectedCities.length > 0) {
+                  setLoadingProgress(0);
                   setIsWordstatLoading(true);
                   setStep('processing');
                   await handleWordstatSubmit(firstKeyword, selectedCities, goal);
