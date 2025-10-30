@@ -44,7 +44,6 @@ export default function SourceStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        {
         <div className="space-y-3">
           <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
           <textarea
