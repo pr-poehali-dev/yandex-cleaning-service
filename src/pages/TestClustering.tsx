@@ -339,16 +339,24 @@ export default function TestClustering() {
                     if (searchResults.length > 0) {
                       const allClusters = searchResults.flatMap((result: any) => result.Clusters || []);
                       
-                      generatedClusters = allClusters.map((cluster: any, idx: number) => ({
-                        name: cluster.cluster_name,
-                        intent: cluster.intent || selectedIntents[0] || 'commercial',
-                        color: ['blue', 'emerald', 'purple', 'orange'][idx % 4],
-                        icon: ['Home', 'Building2', 'Globe', 'ShoppingCart'][idx % 4],
-                        phrases: cluster.phrases.map((p: any) => ({
+                      console.log('🔍 Raw clusters from API:', allClusters);
+                      
+                      generatedClusters = allClusters.map((cluster: any, idx: number) => {
+                        const phrases = cluster.phrases.map((p: any) => ({
                           phrase: p.phrase,
                           count: p.count
-                        }))
-                      }));
+                        }));
+                        
+                        console.log(`📊 Cluster "${cluster.cluster_name}":`, phrases.slice(0, 3));
+                        
+                        return {
+                          name: cluster.cluster_name,
+                          intent: cluster.intent || selectedIntents[0] || 'commercial',
+                          color: ['blue', 'emerald', 'purple', 'orange'][idx % 4],
+                          icon: ['Home', 'Building2', 'Globe', 'ShoppingCart'][idx % 4],
+                          phrases: phrases
+                        };
+                      });
                       
                       const allMinusWords = searchResults.flatMap((result: any) => {
                         const minusCats = result.MinusWords || {};
@@ -361,6 +369,7 @@ export default function TestClustering() {
                       
                       console.log('✅ Parsed clusters:', generatedClusters.length);
                       console.log('✅ Parsed minus words:', generatedMinusWords.length);
+                      console.log('📋 First cluster full data:', generatedClusters[0]);
                     } else {
                       console.warn('⚠️ No SearchQuery results, using fallback');
                       generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
