@@ -30,6 +30,7 @@ interface ResultsStepProps {
   onNewProject: () => void;
   projectId?: number;
   onSaveChanges?: (clusters: Cluster[], minusWords: Phrase[]) => void;
+  regions?: string[];
 }
 
 const CLUSTER_BG_COLORS = [
@@ -49,7 +50,8 @@ export default function ResultsStep({
   onExport,
   onNewProject,
   projectId,
-  onSaveChanges
+  onSaveChanges,
+  regions = []
 }: ResultsStepProps) {
   const initialClusters = propsClusters.map((c, idx) => ({
     ...c,
@@ -397,23 +399,58 @@ export default function ResultsStep({
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="flex-shrink-0 border-b bg-white shadow-sm">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div>
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-800">Результаты кластеризации</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {totalPhrases} фраз • Введите текст в поле кластера для автопереноса
-            </p>
+            <div className="flex gap-3">
+              <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
+                <Icon name="Download" size={16} />
+                Excel
+              </Button>
+              <Button onClick={onExport} size="sm" variant="outline" className="gap-2">
+                <Icon name="FileText" size={16} />
+                Экспорт
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
-              <Icon name="Download" size={16} />
-              Excel
-            </Button>
-            <Button onClick={onExport} size="sm" variant="outline" className="gap-2">
-              <Icon name="FileText" size={16} />
-              Экспорт
-            </Button>
-
+          
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-200">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name="Key" size={16} className="text-blue-600" />
+                <span className="text-xs font-medium text-blue-600">Всего ключей</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-900">{totalPhrases.toLocaleString()}</div>
+            </div>
+            
+            <div className="bg-purple-50 rounded-lg px-4 py-3 border border-purple-200">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name="Folder" size={16} className="text-purple-600" />
+                <span className="text-xs font-medium text-purple-600">Кластеров</span>
+              </div>
+              <div className="text-2xl font-bold text-purple-900">{clusters.length}</div>
+            </div>
+            
+            <div className="bg-red-50 rounded-lg px-4 py-3 border border-red-200">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name="Ban" size={16} className="text-red-600" />
+                <span className="text-xs font-medium text-red-600">Минус-слов</span>
+              </div>
+              <div className="text-2xl font-bold text-red-900">{minusWords.length}</div>
+            </div>
+            
+            <div className="bg-green-50 rounded-lg px-4 py-3 border border-green-200">
+              <div className="flex items-center gap-2 mb-1">
+                <Icon name="MapPin" size={16} className="text-green-600" />
+                <span className="text-xs font-medium text-green-600">Регионы</span>
+              </div>
+              <div className="text-2xl font-bold text-green-900">{regions.length || 'Все'}</div>
+              {regions.length > 0 && (
+                <div className="text-[10px] text-green-700 mt-1 truncate">
+                  {regions.slice(0, 2).join(', ')}{regions.length > 2 ? '...' : ''}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

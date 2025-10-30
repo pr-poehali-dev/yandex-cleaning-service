@@ -303,6 +303,7 @@ export default function TestClustering() {
           onNewProject={() => navigate('/')}
           projectId={projectId ? parseInt(projectId) : undefined}
           onSaveChanges={saveResultsToAPI}
+          regions={selectedCities.map(c => c.name)}
         />
       ) : (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8">
