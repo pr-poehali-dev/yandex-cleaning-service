@@ -174,14 +174,10 @@ def cosine_similarity_simple(vec1: Dict[str, float], vec2: Dict[str, float]) -> 
 
 def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context') -> List[Dict[str, Any]]:
     '''
-    Кластеризация через OpenAI GPT-4o-mini
+    Кластеризация через OpenAI GPT-4o-mini (ОТКЛЮЧЕНО до покупки прокси)
     '''
-    openai_key = os.environ.get('OPENAI_API_KEY')
-    if not openai_key:
-        print('[OPENAI] API key not found, falling back to TF-IDF')
-        return smart_clusterize(phrases, mode)
-    
-    print(f'[OPENAI] API key found: {openai_key[:10]}...')
+    print('[OPENAI] Disabled - using TF-IDF clustering')
+    return smart_clusterize(phrases, mode)
     
     phrases_text = '\n'.join([f"{p['phrase']} ({p['count']} показов)" for p in phrases[:200]])
     

@@ -3,10 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import AppSidebar from '@/components/layout/AppSidebar';
+import ExcelClustersTable from '@/components/wordstat/ExcelClustersTable';
 
 interface TopRequest {
   phrase: string;
@@ -34,7 +33,6 @@ export default function WordstatNew() {
   const [region, setRegion] = useState('213');
   const [mode, setMode] = useState<'context' | 'seo'>('context');
   const [step, setStep] = useState<WorkflowStep>('input');
-  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const regions = [
@@ -57,17 +55,7 @@ export default function WordstatNew() {
     { id: '172', name: 'Уфа' }
   ];
 
-  const toggleCluster = (clusterName: string) => {
-    setExpandedClusters(prev => {
-      const next = new Set(prev);
-      if (next.has(clusterName)) {
-        next.delete(clusterName);
-      } else {
-        next.add(clusterName);
-      }
-      return next;
-    });
-  };
+
 
   const fetchClusters = async () => {
     if (!keywords.trim()) {
@@ -97,7 +85,6 @@ export default function WordstatNew() {
 
       setClusters(regularClusters);
       setMinusPhrases(minusCluster?.phrases || []);
-      setExpandedClusters(new Set(regularClusters.map((c: Cluster) => c.cluster_name)));
       setStep('editing');
       
       toast({ 
@@ -115,78 +102,7 @@ export default function WordstatNew() {
     }
   };
 
-  const deletePhrase = (clusterName: string, phraseText: string) => {
-    setClusters(prev => prev.map(c => {
-      if (c.cluster_name === clusterName) {
-        const newPhrases = c.phrases.filter(p => p.phrase !== phraseText);
-        return {
-          ...c,
-          phrases: newPhrases,
-          phrases_count: newPhrases.length,
-          total_count: newPhrases.reduce((sum, p) => sum + p.count, 0),
-          max_frequency: newPhrases.length > 0 ? Math.max(...newPhrases.map(p => p.count)) : 0,
-          min_frequency: newPhrases.length > 0 ? Math.min(...newPhrases.map(p => p.count)) : 0,
-        };
-      }
-      return c;
-    }).filter(c => c.phrases.length > 0));
-    toast({ title: 'Удалено', description: phraseText });
-  };
 
-  const moveToMinus = (clusterName: string, phrase: TopRequest) => {
-    deletePhrase(clusterName, phrase.phrase);
-    setMinusPhrases(prev => [...prev, phrase].sort((a, b) => b.count - a.count));
-    toast({ title: 'В минус-слова', description: phrase.phrase });
-  };
-
-  const removeFromMinus = (phraseText: string) => {
-    setMinusPhrases(prev => prev.filter(p => p.phrase !== phraseText));
-    toast({ title: 'Удалено', description: phraseText });
-  };
-
-  const exportToCSV = () => {
-    let csv = 'Кластер,Фраза,Частотность\n';
-    clusters.forEach(cluster => {
-      cluster.phrases.forEach(phrase => {
-        csv += `"${cluster.cluster_name}","${phrase.phrase}",${phrase.count}\n`;
-      });
-    });
-    
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `кластеры_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    toast({ title: 'Экспорт завершен', description: 'CSV файл загружен' });
-  };
-
-  const exportMinusWords = () => {
-    const minusText = minusPhrases.map(p => p.phrase).join('\n');
-    const blob = new Blob([minusText], { type: 'text/plain;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `минус-слова_${new Date().toISOString().split('T')[0]}.txt`;
-    link.click();
-    toast({ title: 'Экспорт завершен', description: `${minusPhrases.length} минус-фраз для Директа` });
-  };
-
-  const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
-  const totalShows = clusters.reduce((sum, c) => sum + c.total_count, 0);
-  const minusTotalShows = minusPhrases.reduce((sum, p) => sum + p.count, 0);
-
-  const getClusterColor = (clusterName: string) => {
-    const colors = [
-      'bg-blue-100 text-blue-800 border-blue-300',
-      'bg-green-100 text-green-800 border-green-300',
-      'bg-purple-100 text-purple-800 border-purple-300',
-      'bg-orange-100 text-orange-800 border-orange-300',
-      'bg-yellow-100 text-yellow-800 border-yellow-300',
-      'bg-cyan-100 text-cyan-800 border-cyan-300',
-      'bg-pink-100 text-pink-800 border-pink-300',
-    ];
-    const index = clusters.findIndex(c => c.cluster_name === clusterName);
-    return colors[index % colors.length];
-  };
 
   if (step === 'input') {
     return (
@@ -287,205 +203,27 @@ export default function WordstatNew() {
     <>
       <AppSidebar />
       <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-6 ml-64">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Icon name="Sparkles" size={32} className="text-purple-500" />
-              Кластеры готовы
+              <Icon name="Table" size={32} className="text-emerald-500" />
+              Excel-редактор кластеров
             </h1>
             <p className="text-muted-foreground">
-              AI разделил фразы на {clusters.length} кластеров
+              Перетаскивайте фразы между кластерами, начиная вводить текст
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={exportToCSV}>
-              <Icon name="Download" size={16} className="mr-2" />
-              Экспорт CSV
-            </Button>
-            <Button variant="outline" onClick={() => setStep('input')}>
-              <Icon name="RefreshCw" size={16} className="mr-2" />
-              Новый запрос
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => setStep('input')}>
+            <Icon name="RefreshCw" size={16} className="mr-2" />
+            Новый запрос
+          </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Кластеров</div>
-            <div className="text-2xl font-bold">{clusters.length}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Всего фраз</div>
-            <div className="text-2xl font-bold">{totalPhrases}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-sm text-muted-foreground">Показов в месяц</div>
-            <div className="text-2xl font-bold">{totalShows.toLocaleString()}</div>
-          </Card>
-          <Card className="p-4 bg-red-50 border-red-200">
-            <div className="text-sm text-red-700 font-medium flex items-center gap-1">
-              <Icon name="X" size={14} />
-              Минус-фраз
-            </div>
-            <div className="text-2xl font-bold text-red-600">{minusPhrases.length}</div>
-          </Card>
-        </div>
-
-        {/* Minus Words Section */}
-        {minusPhrases.length > 0 && (
-          <Card className="overflow-hidden border-red-300 bg-red-50/30">
-            <button
-              onClick={() => toggleCluster('minus-words')}
-              className="w-full p-4 flex items-center justify-between hover:bg-red-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Icon
-                  name={expandedClusters.has('minus-words') ? "ChevronDown" : "ChevronRight"}
-                  size={20}
-                  className="text-muted-foreground"
-                />
-                <Icon name="X" size={24} className="text-red-600" />
-                <div className="text-left">
-                  <div className="font-semibold text-lg text-red-800">Минус-слова (мусор)</div>
-                  <div className="text-sm text-muted-foreground">
-                    {minusPhrases.length} фраз • {minusTotalShows.toLocaleString()} показов отфильтровано
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-red-300 text-red-700 hover:bg-red-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    exportMinusWords();
-                  }}
-                >
-                  <Icon name="Download" size={16} className="mr-2" />
-                  Экспорт для Директа
-                </Button>
-                <Badge className="bg-red-100 text-red-800 border-red-300">
-                  Нерелевантные
-                </Badge>
-              </div>
-            </button>
-
-            {expandedClusters.has('minus-words') && (
-              <div className="border-t border-red-200">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-red-50">
-                      <th className="text-left p-3 text-sm font-medium">Фраза</th>
-                      <th className="text-right p-3 text-sm font-medium">Показов</th>
-                      <th className="text-center p-3 text-sm font-medium w-20">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {minusPhrases.map((phrase, idx) => (
-                      <tr key={idx} className="border-t border-red-100 hover:bg-red-50/50">
-                        <td className="p-3">{phrase.phrase}</td>
-                        <td className="p-3 text-right text-muted-foreground">
-                          {phrase.count.toLocaleString()}
-                        </td>
-                        <td className="p-3 text-center">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeFromMinus(phrase.phrase)}
-                          >
-                            <Icon name="Trash2" size={14} className="text-red-500" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        )}
-
-        {/* Regular Clusters */}
-        <div className="space-y-3">
-          {clusters.map((cluster) => {
-            const isExpanded = expandedClusters.has(cluster.cluster_name);
-            const clusterColor = getClusterColor(cluster.cluster_name);
-
-            return (
-              <Card key={cluster.cluster_name} className="overflow-hidden">
-                <button
-                  onClick={() => toggleCluster(cluster.cluster_name)}
-                  className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      name={isExpanded ? "ChevronDown" : "ChevronRight"}
-                      size={20}
-                      className="text-muted-foreground"
-                    />
-                    <div className="text-left">
-                      <div className="font-semibold text-lg">{cluster.cluster_name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {cluster.phrases.length} фраз • {cluster.total_count.toLocaleString()} показов
-                      </div>
-                    </div>
-                  </div>
-                  <Badge className={clusterColor}>
-                    {cluster.intent === 'commercial' ? 'Коммерческий' : 'Информационный'}
-                  </Badge>
-                </button>
-
-                {isExpanded && (
-                  <div className="border-t">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-muted/30">
-                          <th className="text-left p-3 text-sm font-medium">Фраза</th>
-                          <th className="text-right p-3 text-sm font-medium">Показов</th>
-                          <th className="text-center p-3 text-sm font-medium w-32">Действия</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cluster.phrases.map((phrase, idx) => (
-                          <tr key={idx} className="border-t hover:bg-muted/20">
-                            <td className="p-3">{phrase.phrase}</td>
-                            <td className="p-3 text-right text-muted-foreground">
-                              {phrase.count.toLocaleString()}
-                            </td>
-                            <td className="p-3 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => moveToMinus(cluster.cluster_name, phrase)}
-                                  title="В минус-слова"
-                                >
-                                  <Icon name="Ban" size={14} className="text-orange-500" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => deletePhrase(cluster.cluster_name, phrase.phrase)}
-                                  title="Удалить"
-                                >
-                                  <Icon name="Trash2" size={14} className="text-red-500" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
+        <ExcelClustersTable 
+          initialClusters={clusters}
+          initialMinusPhrases={minusPhrases}
+        />
       </div>
     </div>
     </>
