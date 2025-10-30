@@ -423,6 +423,10 @@ export default function ResultsStep({
               <tr key={rowIdx} className="border-b border-slate-200">
                 {clusters.map((cluster, clusterIdx) => {
                   const phrase = cluster.phrases[rowIdx];
+                  const originalClusterIdx = phrase ? moveHistory.get(phrase.phrase) : undefined;
+                  const isMovedPhrase = originalClusterIdx !== undefined && originalClusterIdx !== clusterIdx;
+                  const originalCluster = isMovedPhrase ? clusters[originalClusterIdx] : null;
+                  
                   return (
                     <td 
                       key={clusterIdx}
@@ -430,11 +434,31 @@ export default function ResultsStep({
                       style={{ backgroundColor: phrase ? `${cluster.bgColor}40` : 'white' }}
                     >
                       {phrase && (
-                        <div className="flex items-start justify-between gap-2 group hover:bg-white/60 rounded px-1 -mx-1">
+                        <div 
+                          className="flex items-start justify-between gap-2 group hover:bg-white/60 rounded px-1 -mx-1 relative"
+                          style={isMovedPhrase && originalCluster ? {
+                            borderLeft: `3px solid ${originalCluster.bgColor}`,
+                            paddingLeft: '6px',
+                            marginLeft: '-4px'
+                          } : {}}
+                        >
                           <div className="flex-1 min-w-0">
                             <div className="text-sm leading-snug break-words">{phrase.phrase}</div>
-                            <div className="text-xs text-slate-500 font-mono mt-0.5">
-                              {phrase.count.toLocaleString()}
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <div className="text-xs text-slate-500 font-mono">
+                                {phrase.count.toLocaleString()}
+                              </div>
+                              {isMovedPhrase && originalCluster && (
+                                <div 
+                                  className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                                  style={{ 
+                                    backgroundColor: originalCluster.bgColor,
+                                    color: '#475569'
+                                  }}
+                                >
+                                  из {originalCluster.name}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <Button
@@ -453,26 +477,53 @@ export default function ResultsStep({
                 <td 
                   className="px-3 py-2 border-r border-slate-200 align-top bg-red-50/40"
                 >
-                  {minusWords[rowIdx] && (
-                    <div className="flex items-start justify-between gap-2 group hover:bg-white/60 rounded px-1 -mx-1">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm leading-snug break-words">{minusWords[rowIdx].phrase}</div>
-                        {minusWords[rowIdx].count > 0 && (
-                          <div className="text-xs text-slate-500 font-mono mt-0.5">
-                            {minusWords[rowIdx].count.toLocaleString()}
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeMinusPhrase(minusWords[rowIdx].phrase)}
-                        className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 flex-shrink-0 hover:bg-red-100"
+                  {minusWords[rowIdx] && (() => {
+                    const phrase = minusWords[rowIdx];
+                    const originalClusterIdx = moveHistory.get(phrase.phrase);
+                    const isMovedPhrase = originalClusterIdx !== undefined;
+                    const originalCluster = isMovedPhrase ? clusters[originalClusterIdx] : null;
+                    
+                    return (
+                      <div 
+                        className="flex items-start justify-between gap-2 group hover:bg-white/60 rounded px-1 -mx-1 relative"
+                        style={isMovedPhrase && originalCluster ? {
+                          borderLeft: `3px solid ${originalCluster.bgColor}`,
+                          paddingLeft: '6px',
+                          marginLeft: '-4px'
+                        } : {}}
                       >
-                        <Icon name="X" size={12} />
-                      </Button>
-                    </div>
-                  )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm leading-snug break-words">{phrase.phrase}</div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {phrase.count > 0 && (
+                              <div className="text-xs text-slate-500 font-mono">
+                                {phrase.count.toLocaleString()}
+                              </div>
+                            )}
+                            {isMovedPhrase && originalCluster && (
+                              <div 
+                                className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                                style={{ 
+                                  backgroundColor: originalCluster.bgColor,
+                                  color: '#475569'
+                                }}
+                              >
+                                из {originalCluster.name}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMinusPhrase(phrase.phrase)}
+                          className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 flex-shrink-0 hover:bg-red-100"
+                        >
+                          <Icon name="X" size={12} />
+                        </Button>
+                      </div>
+                    );
+                  })()}
                 </td>
               </tr>
             ))}
