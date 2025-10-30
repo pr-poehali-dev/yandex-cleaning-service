@@ -13,6 +13,8 @@ interface SourceStepProps {
   setManualKeywords: (keywords: string) => void;
   websiteUrl: string;
   setWebsiteUrl: (url: string) => void;
+  objectAddress: string;
+  setObjectAddress: (address: string) => void;
   onNext: () => void;
 }
 
@@ -23,16 +25,15 @@ export default function SourceStep({
   setManualKeywords,
   websiteUrl,
   setWebsiteUrl,
+  objectAddress,
+  setObjectAddress,
   onNext
 }: SourceStepProps) {
   const handleNext = () => {
-    if (source === 'website' && !websiteUrl.trim()) {
-      return;
-    }
     onNext();
   };
 
-  const isNextDisabled = (source === 'website' && !websiteUrl.trim());
+  const isNextDisabled = false;
 
   return (
     <Card className="border-slate-200 shadow-lg">
@@ -43,88 +44,41 @@ export default function SourceStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div
-            onClick={() => setSource('manual')}
-            className={`p-6 rounded-xl border-2 cursor-pointer transition-all ${
-              source === 'manual'
-                ? 'border-emerald-500 bg-emerald-50/50 shadow-md'
-                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                source === 'manual' ? 'bg-emerald-500' : 'bg-slate-100'
-              }`}>
-                <Icon 
-                  name="FileText" 
-                  className={`h-5 w-5 ${source === 'manual' ? 'text-white' : 'text-slate-600'}`}
-                />
-              </div>
-              <div>
-                <div className="font-semibold text-slate-800">Вручную</div>
-                <div className="text-sm text-slate-500">Вставить список</div>
-              </div>
-            </div>
-          </div>
-
-          <div
-            onClick={() => setSource('website')}
-            className={`p-6 rounded-xl border-2 cursor-pointer transition-all ${
-              source === 'website'
-                ? 'border-emerald-500 bg-emerald-50/50 shadow-md'
-                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                source === 'website' ? 'bg-emerald-500' : 'bg-slate-100'
-              }`}>
-                <Icon 
-                  name="Globe" 
-                  className={`h-5 w-5 ${source === 'website' ? 'text-white' : 'text-slate-600'}`}
-                />
-              </div>
-              <div>
-                <div className="font-semibold text-slate-800">С сайта</div>
-                <div className="text-sm text-slate-500">Парсинг URL</div>
-              </div>
-            </div>
-          </div>
+        {
+        <div className="space-y-3">
+          <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
+          <textarea
+            id="keywords"
+            value={manualKeywords}
+            onChange={(e) => setManualKeywords(e.target.value)}
+            placeholder="Введите ключевые слова (каждое с новой строки)&#10;купить квартиру москва&#10;купить квартиру от застройщика&#10;купить квартиру вторичка&#10;&#10;Или оставьте пустым и соберите из Wordstat на следующем шаге"
+            className="w-full h-48 p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+          />
+          <p className="text-xs text-slate-500">
+            {manualKeywords.split('\n').filter(k => k.trim()).length} ключевых слов
+          </p>
         </div>
 
-        {source === 'manual' && (
-          <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-            <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
-            <textarea
-              id="keywords"
-              value={manualKeywords}
-              onChange={(e) => setManualKeywords(e.target.value)}
-              placeholder="Введите ключевые слова (каждое с новой строки)&#10;купить квартиру москва&#10;купить квартиру от застройщика&#10;купить квартиру вторичка&#10;&#10;Или оставьте пустым и соберите из Wordstat на следующем шаге"
-              className="w-full h-48 p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
-            />
-            <p className="text-xs text-slate-500">
-              {manualKeywords.split('\n').filter(k => k.trim()).length} ключевых слов
-            </p>
+        <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2">
+            <Icon name="MapPin" className="h-5 w-5 text-blue-600" />
+            <Label htmlFor="address" className="text-slate-700 font-semibold">🤖 Геоключи (опционально)</Label>
           </div>
-        )}
-
-        {source === 'website' && (
-          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-            <Label htmlFor="website" className="text-slate-700">URL сайта</Label>
-            <Input
-              id="website"
-              type="url"
-              value={websiteUrl}
-              onChange={(e) => setWebsiteUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-            <p className="text-xs text-slate-500">
-              Мы соберем все ключевые слова, по которым ранжируется ваш сайт
-            </p>
-          </div>
-        )}
+          <Input
+            id="address"
+            type="text"
+            value={objectAddress}
+            onChange={(e) => setObjectAddress(e.target.value)}
+            placeholder="Ставрополь, Кулакова 1"
+            className="border-blue-200 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          />
+          <p className="text-xs text-slate-600 leading-relaxed">
+            <b>AI генерирует вариации адреса:</b><br/>
+            "Ставрополь Кулакова 1" → "Кулакова", "Кулакова 1", "Северо-Западный район", "рядом с Тухачевским рынком" и т.д.<br/>
+            <span className="text-blue-700 font-medium">Проверяет частотность в Wordstat → добавляет в кластер 📍 Геолокация</span>
+          </p>
+        </div>
+        }
 
         <Button 
           onClick={handleNext}

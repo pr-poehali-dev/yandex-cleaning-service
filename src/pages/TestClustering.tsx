@@ -144,6 +144,7 @@ export default function TestClustering() {
   const [source, setSource] = useState<Source>('manual');
   const [manualKeywords, setManualKeywords] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
+  const [objectAddress, setObjectAddress] = useState('');
   const [wordstatQuery, setWordstatQuery] = useState('');
   const [isWordstatLoading, setIsWordstatLoading] = useState(false);
   const [selectedCities, setSelectedCities] = useState<City[]>([]);
@@ -559,6 +560,8 @@ export default function TestClustering() {
               setManualKeywords={setManualKeywords}
               websiteUrl={websiteUrl}
               setWebsiteUrl={setWebsiteUrl}
+              objectAddress={objectAddress}
+              setObjectAddress={setObjectAddress}
               onNext={() => setStep('cities')}
             />
           )}

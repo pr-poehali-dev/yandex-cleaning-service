@@ -390,6 +390,82 @@ def smart_clusterize(phrases: List[Dict[str, Any]], mode: str = 'seo') -> List[D
     
     return result
 
+def generate_geo_keywords(address: str, base_query: str) -> List[str]:
+    '''
+    Генерация геозависимых вариаций адреса через OpenAI
+    address: "Ставрополь, Кулакова 1"
+    base_query: "купить квартиру"
+    Returns: ["купить квартиру Кулакова", "купить квартиру Кулакова 1", ...]
+    '''
+    openai_key = os.environ.get('OPENAI_API_KEY')
+    proxy_url = os.environ.get('OPENAI_PROXY_URL')
+    
+    if not openai_key:
+        print('[GEO] OpenAI key not found')
+        return []
+    
+    prompt = f"""Ты эксперт по недвижимости и геолокации. Сгенерируй ВСЕ возможные варианты поисковых фраз для этого адреса:
+
+Адрес: {address}
+Базовый запрос: {base_query}
+
+Сгенерируй 15-25 вариантов, которые люди могут использовать при поиске:
+1. Полный адрес: "город улица дом"
+2. Улица с домом: "улица дом"  
+3. Только улица: "улица"
+4. Район города
+5. Ориентиры рядом: "рядом с [место]"
+6. Транспортные узлы: "у метро [название]"  
+7. Микрорайоны
+8. Разговорные варианты
+
+Формат ответа: ТОЛЬКО список фраз через запятую, каждая фраза должна начинаться с базового запроса.
+Пример: купить квартиру Кулакова, купить квартиру Кулакова 1, купить квартиру Северо-Западный район, купить квартиру рядом с Тухачевским рынком
+
+Ответ:"""
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {openai_key}'
+    }
+    
+    payload = {
+        'model': 'gpt-4o-mini',
+        'messages': [{'role': 'user', 'content': prompt}],
+        'temperature': 0.7,
+        'max_tokens': 400
+    }
+    
+    proxies = None
+    if proxy_url:
+        proxies = {'http': proxy_url, 'https': proxy_url}
+    
+    try:
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers=headers,
+            json=payload,
+            proxies=proxies,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            print(f'[GEO] OpenAI error: {response.status_code}')
+            return []
+        
+        result = response.json()
+        content = result['choices'][0]['message']['content'].strip()
+        
+        # Parse comma-separated list
+        variations = [v.strip() for v in content.split(',') if v.strip()]
+        
+        print(f'[GEO] Generated {len(variations)} geo variations')
+        return variations[:25]  # Limit to 25
+        
+    except Exception as e:
+        print(f'[GEO] Error: {e}')
+        return []
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     Business: Получение данных из Яндекс.Wordstat API с СУПЕР умной кластеризацией
@@ -476,6 +552,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         keywords: List[str] = body_data.get('keywords', [])
         regions: List[int] = body_data.get('regions', [213])
         use_openai: bool = body_data.get('use_openai', True)
+        object_address: str = body_data.get('objectAddress', '')
         
         if not keywords:
             return {
@@ -547,13 +624,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 minus_words = detect_minus_words(top_requests)
                 print(f'[WORDSTAT] Detected {sum(v["count"] for v in minus_words.values())} minus-words')
             
+            # Добавляем геоключи, если указан адрес объекта
+            geo_cluster = None
+            if object_address and object_address.strip():
+                print(f'[GEO] Generating geo keywords for: {object_address}')
+                geo_keywords = generate_geo_keywords(object_address, keywords[0])
+                
+                if geo_keywords:
+                    # Проверяем частотность в Wordstat
+                    geo_phrases = []
+                    for geo_kw in geo_keywords[:15]:  # Limit to 15 requests
+                        try:
+                            payload_geo = {'phrase': geo_kw, 'regions': regions}
+                            resp_geo = requests.post(api_url, json=payload_geo, headers=headers, timeout=10)
+                            if resp_geo.status_code == 200:
+                                data_geo = resp_geo.json()
+                                top_req_geo = data_geo.get('topRequests', [])
+                                if top_req_geo and top_req_geo[0]['count'] > 10:  # Min frequency 10
+                                    geo_phrases.append(top_req_geo[0])
+                        except:
+                            pass
+                    
+                    if geo_phrases:
+                        geo_cluster = {
+                            'cluster_name': '📍 Геолокация',
+                            'total_count': sum(p['count'] for p in geo_phrases),
+                            'phrases_count': len(geo_phrases),
+                            'avg_words': round(sum(len(p['phrase'].split()) for p in geo_phrases) / len(geo_phrases), 1),
+                            'max_frequency': max(p['count'] for p in geo_phrases),
+                            'min_frequency': min(p['count'] for p in geo_phrases),
+                            'intent': 'commercial',
+                            'phrases': sorted(geo_phrases, key=lambda x: x['count'], reverse=True)
+                        }
+                        clusters.insert(0, geo_cluster)  # Add as first cluster
+                        print(f'[GEO] Added geo cluster with {len(geo_phrases)} phrases')
+            
             search_query = [{
                 'Keyword': keywords[0],
                 'Shows': top_requests[0]['count'] if top_requests else 0,
                 'TopRequests': top_requests,
                 'Clusters': clusters,
                 'MinusWords': minus_words,
-                'Mode': clustering_mode
+                'Mode': clustering_mode,
+                'GeoCluster': geo_cluster
             }]
         
         except requests.exceptions.Timeout:
