@@ -113,6 +113,31 @@ export default function ResultsStep({
     return words.some(word => word === searchLower);
   };
 
+  // Подсветка найденных слов в фразе
+  const highlightMatches = (phrase: string, searchTerm: string) => {
+    if (!searchTerm || searchTerm.trim().length < 3) {
+      return phrase;
+    }
+
+    const searchLower = searchTerm.trim().toLowerCase();
+    const words = phrase.split(/(\s+|\-|\.|,)/); // Разбиваем с сохранением разделителей
+    
+    return words.map((word, idx) => {
+      const wordLower = word.toLowerCase();
+      if (wordLower.startsWith(searchLower)) {
+        const matchPart = word.substring(0, searchLower.length);
+        const restPart = word.substring(searchLower.length);
+        return (
+          <span key={idx}>
+            <span className="bg-yellow-300 font-bold">{matchPart}</span>
+            {restPart}
+          </span>
+        );
+      }
+      return <span key={idx}>{word}</span>;
+    });
+  };
+
   const handleConfirmClusterSearch = (clusterIndex: number) => {
     // Фиксируем перемещение: удаляем из истории все перенесённые фразы
     const newClusters = [...clusters];
@@ -194,25 +219,17 @@ export default function ResultsStep({
       });
     }
 
-    // 1б) СКРЫТЬ оригинальные фразы кластера, которые не подходят под поиск
-    const originalPhrases = targetCluster.phrases.filter(p => {
-      const originalCluster = moveHistory.get(p.phrase);
-      // Это оригинальная фраза кластера (не была перенесена)
-      return originalCluster === undefined || originalCluster === clusterIndex;
-    });
-
-    // Оставляем только: перенесённые фразы (подходящие) + оригинальные фразы (подходящие)
+    // 1б) Удалить перенесённые фразы, которые больше не подходят
     targetCluster.phrases = targetCluster.phrases.filter(p => {
       const originalCluster = moveHistory.get(p.phrase);
-      const stillMatches = matchesWholeWord(p.phrase, value);
       
-      // Перенесённая фраза → показываем только если подходит
-      if (originalCluster !== undefined && originalCluster !== clusterIndex) {
-        return stillMatches;
+      // Оригинальная фраза кластера → ВСЕГДА показываем
+      if (originalCluster === undefined || originalCluster === clusterIndex) {
+        return true;
       }
       
-      // Оригинальная фраза → показываем только если подходит
-      return stillMatches;
+      // Перенесённая фраза → показываем только если ещё подходит под поиск
+      return matchesWholeWord(p.phrase, value);
     });
 
     // ШАГ 2: Найти новые фразы, которые подходят под поиск
@@ -593,7 +610,9 @@ export default function ResultsStep({
                           } : {}}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm leading-snug break-words">{phrase.phrase}</div>
+                            <div className="text-sm leading-snug break-words">
+                              {highlightMatches(phrase.phrase, cluster.searchText)}
+                            </div>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <div className="text-xs text-slate-500 font-mono">
                                 {phrase.count.toLocaleString()}
