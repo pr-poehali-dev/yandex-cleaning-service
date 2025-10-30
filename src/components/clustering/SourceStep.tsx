@@ -15,10 +15,6 @@ interface SourceStepProps {
   setWebsiteUrl: (url: string) => void;
   objectAddress: string;
   setObjectAddress: (address: string) => void;
-  clientId: string;
-  setClientId: (id: string) => void;
-  clientSecret: string;
-  setClientSecret: (secret: string) => void;
   onNext: () => void;
 }
 
@@ -31,10 +27,6 @@ export default function SourceStep({
   setWebsiteUrl,
   objectAddress,
   setObjectAddress,
-  clientId,
-  setClientId,
-  clientSecret,
-  setClientSecret,
   onNext
 }: SourceStepProps) {
   const handleNext = () => {
@@ -52,39 +44,6 @@ export default function SourceStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6 space-y-6">
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
-          <div className="flex items-start gap-2">
-            <Icon name="Key" className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-medium text-amber-900 mb-1">Настройки Яндекс.Директ API</h3>
-              <p className="text-sm text-amber-700 mb-3">Получите Client ID и Secret на <a href="https://oauth.yandex.ru" target="_blank" rel="noopener noreferrer" className="underline">oauth.yandex.ru</a></p>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="client-id" className="text-slate-700">Client ID</Label>
-            <Input
-              id="client-id"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              placeholder="4f93051bafae4b50a1928d1121b71379"
-              className="border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="client-secret" className="text-slate-700">Client Secret</Label>
-            <Input
-              id="client-secret"
-              type="password"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.target.value)}
-              placeholder="Введите Client Secret"
-              className="border-slate-200 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-          </div>
-        </div>
-
         <div className="space-y-3">
           <Label htmlFor="keywords" className="text-slate-700">Список ключевых слов</Label>
           <textarea
