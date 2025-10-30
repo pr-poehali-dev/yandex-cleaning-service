@@ -379,6 +379,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'regions': regions
             }
             
+            print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}')
+            
             response = requests.post(api_url, json=payload, headers=headers, timeout=30)
             
             if response.status_code != 200:
