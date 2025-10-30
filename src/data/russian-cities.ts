@@ -6,6 +6,9 @@ export interface City {
 }
 
 export const RUSSIAN_CITIES: City[] = [
+  // Вся Россия (без региона)
+  { id: 0, name: 'Россия', region: 'Вся страна' },
+  
   // Федеральные города
   { id: 213, name: 'Москва', region: 'Город федерального значения', population: 13000000 },
   { id: 2, name: 'Санкт-Петербург', region: 'Город федерального значения', population: 5600000 },

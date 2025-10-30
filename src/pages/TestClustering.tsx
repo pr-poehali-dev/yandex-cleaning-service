@@ -314,7 +314,7 @@ export default function TestClustering() {
               
               if (keywords.length > 0) {
                 try {
-                  const regionIds = selectedCities.map(c => c.id);
+                  const regionIds = selectedCities.map(c => c.id).filter(id => id !== 0);
                   const requestPayload = {
                     keywords: keywords,
                     regions: regionIds,
