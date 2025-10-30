@@ -9,6 +9,7 @@ interface Phrase {
   count: number;
   sourceCluster?: string;
   sourceColor?: string;
+  isTemporary?: boolean;
 }
 
 interface Cluster {
@@ -85,6 +86,35 @@ export default function ResultsStep({
     setClusters(newClusters);
   };
 
+  const getFilteredPhrases = (clusterIndex: number) => {
+    const cluster = clusters[clusterIndex];
+    const searchTerm = cluster.searchText.toLowerCase();
+    
+    if (!searchTerm) {
+      return cluster.phrases;
+    }
+
+    const tempPhrases = [...cluster.phrases];
+    
+    for (let i = 0; i < clusters.length; i++) {
+      if (i === clusterIndex) continue;
+      
+      const otherCluster = clusters[i];
+      const matchingPhrases = otherCluster.phrases
+        .filter(p => p.phrase.toLowerCase().includes(searchTerm) && !p.sourceCluster)
+        .map(p => ({
+          ...p,
+          sourceCluster: otherCluster.name,
+          sourceColor: otherCluster.bgColor,
+          isTemporary: true
+        }));
+      
+      tempPhrases.push(...matchingPhrases);
+    }
+    
+    return tempPhrases.sort((a, b) => b.count - a.count);
+  };
+
   const handleConfirmSearch = async (targetIndex: number) => {
     const newClusters = [...clusters];
     const targetCluster = newClusters[targetIndex];
@@ -99,18 +129,19 @@ export default function ResultsStep({
 
       const cluster = newClusters[i];
       const matchingPhrases = cluster.phrases.filter(p =>
-        p.phrase.toLowerCase().includes(searchTerm)
+        p.phrase.toLowerCase().includes(searchTerm) && !p.sourceCluster
       );
 
       if (matchingPhrases.length > 0) {
         cluster.phrases = cluster.phrases.filter(p =>
-          !p.phrase.toLowerCase().includes(searchTerm)
+          !p.phrase.toLowerCase().includes(searchTerm) || p.sourceCluster
         );
         
         const phrasesWithSource = matchingPhrases.map(p => ({
           ...p,
           sourceCluster: cluster.name,
-          sourceColor: cluster.bgColor
+          sourceColor: cluster.bgColor,
+          isTemporary: false
         }));
         
         movedPhrases.push(...phrasesWithSource);
@@ -370,7 +401,7 @@ export default function ResultsStep({
                 </div>
 
                 <div className="text-xs text-gray-500 mb-2">
-                  {cluster.phrases.length} фраз
+                  {getFilteredPhrases(idx).length} фраз
                 </div>
 
                 <div className="flex gap-1.5">
@@ -395,7 +426,7 @@ export default function ResultsStep({
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                {cluster.phrases.map((phrase, pIdx) => {
+                {getFilteredPhrases(idx).map((phrase, pIdx) => {
                   return (
                     <div
                       key={pIdx}
