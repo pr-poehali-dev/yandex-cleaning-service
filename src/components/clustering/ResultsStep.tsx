@@ -10,6 +10,7 @@ interface Phrase {
   sourceCluster?: string;
   sourceColor?: string;
   isTemporary?: boolean;
+  removedPhrases?: Phrase[];
 }
 
 interface Cluster {
@@ -176,8 +177,8 @@ export default function ResultsStep({
     setMinusSearchText(value);
   };
 
-  const handleConfirmMinusSearch = () => {
-    const searchTerm = minusSearchText.toLowerCase();
+  const handleConfirmMinusSearch = async () => {
+    const searchTerm = minusSearchText.toLowerCase().trim();
     if (!searchTerm) return;
 
     const newClusters = [...clusters];
@@ -197,13 +198,27 @@ export default function ResultsStep({
     }
 
     if (removedPhrases.length > 0) {
-      setMinusWords([...minusWords, ...removedPhrases].sort((a, b) => b.count - a.count));
+      const newMinusWord: Phrase = {
+        phrase: searchTerm,
+        count: 0,
+        removedPhrases: removedPhrases
+      };
+      
+      const newMinusWords = [...minusWords, newMinusWord].sort((a, b) => b.count - a.count);
+      setMinusWords(newMinusWords);
       setClusters(newClusters);
       setMinusSearchText('');
 
+      if (onSaveChanges) {
+        await onSaveChanges(
+          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+          newMinusWords
+        );
+      }
+
       toast({
         title: '🚫 Добавлено в минус-слова',
-        description: `${removedPhrases.length} фраз`
+        description: `${removedPhrases.length} фраз удалено`
       });
     }
   };
@@ -289,6 +304,54 @@ export default function ResultsStep({
     const text = phrases.map(p => p.phrase).join('\n');
     navigator.clipboard.writeText(text);
     toast({ title: '📋 Скопировано', description: `${phrases.length} фраз` });
+  };
+
+  const removeMinusWord = async (minusIndex: number) => {
+    const minusWord = minusWords[minusIndex];
+    const newMinusWords = minusWords.filter((_, idx) => idx !== minusIndex);
+    
+    if (minusWord.removedPhrases && minusWord.removedPhrases.length > 0) {
+      const newClusters = [...clusters];
+      
+      minusWord.removedPhrases.forEach(phrase => {
+        const originalCluster = newClusters.find(c => 
+          c.name === phrase.sourceCluster || 
+          (!phrase.sourceCluster && c.phrases.length === 0)
+        );
+        
+        if (originalCluster) {
+          originalCluster.phrases.push(phrase);
+          originalCluster.phrases.sort((a, b) => b.count - a.count);
+        } else if (newClusters[0]) {
+          newClusters[0].phrases.push(phrase);
+          newClusters[0].phrases.sort((a, b) => b.count - a.count);
+        }
+      });
+      
+      setClusters(newClusters);
+      setMinusWords(newMinusWords);
+      
+      if (onSaveChanges) {
+        await onSaveChanges(
+          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+          newMinusWords
+        );
+      }
+      
+      toast({
+        title: '↩️ Фразы возвращены',
+        description: `${minusWord.removedPhrases.length} фраз`
+      });
+    } else {
+      setMinusWords(newMinusWords);
+      
+      if (onSaveChanges) {
+        await onSaveChanges(
+          clusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+          newMinusWords
+        );
+      }
+    }
   };
 
   const copyMinusPhrases = () => {
@@ -529,13 +592,23 @@ export default function ResultsStep({
               {minusWords.map((phrase, pIdx) => (
                 <div
                   key={pIdx}
-                  className="px-3 py-2 border-b border-gray-200 hover:bg-white/40"
+                  className="px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/minus"
                 >
-                  <div className="text-sm text-gray-800 leading-snug mb-1">
-                    {phrase.phrase}
-                  </div>
-                  <div className="text-xs text-gray-500 font-mono">
-                    {phrase.count > 0 ? phrase.count.toLocaleString() : '—'}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-800 leading-snug mb-1">
+                        {phrase.phrase}
+                      </div>
+                      <div className="text-xs text-gray-500 font-mono">
+                        {phrase.count > 0 ? phrase.count.toLocaleString() : '—'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeMinusWord(pIdx)}
+                      className="opacity-0 group-hover/minus:opacity-100 text-red-700 hover:text-red-900 flex-shrink-0"
+                    >
+                      <Icon name="X" size={14} />
+                    </button>
                   </div>
                 </div>
               ))}
