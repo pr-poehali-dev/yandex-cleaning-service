@@ -650,6 +650,13 @@ export default function TestClustering() {
               minusWords={minusWords}
               onExport={exportResults}
               onNewProject={createNewProject}
+              projectId={projectId ? parseInt(projectId) : undefined}
+              onSaveChanges={async (newClusters, newMinusWords) => {
+                const minusWordsStrings = newMinusWords.map(m => m.phrase);
+                await saveResultsToAPI(newClusters, minusWordsStrings);
+                setClusters(newClusters);
+                setMinusWords(minusWordsStrings);
+              }}
             />
           )}
         </div>

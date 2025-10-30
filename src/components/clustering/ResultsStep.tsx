@@ -22,6 +22,8 @@ interface ResultsStepProps {
   minusWords: string[];
   onExport: () => void;
   onNewProject: () => void;
+  projectId?: number;
+  onSaveChanges?: (clusters: Cluster[], minusWords: Phrase[]) => void;
 }
 
 const CLUSTER_COLORS = [
@@ -39,8 +41,21 @@ export default function ResultsStep({
   clusters: initialClusters,
   minusWords: initialMinusWords,
   onExport,
-  onNewProject
+  onNewProject,
+  projectId,
+  onSaveChanges
 }: ResultsStepProps) {
+  const [originalClusters] = useState(
+    initialClusters.map((c, idx) => ({
+      ...c,
+      bgColor: CLUSTER_COLORS[idx % CLUSTER_COLORS.length],
+      searchText: ''
+    }))
+  );
+  const [originalMinusWords] = useState<Phrase[]>(
+    initialMinusWords.map(word => ({ phrase: word, count: 0 }))
+  );
+  
   const [clusters, setClusters] = useState(
     initialClusters.map((c, idx) => ({
       ...c,
@@ -52,6 +67,8 @@ export default function ResultsStep({
     initialMinusWords.map(word => ({ phrase: word, count: 0 }))
   );
   const [minusSearchText, setMinusSearchText] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
@@ -86,6 +103,8 @@ export default function ResultsStep({
     if (movedPhrases.length > 0) {
       targetCluster.phrases = [...targetCluster.phrases, ...movedPhrases]
         .sort((a, b) => b.count - a.count);
+      
+      setHasChanges(true);
       
       toast({
         title: '✅ Перенесено',
@@ -125,6 +144,7 @@ export default function ResultsStep({
     if (movedPhrases.length > 0) {
       setMinusWords(prev => [...prev, ...movedPhrases].sort((a, b) => b.count - a.count));
       setClusters(newClusters);
+      setHasChanges(true);
       
       toast({
         title: '🚫 В минус-слова',
@@ -139,10 +159,45 @@ export default function ResultsStep({
       p => p.phrase !== phraseText
     );
     setClusters(newClusters);
+    setHasChanges(true);
   };
 
   const removeMinusPhrase = (phraseText: string) => {
     setMinusWords(prev => prev.filter(p => p.phrase !== phraseText));
+    setHasChanges(true);
+  };
+
+  const handleReset = () => {
+    setClusters(JSON.parse(JSON.stringify(originalClusters)));
+    setMinusWords(JSON.parse(JSON.stringify(originalMinusWords)));
+    setHasChanges(false);
+    toast({
+      title: '↩️ Отменено',
+      description: 'Возврат к исходному результату'
+    });
+  };
+
+  const handleSave = async () => {
+    if (!projectId || !onSaveChanges) return;
+    
+    setIsSaving(true);
+    try {
+      const cleanClusters = clusters.map(({ bgColor, searchText, ...rest }) => rest);
+      await onSaveChanges(cleanClusters, minusWords);
+      setHasChanges(false);
+      toast({
+        title: '💾 Сохранено',
+        description: 'Изменения успешно сохранены'
+      });
+    } catch (error) {
+      toast({
+        title: '❌ Ошибка',
+        description: 'Не удалось сохранить изменения',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const copyClusterPhrases = (clusterIndex: number) => {
@@ -193,9 +248,22 @@ export default function ResultsStep({
           <h2 className="text-xl font-bold">Результаты кластеризации</h2>
           <p className="text-xs text-muted-foreground">
             Всего {totalPhrases} фраз • Введите текст в поле кластера для автопереноса
+            {hasChanges && <span className="text-orange-600 font-medium ml-2">• Есть несохранённые изменения</span>}
           </p>
         </div>
         <div className="flex gap-2">
+          {hasChanges && (
+            <>
+              <Button onClick={handleReset} size="sm" variant="outline" className="gap-2">
+                <Icon name="RotateCcw" size={16} />
+                Отменить
+              </Button>
+              <Button onClick={handleSave} size="sm" disabled={isSaving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <Icon name={isSaving ? "Loader2" : "Save"} size={16} className={isSaving ? "animate-spin" : ""} />
+                {isSaving ? 'Сохранение...' : 'Сохранить'}
+              </Button>
+            </>
+          )}
           <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
             <Icon name="Download" size={16} />
             Excel
