@@ -58,26 +58,6 @@ export default function SourceStep({
           </p>
         </div>
 
-        <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center gap-2">
-            <Icon name="MapPin" className="h-5 w-5 text-blue-600" />
-            <Label htmlFor="address" className="text-slate-700 font-semibold">🤖 Геоключи (опционально)</Label>
-          </div>
-          <Input
-            id="address"
-            type="text"
-            value={objectAddress}
-            onChange={(e) => setObjectAddress(e.target.value)}
-            placeholder="Ставрополь, Кулакова 1"
-            className="border-blue-200 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          />
-          <p className="text-xs text-slate-600 leading-relaxed">
-            <b>AI генерирует вариации адреса:</b><br/>
-            "Ставрополь Кулакова 1" → "Кулакова", "Кулакова 1", "Северо-Западный район", "рядом с Тухачевским рынком" и т.д.<br/>
-            <span className="text-blue-700 font-medium">Проверяет частотность в Wordstat → добавляет в кластер 📍 Геолокация</span>
-          </p>
-        </div>
-
         <Button 
           onClick={handleNext}
           disabled={isNextDisabled}

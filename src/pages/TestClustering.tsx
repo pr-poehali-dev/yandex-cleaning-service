@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import Icon from '@/components/ui/icon';
 import Header from '@/components/Header';
@@ -145,6 +146,7 @@ export default function TestClustering() {
   const [manualKeywords, setManualKeywords] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [objectAddress, setObjectAddress] = useState('');
+  const [useGeoKeys, setUseGeoKeys] = useState(false);
   const [wordstatQuery, setWordstatQuery] = useState('');
   const [isWordstatLoading, setIsWordstatLoading] = useState(false);
   const [selectedCities, setSelectedCities] = useState<City[]>([]);
@@ -437,10 +439,10 @@ export default function TestClustering() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: wordstatQuery,
+          keywords: [wordstatQuery],
           regions: selectedCities.map(c => c.id),
           mode: 'seo',
-          limit: 1000
+          objectAddress: useGeoKeys && objectAddress.trim() ? objectAddress : undefined
         })
       });
 
@@ -583,6 +585,42 @@ export default function TestClustering() {
                     className="mt-2"
                   />
                 </div>
+
+                <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="use-geo" 
+                      checked={useGeoKeys}
+                      onCheckedChange={(checked) => setUseGeoKeys(checked as boolean)}
+                    />
+                    <Label 
+                      htmlFor="use-geo" 
+                      className="text-sm font-medium leading-none cursor-pointer"
+                    >
+                      Добавить геоключи (опционально)
+                    </Label>
+                  </div>
+                  
+                  {useGeoKeys && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <Label htmlFor="address" className="text-sm text-slate-600">
+                        Адрес рекламируемого места
+                      </Label>
+                      <Input
+                        id="address"
+                        type="text"
+                        value={objectAddress}
+                        onChange={(e) => setObjectAddress(e.target.value)}
+                        placeholder="Ставрополь, Кулакова 1"
+                        className="bg-white"
+                      />
+                      <p className="text-xs text-slate-500">
+                        AI подберет разные комбинации ключей из Wordstat
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
