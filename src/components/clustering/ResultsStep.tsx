@@ -525,10 +525,12 @@ export default function ResultsStep({
           </div>
           
           {regions.length > 0 && (
-            <div className="text-sm text-gray-600 flex items-center gap-2">
-              <Icon name="MapPin" size={14} className="text-gray-500" />
-              <span className="font-medium">Регионы:</span>
-              <span>{regions.join(', ')}</span>
+            <div className="mt-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg px-4 py-3 border border-emerald-200">
+              <div className="flex items-center gap-2">
+                <Icon name="MapPin" size={16} className="text-emerald-600" />
+                <span className="font-semibold text-emerald-800">Регионы:</span>
+                <span className="text-emerald-700 font-medium">{regions.join(', ')}</span>
+              </div>
             </div>
           )}
         </div>
