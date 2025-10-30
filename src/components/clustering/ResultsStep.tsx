@@ -90,12 +90,14 @@ export default function ResultsStep({
     // Разбиваем фразу на слова (разделители: пробелы, дефисы, точки, запятые)
     const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
     
-    // Ищем точное вхождение поискового запроса в любое слово
-    const matches = words.some(word => word.includes(searchLower));
+    // Ищем только те слова, которые НАЧИНАЮТСЯ с поискового запроса
+    // "куп" найдёт: "купить", "куплю", НО НЕ "закупить" 
+    // "вторич" найдёт: "вторичка", "вторичный", НО НЕ "авторичка"
+    const matches = words.some(word => word.startsWith(searchLower));
     
     // Отладочный лог
     if (matches) {
-      console.log(`✓ Найдено совпадение: "${phrase}" содержит "${searchTerm}" в словах:`, words.filter(w => w.includes(searchLower)));
+      console.log(`✓ Найдено совпадение: "${phrase}" содержит "${searchTerm}" в словах:`, words.filter(w => w.startsWith(searchLower)));
     }
     
     return matches;
