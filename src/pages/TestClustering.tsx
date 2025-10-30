@@ -344,10 +344,10 @@ export default function TestClustering() {
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-semibold text-slate-800 mb-2 tracking-tight">
-                {projectName || 'Кластеризация ключей'}
+                AI сбор ключей
               </h1>
               <p className="text-lg text-slate-500">
-                Автоматическая кластеризация ключевых слов с помощью ИИ
+                {projectName || 'Автоматическая кластеризация ключевых слов'}
               </p>
             </div>
 

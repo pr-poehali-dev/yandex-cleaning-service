@@ -584,6 +584,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         use_openai: bool = body_data.get('use_openai', True)
         object_address: str = body_data.get('objectAddress', '')
         
+        print(f'[WORDSTAT] Request params: keywords={keywords}, regions={regions}, use_openai={use_openai}')
+        
         if not keywords:
             return {
                 'statusCode': 400,
