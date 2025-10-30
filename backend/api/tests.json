@@ -26,7 +26,7 @@
         "name": "Тест",
         "domain": "test.ru"
       },
-      "expectedStatus": 201,
+      "expectedStatus": 200,
       "expectedBody": {
         "id": "number",
         "name": "string"

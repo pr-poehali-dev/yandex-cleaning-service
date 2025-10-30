@@ -261,7 +261,7 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         conn.commit()
         
         return {
-            'statusCode': 201,
+            'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
                 'id': result[0],
