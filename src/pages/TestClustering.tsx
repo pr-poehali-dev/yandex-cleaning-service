@@ -193,6 +193,8 @@ export default function TestClustering() {
           
           if (project.results && project.results.clusters && project.results.clusters.length > 0) {
             console.log('✅ SHOWING RESULTS PAGE! Clusters:', project.results.clusters.length);
+            console.log('🔍 First cluster from DB:', project.results.clusters[0]);
+            console.log('🔍 First phrase from DB:', project.results.clusters[0]?.phrases?.[0]);
             setClusters(project.results.clusters);
             setMinusWords(project.results.minusWords || []);
             setStep('results');
