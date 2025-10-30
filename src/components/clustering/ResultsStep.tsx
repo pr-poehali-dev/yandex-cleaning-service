@@ -381,33 +381,56 @@ export default function ResultsStep({
   };
 
   const exportToExcel = () => {
-    let csv = '';
-    let totalExported = 0;
-
-    clusters.forEach(cluster => {
-      csv += `${cluster.name}\n`;
-      
+    const clusterData = clusters.map(cluster => {
       const phrasesToExport = cluster.phrases.filter(p => {
         if (excludeRedPhrases && p.isMinusWord) return false;
         return true;
       });
+      
+      return {
+        name: cluster.name,
+        phrases: phrasesToExport
+      };
+    });
 
-      phrasesToExport.forEach(phrase => {
-        if (includeFrequency) {
-          csv += `${phrase.phrase}\t${phrase.count}`;
-        } else {
-          csv += phrase.phrase;
+    const maxRows = Math.max(...clusterData.map(c => c.phrases.length));
+    
+    let csv = '';
+    let totalExported = 0;
+
+    const headerRow = clusterData.map(c => {
+      if (includeFrequency) {
+        return `${c.name}\tЧастотность`;
+      }
+      return c.name;
+    }).join('\t');
+    csv += headerRow + '\n';
+
+    for (let row = 0; row < maxRows; row++) {
+      const rowData = clusterData.map(cluster => {
+        const phrase = cluster.phrases[row];
+        if (!phrase) {
+          return includeFrequency ? '\t' : '';
         }
         
-        if (phrase.isMinusWord && !excludeRedPhrases) {
-          csv += '\t[МИНУС-СЛОВО]';
-        }
-        csv += '\n';
         totalExported++;
+        
+        if (includeFrequency) {
+          let text = `${phrase.phrase}\t${phrase.count}`;
+          if (phrase.isMinusWord && !excludeRedPhrases) {
+            text = `${phrase.phrase} [МИНУС]\t${phrase.count}`;
+          }
+          return text;
+        } else {
+          if (phrase.isMinusWord && !excludeRedPhrases) {
+            return `${phrase.phrase} [МИНУС]`;
+          }
+          return phrase.phrase;
+        }
       });
       
-      csv += '\n';
-    });
+      csv += rowData.join('\t') + '\n';
+    }
 
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
