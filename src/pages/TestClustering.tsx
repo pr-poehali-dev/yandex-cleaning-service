@@ -289,9 +289,9 @@ export default function TestClustering() {
     } catch (error) {
       console.error('Error fetching from Wordstat:', error);
       toast.error('Не удалось получить данные из Wordstat');
+      setStep('cities');
     } finally {
       setIsWordstatLoading(false);
-      setStep('source');
     }
   };
 
