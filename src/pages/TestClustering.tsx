@@ -174,8 +174,6 @@ export default function TestClustering() {
       return;
     }
     
-    setStep('processing');
-    
     try {
       const regionIds = cities.map(c => c.id);
       
@@ -373,9 +371,8 @@ export default function TestClustering() {
                 const firstKeyword = manualKeywords.split('\n')[0]?.trim();
                 if (firstKeyword && selectedCities.length > 0) {
                   setIsWordstatLoading(true);
-                  await handleWordstatSubmit(firstKeyword, selectedCities, goal);
-                } else {
                   setStep('processing');
+                  await handleWordstatSubmit(firstKeyword, selectedCities, goal);
                 }
               }}
               onBack={handleBack}
