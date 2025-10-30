@@ -172,6 +172,74 @@ def cosine_similarity_simple(vec1: Dict[str, float], vec2: Dict[str, float]) -> 
     
     return dot_product / (norm1 * norm2)
 
+def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context') -> List[Dict[str, Any]]:
+    '''
+    Кластеризация через OpenAI GPT-4o-mini
+    '''
+    openai_key = os.environ.get('OPENAI_API_KEY')
+    if not openai_key:
+        print('[OPENAI] API key not found, falling back to TF-IDF')
+        return smart_clusterize(phrases, mode)
+    
+    phrases_text = '\n'.join([f"{p['phrase']} ({p['count']} показов)" for p in phrases[:200]])
+    
+    prompt = f"""Ты эксперт по кластеризации поисковых запросов для {'контекстной рекламы' if mode == 'context' else 'SEO'}.
+
+Проанализируй фразы и раздели их на кластеры по смыслу и интенту пользователя.
+
+Правила:
+- {'Узкие кластеры (5-15 фраз) для точного таргетинга' if mode == 'context' else 'Широкие кластеры (10-30 фраз) для контента'}
+- Название кластера отражает главный интент
+- Каждая фраза только в одном кластере
+
+Фразы:
+{phrases_text}
+
+Верни JSON:
+{{
+  "clusters": [
+    {{
+      "cluster_name": "Название",
+      "intent": "commercial/informational/navigational",
+      "phrases": [{{"phrase": "текст", "count": число}}]
+    }}
+  ]
+}}"""
+    
+    try:
+        response = requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {openai_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'gpt-4o-mini',
+                'messages': [
+                    {'role': 'system', 'content': 'Ты эксперт по кластеризации. Отвечаешь только валидным JSON.'},
+                    {'role': 'user', 'content': prompt}
+                ],
+                'temperature': 0.3,
+                'response_format': {'type': 'json_object'}
+            },
+            timeout=60
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            content = data['choices'][0]['message']['content']
+            result = json.loads(content)
+            clusters = result.get('clusters', [])
+            print(f'[OPENAI] Created {len(clusters)} clusters via GPT-4o-mini')
+            return clusters
+        else:
+            print(f'[OPENAI] API error {response.status_code}, falling back to TF-IDF')
+            return smart_clusterize(phrases, mode)
+            
+    except Exception as e:
+        print(f'[OPENAI] Error: {str(e)}, falling back to TF-IDF')
+        return smart_clusterize(phrases, mode)
+
 def smart_clusterize(phrases: List[Dict[str, Any]], mode: str = 'seo') -> List[Dict[str, Any]]:
     '''
     Супер-продвинутая кластеризация с разными режимами:
@@ -399,6 +467,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(body_str)
         keywords: List[str] = body_data.get('keywords', [])
         regions: List[int] = body_data.get('regions', [213])
+        use_openai: bool = body_data.get('use_openai', True)
         
         if not keywords:
             return {
@@ -456,7 +525,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             clustering_mode = body_data.get('mode', 'seo')
             print(f'[WORDSTAT] Got {len(top_requests)} phrases from Yandex API, mode: {clustering_mode}')
             
-            clusters = smart_clusterize(top_requests, mode=clustering_mode)
+            if use_openai:
+                print('[WORDSTAT] Using OpenAI GPT-4o-mini for clustering')
+                clusters = clusterize_with_openai(top_requests, mode=clustering_mode)
+            else:
+                print('[WORDSTAT] Using TF-IDF for clustering')
+                clusters = smart_clusterize(top_requests, mode=clustering_mode)
+            
             print(f'[WORDSTAT] Created {len(clusters)} smart clusters ({clustering_mode} mode)')
             
             minus_words = {}
