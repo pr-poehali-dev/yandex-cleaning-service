@@ -244,10 +244,7 @@ export default function ResultsStep({
               <Icon name="FileText" size={16} />
               Экспорт
             </Button>
-            <Button onClick={onNewProject} size="sm" className="gap-2 bg-blue-600 hover:bg-blue-700">
-              <Icon name="ArrowLeft" size={16} />
-              К проектам
-            </Button>
+
           </div>
         </div>
       </div>
@@ -282,7 +279,7 @@ export default function ResultsStep({
                 </button>
               )}
 
-              <div className="p-3 border-b border-gray-200 bg-white/60">
+              <div className="p-3 border-b border-gray-200" style={{ backgroundColor: cluster.bgColor }}>
                 <div className="flex items-center gap-2 mb-2">
                   <Icon name={cluster.icon as any} size={18} className="text-gray-700" />
                   <Input
