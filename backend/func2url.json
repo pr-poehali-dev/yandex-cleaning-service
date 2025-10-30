@@ -1,3 +1,7 @@
 {
-  "api": "https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f"
+  "wordstat-regions": "https://functions.poehali.dev/a0ab9dc8-671f-45ed-a5a9-a17f5e7fd34d",
+  "api": "https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f",
+  "yandex-direct": "https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23",
+  "wordstat": "https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8",
+  "yandex-platforms": "https://functions.poehali.dev/92a3c242-6114-450f-b744-88b7eda19d62"
 }

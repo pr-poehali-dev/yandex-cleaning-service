@@ -150,10 +150,17 @@ export default function ResultsStep({
     }
   };
 
-  const renameCluster = (clusterIndex: number, newName: string) => {
+  const renameCluster = async (clusterIndex: number, newName: string) => {
     const newClusters = [...clusters];
     newClusters[clusterIndex].name = newName;
     setClusters(newClusters);
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        minusWords
+      );
+    }
   };
 
   const deleteCluster = async (clusterIndex: number) => {
