@@ -47,11 +47,10 @@ const PROCESSING_STAGES = [
 ];
 
 const CLUSTER_STYLES = [
-  { bg: 'bg-gradient-to-br from-emerald-50 to-teal-50', border: 'border-emerald-200', headerBg: 'bg-gradient-to-r from-emerald-500 to-teal-500', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
-  { bg: 'bg-gradient-to-br from-blue-50 to-cyan-50', border: 'border-blue-200', headerBg: 'bg-gradient-to-r from-blue-500 to-cyan-500', iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
-  { bg: 'bg-gradient-to-br from-purple-50 to-pink-50', border: 'border-purple-200', headerBg: 'bg-gradient-to-r from-purple-500 to-pink-500', iconBg: 'bg-purple-100', iconColor: 'text-purple-600' },
-  { bg: 'bg-gradient-to-br from-orange-50 to-amber-50', border: 'border-orange-200', headerBg: 'bg-gradient-to-r from-orange-500 to-amber-500', iconBg: 'bg-orange-100', iconColor: 'text-orange-600' },
-  { bg: 'bg-gradient-to-br from-rose-50 to-red-50', border: 'border-rose-200', headerBg: 'bg-gradient-to-r from-rose-500 to-red-500', iconBg: 'bg-rose-100', iconColor: 'text-rose-600' },
+  { bg: 'bg-slate-50', border: 'border-slate-200', headerBg: 'bg-white', iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+  { bg: 'bg-slate-50', border: 'border-slate-200', headerBg: 'bg-white', iconBg: 'bg-teal-100', iconColor: 'text-teal-600' },
+  { bg: 'bg-slate-50', border: 'border-slate-200', headerBg: 'bg-white', iconBg: 'bg-green-100', iconColor: 'text-green-600' },
+  { bg: 'bg-slate-50', border: 'border-slate-200', headerBg: 'bg-white', iconBg: 'bg-lime-100', iconColor: 'text-lime-600' },
 ];
 
 const mockClusters: Cluster[] = [
@@ -642,28 +641,25 @@ export default function TestClustering() {
             <div key={renderKey} className="space-y-6 pb-8">
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
-                <Card className="relative overflow-hidden shadow-lg border-2 border-emerald-200">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 rounded-bl-full" />
-                  <div className="relative p-6 bg-gradient-to-br from-emerald-50 to-white">
-                    <Icon name="Grid3x3" className="h-8 w-8 text-emerald-500 mb-3" />
+                <Card className="relative overflow-hidden shadow-lg">
+                  <div className="relative p-6 bg-white">
+                    <Icon name="Layers" className="h-8 w-8 text-slate-500 mb-3" />
                     <div className="text-4xl font-bold text-slate-900 mb-2">{clusters.length}</div>
                     <div className="text-sm text-slate-600 font-medium">Кластеров</div>
                   </div>
                 </Card>
-                <Card className="relative overflow-hidden shadow-lg border-2 border-blue-200">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-bl-full" />
-                  <div className="relative p-6 bg-gradient-to-br from-blue-50 to-white">
-                    <Icon name="Hash" className="h-8 w-8 text-blue-500 mb-3" />
+                <Card className="relative overflow-hidden shadow-lg">
+                  <div className="relative p-6 bg-white">
+                    <Icon name="Key" className="h-8 w-8 text-slate-500 mb-3" />
                     <div className="text-4xl font-bold text-slate-900 mb-2">
                       {clusters.reduce((sum, c) => sum + c.phrases.length, 0)}
                     </div>
                     <div className="text-sm text-slate-600 font-medium">Ключевых фраз</div>
                   </div>
                 </Card>
-                <Card className="relative overflow-hidden shadow-lg border-2 border-rose-200">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-red-500/10 rounded-bl-full" />
-                  <div className="relative p-6 bg-gradient-to-br from-rose-50 to-white">
-                    <Icon name="Ban" className="h-8 w-8 text-rose-500 mb-3" />
+                <Card className="relative overflow-hidden shadow-lg">
+                  <div className="relative p-6 bg-white">
+                    <Icon name="Ban" className="h-8 w-8 text-slate-500 mb-3" />
                     <div className="text-4xl font-bold text-slate-900 mb-2">{minusWords.length}</div>
                     <div className="text-sm text-slate-600 font-medium">Минус-слов</div>
                   </div>
@@ -694,31 +690,34 @@ export default function TestClustering() {
                   const intentType = INTENT_TYPES.find(i => i.id === cluster.intent);
                   
                   return (
-                    <Card key={idx} className={`border-2 ${style.border} shadow-lg hover:shadow-xl transition-shadow overflow-hidden`}>
-                      <CardHeader className={`${style.headerBg} text-white`}>
+                    <Card key={idx} className="border">
+                      <CardHeader>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                              <Icon name={cluster.icon as any} className="h-6 w-6 text-white" />
+                            <div className={`w-10 h-10 rounded-lg ${style.iconBg} flex items-center justify-center`}>
+                              <Icon name={cluster.icon as any} className={`h-5 w-5 ${style.iconColor}`} />
                             </div>
                             <div>
-                              <CardTitle className="text-xl text-white">{cluster.name}</CardTitle>
-                              <CardDescription className="text-white/90">
+                              <CardTitle className="text-lg">{cluster.name}</CardTitle>
+                              <CardDescription>
                                 {intentType?.emoji} {intentType?.label} • {cluster.phrases.length} фраз
                               </CardDescription>
                             </div>
                           </div>
+                          <Badge variant="outline" className="text-xs">
+                            {INTENT_TYPES.find(t => t.id === cluster.intent)?.label}
+                          </Badge>
                         </div>
                       </CardHeader>
-                      <CardContent className={`${style.bg} pt-4`}>
+                      <CardContent className="pt-4">
                         <div className="space-y-2">
                           {cluster.phrases.map((phrase, pIdx) => (
                             <div
                               key={pIdx}
-                              className="flex items-center justify-between p-3 bg-white rounded-lg border-2 border-slate-100 hover:border-slate-300 transition-colors shadow-sm"
+                              className="flex items-center justify-between py-2 px-3 hover:bg-slate-50 rounded"
                             >
-                              <span className="text-sm font-medium text-slate-700">{phrase.phrase}</span>
-                              <Badge variant="secondary" className="font-mono text-xs bg-slate-100 hover:bg-slate-200">
+                              <span className="text-sm">{phrase.phrase}</span>
+                              <Badge variant="outline" className="font-mono text-xs">
                                 {phrase.count.toLocaleString()}
                               </Badge>
                             </div>
@@ -731,28 +730,23 @@ export default function TestClustering() {
               </div>
 
               {/* Minus Words */}
-              <Card className="border-2 border-rose-200 shadow-lg bg-gradient-to-br from-rose-50 to-white">
-                <CardHeader className="bg-gradient-to-r from-rose-500 to-red-500 text-white">
+              <Card>
+                <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <Icon name="Ban" className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl text-white">Минус-слова</CardTitle>
-                        <CardDescription className="text-white/90">Слова для исключения из показов • {minusWords.length} слов</CardDescription>
-                      </div>
+                    <div>
+                      <CardTitle>Минус-слова</CardTitle>
+                      <CardDescription>Слова для исключения из показов</CardDescription>
                     </div>
-                    <Button variant="secondary" size="sm" onClick={copyMinusWords} className="bg-white/20 hover:bg-white/30 text-white border-white/30">
+                    <Button variant="outline" size="sm" onClick={copyMinusWords}>
                       <Icon name="Copy" className="mr-2 h-4 w-4" />
                       Копировать
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {minusWords.map((word, idx) => (
-                      <Badge key={idx} className="bg-gradient-to-r from-rose-500 to-red-500 text-white px-3 py-1 text-sm font-medium shadow-md hover:shadow-lg transition-shadow">
+                      <Badge key={idx} variant="destructive">
                         {word}
                       </Badge>
                     ))}
