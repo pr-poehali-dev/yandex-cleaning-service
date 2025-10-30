@@ -3,25 +3,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 
 interface Phrase {
   phrase: string;
@@ -53,28 +34,26 @@ const CLUSTER_COLORS = [
   '#E1F5FE',
 ];
 
-function SortablePhrase({ phrase, onRemove }: { phrase: Phrase; onRemove: () => void }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: phrase.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
+function DraggablePhrase({ 
+  phrase, 
+  onRemove,
+  onDragStart,
+  onDragEnd
+}: { 
+  phrase: Phrase; 
+  onRemove: () => void;
+  onDragStart: (phrase: Phrase) => void;
+  onDragEnd: (phrase: Phrase) => void;
+}) {
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('phraseId', phrase.id);
+        onDragStart(phrase);
+      }}
+      onDragEnd={() => onDragEnd(phrase)}
       className="px-2 py-1 border-b border-slate-200 hover:bg-slate-50 cursor-move flex items-center justify-between group"
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -104,15 +83,9 @@ export default function ExcelClustersTable({
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [minusPhrases, setMinusPhrases] = useState<Phrase[]>([]);
   const [minusSearchText, setMinusSearchText] = useState('');
-  const [activePhrase, setActivePhrase] = useState<Phrase | null>(null);
+  const [draggedPhrase, setDraggedPhrase] = useState<Phrase | null>(null);
+  const [dragOverCluster, setDragOverCluster] = useState<string | null>(null);
   const { toast } = useToast();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   useEffect(() => {
     setClusters(initialClusters.map((c, idx) => ({
@@ -221,112 +194,51 @@ export default function ExcelClustersTable({
     }
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const phraseId = active.id as string;
-    
-    for (const cluster of clusters) {
-      const phrase = cluster.phrases.find(p => p.id === phraseId);
-      if (phrase) {
-        setActivePhrase(phrase);
-        return;
-      }
-    }
-    
-    const minusPhrase = minusPhrases.find(p => p.id === phraseId);
-    if (minusPhrase) {
-      setActivePhrase(minusPhrase);
-    }
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActivePhrase(null);
-
-    if (!over || active.id === over.id) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-
-    let sourceClusterIndex = -1;
-    let targetClusterIndex = -1;
-    let isFromMinus = false;
-    let isToMinus = false;
-
-    if (activeId.startsWith('minus-')) {
-      isFromMinus = true;
-    } else {
-      sourceClusterIndex = clusters.findIndex(c => 
-        c.phrases.some(p => p.id === activeId)
-      );
-    }
-
-    if (overId.startsWith('minus-') || overId === 'minus-drop') {
-      isToMinus = true;
-    } else if (overId.startsWith('cluster-')) {
-      targetClusterIndex = clusters.findIndex(c => c.id === overId);
-    } else {
-      targetClusterIndex = clusters.findIndex(c => 
-        c.phrases.some(p => p.id === overId)
-      );
-    }
-
-    if (sourceClusterIndex === targetClusterIndex && !isFromMinus && !isToMinus) {
-      const cluster = clusters[sourceClusterIndex];
-      const oldIndex = cluster.phrases.findIndex(p => p.id === activeId);
-      const newIndex = cluster.phrases.findIndex(p => p.id === overId);
-
-      if (oldIndex !== newIndex) {
-        const newClusters = [...clusters];
-        newClusters[sourceClusterIndex].phrases = arrayMove(
-          cluster.phrases,
-          oldIndex,
-          newIndex
-        );
-        setClusters(newClusters);
-      }
-      return;
-    }
-
+  const handleDrop = (targetClusterId: string, phraseId: string) => {
     const newClusters = [...clusters];
     let movedPhrase: Phrase | undefined;
+    let sourceClusterIndex = -1;
 
-    if (isFromMinus) {
-      const phraseIndex = minusPhrases.findIndex(p => p.id === activeId);
-      if (phraseIndex !== -1) {
-        movedPhrase = minusPhrases[phraseIndex];
-        setMinusPhrases(minusPhrases.filter((_, i) => i !== phraseIndex));
+    if (phraseId.startsWith('minus-')) {
+      const idx = minusPhrases.findIndex(p => p.id === phraseId);
+      if (idx !== -1) {
+        movedPhrase = minusPhrases[idx];
+        setMinusPhrases(minusPhrases.filter((_, i) => i !== idx));
       }
-    } else if (sourceClusterIndex !== -1) {
-      const phraseIndex = newClusters[sourceClusterIndex].phrases.findIndex(
-        p => p.id === activeId
-      );
-      if (phraseIndex !== -1) {
-        movedPhrase = newClusters[sourceClusterIndex].phrases[phraseIndex];
-        newClusters[sourceClusterIndex].phrases = newClusters[sourceClusterIndex].phrases.filter(
-          (_, i) => i !== phraseIndex
-        );
+    } else {
+      for (let i = 0; i < newClusters.length; i++) {
+        const idx = newClusters[i].phrases.findIndex(p => p.id === phraseId);
+        if (idx !== -1) {
+          movedPhrase = newClusters[i].phrases[idx];
+          sourceClusterIndex = i;
+          newClusters[i].phrases = newClusters[i].phrases.filter((_, j) => j !== idx);
+          break;
+        }
       }
     }
 
     if (!movedPhrase) return;
 
-    if (isToMinus) {
+    if (targetClusterId === 'minus-drop') {
       setMinusPhrases(prev => [...prev, movedPhrase!]);
       toast({
         title: '🚫 В минус-слова',
         description: `"${movedPhrase.phrase}"`
       });
-    } else if (targetClusterIndex !== -1) {
-      newClusters[targetClusterIndex].phrases.push(movedPhrase);
-      newClusters[targetClusterIndex].phrases.sort((a, b) => b.count - a.count);
-      toast({
-        title: '✅ Перенесено',
-        description: `→ "${newClusters[targetClusterIndex].cluster_name}"`
-      });
+    } else {
+      const targetIndex = newClusters.findIndex(c => c.id === targetClusterId);
+      if (targetIndex !== -1) {
+        newClusters[targetIndex].phrases.push(movedPhrase);
+        newClusters[targetIndex].phrases.sort((a, b) => b.count - a.count);
+        toast({
+          title: '✅ Перенесено',
+          description: `→ "${newClusters[targetIndex].cluster_name}"`
+        });
+      }
     }
 
     setClusters(newClusters);
+    setDragOverCluster(null);
   };
 
   const removePhrase = (clusterIndex: number, phraseId: string) => {
@@ -402,12 +314,6 @@ export default function ExcelClustersTable({
   );
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -503,46 +409,62 @@ export default function ExcelClustersTable({
                 {clusters.map((cluster, colIdx) => (
                   <td 
                     key={cluster.id}
-                    className="border-r align-top p-0"
+                    className="border-r align-top p-0 relative"
                     style={{ backgroundColor: `${cluster.color}30` }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverCluster(cluster.id);
+                    }}
+                    onDragLeave={() => setDragOverCluster(null)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const phraseId = e.dataTransfer.getData('phraseId');
+                      if (phraseId) handleDrop(cluster.id, phraseId);
+                    }}
                   >
-                    <SortableContext
-                      items={cluster.phrases.map(p => p.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div 
-                        id={cluster.id}
-                        className="min-h-[100px]"
-                      >
-                        {cluster.phrases.map((phrase) => (
-                          <SortablePhrase
-                            key={phrase.id}
-                            phrase={phrase}
-                            onRemove={() => removePhrase(colIdx, phrase.id)}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </td>
-                ))}
-                <td className="border-r align-top bg-red-50 p-0">
-                  <SortableContext
-                    items={minusPhrases.map(p => p.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <div 
-                      id="minus-drop"
-                      className="min-h-[100px]"
-                    >
-                      {minusPhrases.map((phrase) => (
-                        <SortablePhrase
+                    {dragOverCluster === cluster.id && (
+                      <div className="absolute inset-0 bg-blue-200 opacity-30 pointer-events-none z-10" />
+                    )}
+                    <div className="min-h-[100px]">
+                      {cluster.phrases.map((phrase) => (
+                        <DraggablePhrase
                           key={phrase.id}
                           phrase={phrase}
-                          onRemove={() => removeMinusPhrase(phrase.id)}
+                          onDragStart={() => setDraggedPhrase(phrase)}
+                          onDragEnd={() => setDraggedPhrase(null)}
+                          onRemove={() => removePhrase(colIdx, phrase.id)}
                         />
                       ))}
                     </div>
-                  </SortableContext>
+                  </td>
+                ))}
+                <td 
+                  className="border-r align-top bg-red-50 p-0 relative"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverCluster('minus-drop');
+                  }}
+                  onDragLeave={() => setDragOverCluster(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const phraseId = e.dataTransfer.getData('phraseId');
+                    if (phraseId) handleDrop('minus-drop', phraseId);
+                  }}
+                >
+                  {dragOverCluster === 'minus-drop' && (
+                    <div className="absolute inset-0 bg-red-200 opacity-30 pointer-events-none z-10" />
+                  )}
+                  <div className="min-h-[100px]">
+                    {minusPhrases.map((phrase) => (
+                      <DraggablePhrase
+                        key={phrase.id}
+                        phrase={phrase}
+                        onDragStart={() => setDraggedPhrase(phrase)}
+                        onDragEnd={() => setDraggedPhrase(null)}
+                        onRemove={() => removeMinusPhrase(phrase.id)}
+                      />
+                    ))}
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -550,13 +472,6 @@ export default function ExcelClustersTable({
         </div>
       </div>
 
-      <DragOverlay>
-        {activePhrase ? (
-          <div className="px-2 py-1 bg-white border border-slate-300 rounded shadow-lg text-xs">
-            {activePhrase.phrase} ({activePhrase.count})
-          </div>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    </div>
   );
 }
