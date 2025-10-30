@@ -237,17 +237,22 @@ export default function ResultsStep({
 
         if (phrasesToReturn.length > 0) {
           const newClusters = [...clusters];
+          const newHistory = new Map(moveHistory);
+          const phrasesToReturnSet = new Set(phrasesToReturn.map(p => p.phrase));
+          
           phrasesToReturn.forEach(p => {
             const originalClusterIdx = moveHistory.get(p.phrase);
             if (originalClusterIdx !== undefined) {
               newClusters[originalClusterIdx].phrases.push(p);
               newClusters[originalClusterIdx].phrases.sort((a, b) => b.count - a.count);
-              moveHistory.delete(p.phrase);
+              newHistory.delete(p.phrase);
             }
           });
 
-          setMinusWords(prev => prev.filter(p => !moveHistory.has(p.phrase) || moveHistory.get(p.phrase) === undefined));
+          setMinusWords(prev => prev.filter(p => !phrasesToReturnSet.has(p.phrase)));
           setClusters(newClusters);
+          setMoveHistory(newHistory);
+          setHasChanges(true);
         }
       }
       return;
