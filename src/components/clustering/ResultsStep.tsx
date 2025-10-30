@@ -58,21 +58,28 @@ export default function ResultsStep({
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('🔄 ResultsStep: initialClusters updated', initialClusters.length);
-    setClusters(
-      initialClusters.map((c, idx) => ({
-        ...c,
-        bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
-        searchText: '',
-        hovering: false
-      }))
-    );
-  }, [initialClusters]);
-
-  useEffect(() => {
-    console.log('🔄 ResultsStep: initialMinusWords updated', initialMinusWords.length);
-    setMinusWords(initialMinusWords);
-  }, [initialMinusWords]);
+    console.log('🔄 ResultsStep: Props updated', {
+      clustersCount: initialClusters.length,
+      minusWordsCount: initialMinusWords.length,
+      firstCluster: initialClusters[0]?.name,
+      firstClusterPhrases: initialClusters[0]?.phrases?.length
+    });
+    
+    if (initialClusters.length > 0) {
+      setClusters(
+        initialClusters.map((c, idx) => ({
+          ...c,
+          bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
+          searchText: '',
+          hovering: false
+        }))
+      );
+    }
+    
+    if (initialMinusWords.length > 0) {
+      setMinusWords(initialMinusWords);
+    }
+  }, [initialClusters.length, initialMinusWords.length]);
 
   const matchesSearch = (phrase: string, searchTerm: string): boolean => {
     if (!searchTerm.trim()) return false;
