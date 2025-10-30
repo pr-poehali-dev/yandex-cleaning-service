@@ -209,7 +209,7 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         else:
             cur.execute(
                 """
-                SELECT id, name, domain, intent_filter, status, 
+                SELECT id, name, source, website_url,
                        keywords_count, clusters_count, minus_words_count,
                        created_at, updated_at
                 FROM clustering_projects
@@ -223,11 +223,13 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                 projects.append({
                     'id': row[0],
                     'name': row[1],
-                    'keywordsCount': row[2],
-                    'clustersCount': row[3],
-                    'minusWordsCount': row[4],
-                    'createdAt': row[5].isoformat() if row[5] else None,
-                    'updatedAt': row[6].isoformat() if row[6] else None
+                    'domain': row[3],
+                    'keywordsCount': row[4],
+                    'clustersCount': row[5],
+                    'minusWordsCount': row[6],
+                    'createdAt': row[7].isoformat() if row[7] else None,
+                    'updatedAt': row[8].isoformat() if row[8] else None,
+                    'status': row[2]
                 })
             
             return {
