@@ -11,11 +11,7 @@ import ProcessingStep from '@/components/clustering/ProcessingStep';
 import ResultsStep from '@/components/clustering/ResultsStep';
 import StepIndicator from '@/components/clustering/StepIndicator';
 import WordstatDialog from '@/components/clustering/WordstatDialog';
-import { 
-  generateClustersFromKeywords, 
-  generateMinusWords, 
-  PROCESSING_STAGES 
-} from '@/components/clustering/ClusteringHelpers';
+
 
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 const WORDSTAT_API_URL = 'https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8';
@@ -52,8 +48,7 @@ export default function TestClustering() {
   const [citySearch, setCitySearch] = useState('');
   const [goal, setGoal] = useState<Goal>('context');
   const [selectedIntents, setSelectedIntents] = useState<string[]>(['commercial', 'transactional']);
-  const [processingProgress, setProcessingProgress] = useState(0);
-  const [currentStage, setCurrentStage] = useState(0);
+
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [minusWords, setMinusWords] = useState<Phrase[]>([]);
   const [projectName, setProjectName] = useState('');
@@ -389,8 +384,8 @@ export default function TestClustering() {
 
           {(step === 'processing' || isWordstatLoading) && (
             <ProcessingStep
-              progress={isWordstatLoading ? 50 : processingProgress}
-              currentStage={isWordstatLoading ? 2 : currentStage}
+              progress={50}
+              currentStage={2}
             />
           )}
 
