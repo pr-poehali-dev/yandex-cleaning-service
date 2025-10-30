@@ -301,18 +301,28 @@ export default function TestClustering() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-semibold text-slate-800 mb-2 tracking-tight">
-              {projectName || 'Кластеризация ключей'}
-            </h1>
-            <p className="text-lg text-slate-500">
-              Автоматическая кластеризация ключевых слов с помощью ИИ
-            </p>
-          </div>
+      {step === 'results' ? (
+        <ResultsStep
+          clusters={clusters}
+          minusWords={minusWords}
+          onExport={exportClusters}
+          onNewProject={() => navigate('/')}
+          projectId={projectId ? parseInt(projectId) : undefined}
+          onSaveChanges={saveResultsToAPI}
+        />
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-semibold text-slate-800 mb-2 tracking-tight">
+                {projectName || 'Кластеризация ключей'}
+              </h1>
+              <p className="text-lg text-slate-500">
+                Автоматическая кластеризация ключевых слов с помощью ИИ
+              </p>
+            </div>
 
-          <StepIndicator currentStep={step} />
+            <StepIndicator currentStep={step} />
 
           {step === 'source' && (
             <SourceStep
@@ -364,16 +374,6 @@ export default function TestClustering() {
             />
           )}
 
-          {step === 'results' && (
-            <ResultsStep
-              clusters={clusters}
-              minusWords={minusWords}
-              onExportClusters={exportClusters}
-              onExportMinusWords={exportMinusWords}
-              onBack={handleBack}
-            />
-          )}
-
           <WordstatDialog
             open={step === 'wordstat-dialog'}
             onOpenChange={(open) => setStep(open ? 'wordstat-dialog' : 'source')}
@@ -382,8 +382,9 @@ export default function TestClustering() {
             selectedCities={selectedCities}
             setSelectedCities={setSelectedCities}
           />
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
