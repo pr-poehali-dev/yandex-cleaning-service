@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -150,17 +150,35 @@ export default function TestClustering() {
     fetchProject();
   }, [projectId, navigate]);
 
-  const saveResultsToAPI = async (clustersData: Cluster[], minusWordsData: string[]) => {
-    if (!projectId) return;
+  const saveResultsToAPI = useCallback(async (clustersData: Cluster[], minusWordsData: string[]) => {
+    console.log('saveResultsToAPI called with projectId:', projectId);
+    
+    if (!projectId) {
+      console.error('No projectId provided');
+      return;
+    }
 
     const userId = localStorage.getItem('userId');
     if (!userId) {
+      console.error('No userId found');
       toast.error('Ошибка: пользователь не авторизован');
       return;
     }
 
     try {
       const totalPhrases = clustersData.reduce((sum, c) => sum + c.phrases.length, 0);
+      const payload = {
+        id: parseInt(projectId),
+        results: {
+          clusters: clustersData,
+          minusWords: minusWordsData
+        },
+        keywordsCount: totalPhrases,
+        clustersCount: clustersData.length,
+        minusWordsCount: minusWordsData.length
+      };
+      
+      console.log('Saving results to API:', payload);
       
       const response = await fetch(`${API_URL}?endpoint=projects`, {
         method: 'PUT',
@@ -168,17 +186,10 @@ export default function TestClustering() {
           'Content-Type': 'application/json',
           'X-User-Id': userId
         },
-        body: JSON.stringify({
-          id: projectId,
-          results: {
-            clusters: clustersData,
-            minusWords: minusWordsData
-          },
-          keywordsCount: totalPhrases,
-          clustersCount: clustersData.length,
-          minusWordsCount: minusWordsData.length
-        })
+        body: JSON.stringify(payload)
       });
+
+      console.log('Save response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -188,11 +199,12 @@ export default function TestClustering() {
 
       const result = await response.json();
       console.log('Results saved successfully:', result);
+      toast.success('Результаты сохранены!');
     } catch (error) {
       console.error('Error saving results:', error);
       toast.error('Не удалось сохранить результаты');
     }
-  };
+  }, [projectId]);
 
   const addCity = (city: City) => {
     setSelectedCities([...selectedCities, city]);
@@ -213,6 +225,7 @@ export default function TestClustering() {
 
   useEffect(() => {
     if (step === 'processing') {
+      console.log('Starting processing with projectId:', projectId);
       let totalDuration = 0;
       let currentProgress = 0;
 
@@ -225,6 +238,7 @@ export default function TestClustering() {
 
           if (idx === PROCESSING_STAGES.length - 1) {
             setTimeout(async () => {
+              console.log('Processing complete, saving results...');
               setClusters(mockClusters);
               setMinusWords(mockMinusWords);
               await saveResultsToAPI(mockClusters, mockMinusWords);
@@ -236,7 +250,7 @@ export default function TestClustering() {
         totalDuration += stage.duration;
       });
     }
-  }, [step, projectId]);
+  }, [step, projectId, saveResultsToAPI]);
 
   const exportResults = () => {
     const data = {
