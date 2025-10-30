@@ -450,12 +450,48 @@ export default function ResultsStep({
                       />
                       <span className="text-xs text-muted-foreground flex-shrink-0">{cluster.phrases.length}</span>
                     </div>
-                    <Input
-                      placeholder="🔍 Искать и перенести сюда..."
-                      value={cluster.searchText}
-                      onChange={(e) => handleSearchChange(idx, e.target.value)}
-                      className="h-8 text-sm bg-white/80 border-slate-300 focus:bg-white"
-                    />
+                    <div className="flex gap-1.5">
+                      <Input
+                        placeholder="🔍 Поиск..."
+                        value={cluster.searchText}
+                        onChange={(e) => handleSearchChange(idx, e.target.value)}
+                        className="h-8 text-sm bg-white/80 border-slate-300 focus:bg-white flex-1"
+                      />
+                      {cluster.searchText && cluster.searchText.trim().length >= 3 && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            // Фиксируем перемещение: удаляем из истории все перенесённые фразы
+                            const newClusters = [...clusters];
+                            const targetCluster = newClusters[idx];
+                            const newHistory = new Map(moveHistory);
+                            
+                            targetCluster.phrases.forEach(p => {
+                              const originalCluster = newHistory.get(p.phrase);
+                              if (originalCluster !== undefined && originalCluster !== idx) {
+                                // Это перенесённая фраза - делаем её постоянной
+                                newHistory.delete(p.phrase);
+                              }
+                            });
+                            
+                            // Очищаем поле поиска
+                            targetCluster.searchText = '';
+                            
+                            setClusters(newClusters);
+                            setMoveHistory(newHistory);
+                            setHasChanges(true);
+                            
+                            toast({
+                              title: '✅ Добавлено',
+                              description: `Фразы зафиксированы в "${targetCluster.name}"`
+                            });
+                          }}
+                          className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <Icon name="Plus" size={14} />
+                        </Button>
+                      )}
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -477,12 +513,44 @@ export default function ResultsStep({
                     <span className="font-bold">Минус-слова</span>
                     <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">{minusWords.length}</span>
                   </div>
-                  <Input
-                    placeholder="🚫 Искать и убрать из кластеров..."
-                    value={minusSearchText}
-                    onChange={(e) => handleMinusSearchChange(e.target.value)}
-                    className="h-8 text-sm bg-white/80 border-red-300 focus:bg-white"
-                  />
+                  <div className="flex gap-1.5">
+                    <Input
+                      placeholder="🚫 Поиск..."
+                      value={minusSearchText}
+                      onChange={(e) => handleMinusSearchChange(e.target.value)}
+                      className="h-8 text-sm bg-white/80 border-red-300 focus:bg-white flex-1"
+                    />
+                    {minusSearchText && minusSearchText.trim().length > 0 && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          // Фиксируем перемещение в минус-слова
+                          const newHistory = new Map(moveHistory);
+                          
+                          minusWords.forEach(p => {
+                            const originalCluster = newHistory.get(p.phrase);
+                            if (originalCluster !== undefined) {
+                              // Это перенесённая фраза - делаем её постоянной
+                              newHistory.delete(p.phrase);
+                            }
+                          });
+                          
+                          // Очищаем поле поиска
+                          setMinusSearchText('');
+                          setMoveHistory(newHistory);
+                          setHasChanges(true);
+                          
+                          toast({
+                            title: '✅ Добавлено',
+                            description: `Фразы зафиксированы в минус-словах`
+                          });
+                        }}
+                        className="h-8 px-3 bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        <Icon name="Plus" size={14} />
+                      </Button>
+                    )}
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
