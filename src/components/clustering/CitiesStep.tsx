@@ -161,7 +161,7 @@ export default function CitiesStep({
           </Button>
           <Button 
             onClick={onNext}
-            disabled={selectedCities.length === 0 || isLoading}
+            disabled={selectedCities.length === 0}
             className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white"
           >
             Далее
