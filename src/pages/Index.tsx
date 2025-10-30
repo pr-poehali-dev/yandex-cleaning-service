@@ -228,74 +228,86 @@ export default function Index() {
   const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent mb-3">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-3 mb-4 px-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full shadow-lg">
+            <Icon name="Sparkles" size={28} className="text-white" />
+            <span className="text-white font-bold text-lg">AI Кластеризатор</span>
+          </div>
+          <h1 className="text-6xl font-black bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent mb-4">
             Кластеризатор
           </h1>
-          <p className="text-lg text-muted-foreground">
-            OpenAI создаст кластеры и минус-слова за 30 секунд ✨
+          <p className="text-xl text-slate-600 font-medium">
+            OpenAI создаст кластеры и минус-слова за 30 секунд
           </p>
         </div>
 
         {step !== 'processing' && step !== 'results' && (
-          <div className="mb-8 flex justify-center gap-2">
+          <div className="mb-10 flex justify-center gap-3">
             {['source', 'cities', 'goal', 'intents'].map((s, idx) => (
               <div key={s} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                  step === s ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white scale-110 shadow-lg' : 
-                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-green-500 text-white' : 'bg-white/60 backdrop-blur text-gray-400 border-2 border-gray-200'
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-base font-black transition-all shadow-lg ${
+                  step === s ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white scale-125 shadow-violet-300' : 
+                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white' : 'bg-white text-slate-400 border-2 border-slate-200'
                 }`}>
-                  {['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? '✓' : idx + 1}
+                  {['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? <Icon name="Check" size={24} /> : idx + 1}
                 </div>
-                {idx < 3 && <div className={`w-12 h-1 rounded transition-all ${
-                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-green-500' : 'bg-gray-200'
+                {idx < 3 && <div className={`w-16 h-2 rounded-full transition-all ${
+                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-slate-200'
                 }`} />}
               </div>
             ))}
           </div>
         )}
 
-        <Card className="shadow-2xl backdrop-blur-sm bg-white/80 border-0">
+        <Card className="shadow-2xl bg-white border-0 rounded-3xl overflow-hidden">
           {step === 'source' && (
             <>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg">
-                    <Icon name="FileText" size={24} className="text-white" />
+              <CardHeader className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white pb-8">
+                <CardTitle className="flex items-center gap-4 text-3xl">
+                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                    <Icon name="FileText" size={32} className="text-white" />
                   </div>
                   Откуда взять ключи?
                 </CardTitle>
-                <CardDescription className="text-base">
+                <CardDescription className="text-lg text-white/90 ml-16">
                   Выберите источник для сбора семантического ядра
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="space-y-8 p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card 
-                    className={`cursor-pointer transition-all hover:scale-105 ${source === 'manual' ? 'ring-4 ring-blue-500 shadow-xl bg-gradient-to-br from-blue-50 to-blue-100' : 'hover:shadow-lg bg-white'}`}
+                    className={`cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
+                      source === 'manual' 
+                        ? 'border-violet-500 shadow-2xl shadow-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50' 
+                        : 'border-slate-200 hover:border-violet-300 bg-white'
+                    }`}
                     onClick={() => setSource('manual')}
                   >
-                    <CardContent className="p-8 text-center">
-                      <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl inline-block mb-4">
-                        <Icon name="Edit" size={40} className="text-white" />
+                    <CardContent className="p-10 text-center">
+                      <div className="p-5 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-3xl inline-block mb-5 shadow-lg">
+                        <Icon name="Edit" size={48} className="text-white" />
                       </div>
-                      <h3 className="font-bold text-xl mb-2">Вставить вручную</h3>
-                      <p className="text-sm text-muted-foreground">Есть список из Wordstat</p>
+                      <h3 className="font-black text-2xl mb-3 text-slate-800">Вставить вручную</h3>
+                      <p className="text-base text-slate-600">Есть список из Wordstat</p>
                     </CardContent>
                   </Card>
 
                   <Card 
-                    className={`cursor-pointer transition-all hover:scale-105 ${source === 'website' ? 'ring-4 ring-purple-500 shadow-xl bg-gradient-to-br from-purple-50 to-purple-100' : 'hover:shadow-lg bg-white'}`}
+                    className={`cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
+                      source === 'website' 
+                        ? 'border-fuchsia-500 shadow-2xl shadow-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-pink-50' 
+                        : 'border-slate-200 hover:border-fuchsia-300 bg-white'
+                    }`}
                     onClick={() => setSource('website')}
                   >
-                    <CardContent className="p-8 text-center">
-                      <div className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl inline-block mb-4">
-                        <Icon name="Globe" size={40} className="text-white" />
+                    <CardContent className="p-10 text-center">
+                      <div className="p-5 bg-gradient-to-br from-fuchsia-500 to-pink-500 rounded-3xl inline-block mb-5 shadow-lg">
+                        <Icon name="Globe" size={48} className="text-white" />
                       </div>
-                      <h3 className="font-bold text-xl mb-2">Указать сайт</h3>
-                      <p className="text-sm text-muted-foreground">AI найдёт базисы сам</p>
+                      <h3 className="font-black text-2xl mb-3 text-slate-800">Указать сайт</h3>
+                      <p className="text-base text-slate-600">AI найдёт базисы сам</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -333,8 +345,8 @@ export default function Index() {
                   </div>
                 )}
 
-                <Button onClick={handleNext} className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg">
-                  Далее <Icon name="ArrowRight" size={24} className="ml-2" />
+                <Button onClick={handleNext} className="w-full h-16 text-xl font-black bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-xl hover:shadow-2xl transition-all rounded-2xl">
+                  Далее <Icon name="ArrowRight" size={28} className="ml-3" />
                 </Button>
               </CardContent>
             </>
