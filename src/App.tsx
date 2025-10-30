@@ -14,7 +14,6 @@ import Index from "./pages/Index";
 import Wordstat from "./pages/Wordstat";
 import WordstatNew from "./pages/WordstatNew";
 import TestClustering from "./pages/TestClustering";
-import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -38,7 +37,6 @@ const App = () => (
           <Route path="/rsya/:id" element={<ProtectedRoute><RSYACleaner /></ProtectedRoute>} />
           <Route path="/wordstat" element={<ProtectedRoute><WordstatNew /></ProtectedRoute>} />
           <Route path="/wordstat-old" element={<ProtectedRoute><Wordstat /></ProtectedRoute>} />
-          <Route path="/clustering/oauth-callback" element={<OAuthCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
