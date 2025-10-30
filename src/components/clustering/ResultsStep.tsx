@@ -91,9 +91,14 @@ export default function ResultsStep({
     const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
     
     // Ищем точное вхождение поискового запроса в любое слово
-    // "куплю" найдёт только "куплю", но НЕ "купить"
-    // "вторич" найдёт "вторичка", "вторичный", "вторична"
-    return words.some(word => word.includes(searchLower));
+    const matches = words.some(word => word.includes(searchLower));
+    
+    // Отладочный лог
+    if (matches) {
+      console.log(`✓ Найдено совпадение: "${phrase}" содержит "${searchTerm}" в словах:`, words.filter(w => w.includes(searchLower)));
+    }
+    
+    return matches;
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
