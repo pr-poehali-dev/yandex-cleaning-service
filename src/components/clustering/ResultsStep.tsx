@@ -414,7 +414,7 @@ export default function ResultsStep({
             </div>
           </div>
           
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4 mb-3">
             <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-200">
               <div className="flex items-center gap-2 mb-1">
                 <Icon name="Key" size={16} className="text-blue-600" />
@@ -438,20 +438,15 @@ export default function ResultsStep({
               </div>
               <div className="text-2xl font-bold text-red-900">{minusWords.length}</div>
             </div>
-            
-            <div className="bg-green-50 rounded-lg px-4 py-3 border border-green-200">
-              <div className="flex items-center gap-2 mb-1">
-                <Icon name="MapPin" size={16} className="text-green-600" />
-                <span className="text-xs font-medium text-green-600">Регионы</span>
-              </div>
-              <div className="text-2xl font-bold text-green-900">{regions.length || 'Все'}</div>
-              {regions.length > 0 && (
-                <div className="text-[10px] text-green-700 mt-1 truncate">
-                  {regions.slice(0, 2).join(', ')}{regions.length > 2 ? '...' : ''}
-                </div>
-              )}
-            </div>
           </div>
+          
+          {regions.length > 0 && (
+            <div className="text-sm text-gray-600 flex items-center gap-2">
+              <Icon name="MapPin" size={14} className="text-gray-500" />
+              <span className="font-medium">Регионы:</span>
+              <span>{regions.join(', ')}</span>
+            </div>
+          )}
         </div>
       </div>
 
