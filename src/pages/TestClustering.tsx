@@ -151,16 +151,20 @@ export default function TestClustering() {
   }, [projectId, navigate]);
 
   const saveResultsToAPI = useCallback(async (clustersData: Cluster[], minusWordsData: string[]) => {
-    console.log('saveResultsToAPI called with projectId:', projectId);
+    console.log('🔥 saveResultsToAPI CALLED', {
+      projectId,
+      clustersCount: clustersData.length,
+      minusWordsCount: minusWordsData.length
+    });
     
     if (!projectId) {
-      console.error('No projectId provided');
+      console.error('❌ No projectId provided');
       return;
     }
 
     const userId = localStorage.getItem('userId');
     if (!userId) {
-      console.error('No userId found');
+      console.error('❌ No userId found');
       toast.error('Ошибка: пользователь не авторизован');
       return;
     }
@@ -178,7 +182,7 @@ export default function TestClustering() {
         minusWordsCount: minusWordsData.length
       };
       
-      console.log('Saving results to API:', payload);
+      console.log('📤 Sending PUT request:', API_URL, payload);
       
       const response = await fetch(`${API_URL}?endpoint=projects`, {
         method: 'PUT',
@@ -189,19 +193,19 @@ export default function TestClustering() {
         body: JSON.stringify(payload)
       });
 
-      console.log('Save response status:', response.status);
+      console.log('📥 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Failed to save results:', errorText);
+        console.error('❌ Save failed:', errorText);
         throw new Error('Failed to save results');
       }
 
       const result = await response.json();
-      console.log('Results saved successfully:', result);
-      toast.success('Результаты сохранены!');
+      console.log('✅ SAVED TO DATABASE!', result);
+      toast.success('Результаты сохранены в базу данных!');
     } catch (error) {
-      console.error('Error saving results:', error);
+      console.error('❌ Error saving:', error);
       toast.error('Не удалось сохранить результаты');
     }
   }, [projectId]);
@@ -225,7 +229,7 @@ export default function TestClustering() {
 
   useEffect(() => {
     if (step === 'processing') {
-      console.log('Starting processing with projectId:', projectId);
+      console.log('🚀 PROCESSING STARTED', { projectId });
       let totalDuration = 0;
       let currentProgress = 0;
 
@@ -238,10 +242,12 @@ export default function TestClustering() {
 
           if (idx === PROCESSING_STAGES.length - 1) {
             setTimeout(async () => {
-              console.log('Processing complete, saving results...');
+              console.log('✨ PROCESSING COMPLETE, CALLING SAVE...');
               setClusters(mockClusters);
               setMinusWords(mockMinusWords);
+              console.log('💾 About to call saveResultsToAPI...');
               await saveResultsToAPI(mockClusters, mockMinusWords);
+              console.log('✅ Save completed, showing results');
               setStep('results');
               toast.success('Кластеризация завершена!');
             }, stage.duration);
