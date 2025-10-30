@@ -125,18 +125,20 @@ export default function TestClustering() {
         }
 
         const project = await response.json();
-        console.log('Loaded project:', project);
+        console.log('📦 Loaded project:', project);
+        console.log('📦 Project results:', project.results);
+        console.log('📦 Has clusters?', project.results?.clusters?.length);
         
         if (project) {
           setProjectName(project.name || '');
           
           if (project.results && project.results.clusters && project.results.clusters.length > 0) {
-            console.log('Setting results:', project.results);
+            console.log('✅ SHOWING RESULTS PAGE! Clusters:', project.results.clusters.length);
             setClusters(project.results.clusters);
             setMinusWords(project.results.minusWords || []);
             setStep('results');
           } else {
-            console.log('No results found in project');
+            console.log('❌ No results - showing source step');
           }
         }
       } catch (error) {
