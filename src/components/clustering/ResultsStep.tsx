@@ -86,11 +86,9 @@ export default function ResultsStep({
     setClusters(newClusters);
   };
 
-  const getFilteredPhrases = (clusterIndex: number) => {
+  const getFilteredPhrases = (clusterIndex: number, searchText: string) => {
     const cluster = clusters[clusterIndex];
-    const searchTerm = cluster.searchText?.toLowerCase().trim() || '';
-    
-    console.log('🔍 getFilteredPhrases:', { clusterIndex, searchTerm, clusterName: cluster.name });
+    const searchTerm = searchText?.toLowerCase().trim() || '';
     
     if (!searchTerm) {
       return cluster.phrases.filter(p => !p.isTemporary);
@@ -102,14 +100,8 @@ export default function ResultsStep({
     clusters.forEach((otherCluster, i) => {
       if (i === clusterIndex) return;
       
-      console.log('🔎 Checking cluster:', otherCluster.name, 'phrases:', otherCluster.phrases.length);
-      
       otherCluster.phrases.forEach(p => {
-        const matches = p.phrase.toLowerCase().includes(searchTerm);
-        console.log('  Phrase:', p.phrase, 'matches:', matches, 'hasSource:', !!p.sourceCluster);
-        
-        if (!p.sourceCluster && matches) {
-          console.log('  ✅ Adding to temp');
+        if (!p.sourceCluster && p.phrase.toLowerCase().includes(searchTerm)) {
           tempPhrases.push({
             ...p,
             sourceCluster: otherCluster.name,
@@ -120,7 +112,6 @@ export default function ResultsStep({
       });
     });
     
-    console.log('📊 Total phrases:', tempPhrases.length);
     return tempPhrases.sort((a, b) => b.count - a.count);
   };
 
@@ -410,7 +401,7 @@ export default function ResultsStep({
                 </div>
 
                 <div className="text-xs text-gray-500 mb-2">
-                  {getFilteredPhrases(idx).length} фраз
+                  {getFilteredPhrases(idx, cluster.searchText).length} фраз
                 </div>
 
                 <div className="flex gap-1.5">
@@ -435,7 +426,7 @@ export default function ResultsStep({
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                {getFilteredPhrases(idx).map((phrase, pIdx) => {
+                {getFilteredPhrases(idx, cluster.searchText).map((phrase, pIdx) => {
                   return (
                     <div
                       key={pIdx}
