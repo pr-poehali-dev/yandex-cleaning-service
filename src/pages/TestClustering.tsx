@@ -81,7 +81,7 @@ const mockClusters: Cluster[] = [
 const mockMinusWords = ['бесплатно', 'даром', 'игра', 'в игре', 'скачать', 'торрент', 'порно', 'xxx', 'вакансия', 'работа'];
 
 export default function TestClustering() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const { id: projectId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('source');
   const [source, setSource] = useState<Source>('manual');
