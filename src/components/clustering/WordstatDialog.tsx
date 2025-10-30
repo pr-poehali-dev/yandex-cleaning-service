@@ -51,7 +51,7 @@ export default function WordstatDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Собрать фразы из Wordstat</DialogTitle>
+          <DialogTitle className="text-2xl">AI сбор ключей</DialogTitle>
           <DialogDescription>
             Введите запрос и выберите регионы для сбора ключевых фраз
           </DialogDescription>
