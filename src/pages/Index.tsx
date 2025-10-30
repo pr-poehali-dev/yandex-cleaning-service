@@ -228,125 +228,112 @@ export default function Index() {
   const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-3 mb-4 px-6 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full shadow-lg">
-            <Icon name="Sparkles" size={28} className="text-white" />
-            <span className="text-white font-bold text-lg">AI Кластеризатор</span>
-          </div>
-          <h1 className="text-6xl font-black bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent mb-4">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50/30 to-white p-4 md:p-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
             Кластеризатор
           </h1>
-          <p className="text-xl text-slate-600 font-medium">
+          <p className="text-lg text-slate-500">
             OpenAI создаст кластеры и минус-слова за 30 секунд
           </p>
         </div>
 
         {step !== 'processing' && step !== 'results' && (
-          <div className="mb-10 flex justify-center gap-3">
+          <div className="mb-12 flex justify-center items-center gap-0">
             {['source', 'cities', 'goal', 'intents'].map((s, idx) => (
               <div key={s} className="flex items-center">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-base font-black transition-all shadow-lg ${
-                  step === s ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white scale-125 shadow-violet-300' : 
-                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white' : 'bg-white text-slate-400 border-2 border-slate-200'
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                  step === s ? 'bg-emerald-500 text-white' : 
+                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
                 }`}>
-                  {['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? <Icon name="Check" size={24} /> : idx + 1}
+                  {['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? '✓' : idx + 1}
                 </div>
-                {idx < 3 && <div className={`w-16 h-2 rounded-full transition-all ${
-                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-slate-200'
+                {idx < 3 && <div className={`w-20 h-px ${
+                  ['source', 'cities', 'goal', 'intents'].indexOf(step) > idx ? 'bg-emerald-500' : 'bg-slate-200'
                 }`} />}
               </div>
             ))}
           </div>
         )}
 
-        <Card className="shadow-2xl bg-white border-0 rounded-3xl overflow-hidden">
+        <Card className="shadow-sm bg-white border border-slate-200 rounded-2xl overflow-hidden">
           {step === 'source' && (
             <>
-              <CardHeader className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white pb-8">
-                <CardTitle className="flex items-center gap-4 text-3xl">
-                  <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                    <Icon name="FileText" size={32} className="text-white" />
-                  </div>
+              <CardHeader className="p-8 border-b border-slate-100">
+                <CardTitle className="text-2xl font-semibold text-slate-800 mb-2">
                   Откуда взять ключи?
                 </CardTitle>
-                <CardDescription className="text-lg text-white/90 ml-16">
+                <CardDescription className="text-base text-slate-500">
                   Выберите источник для сбора семантического ядра
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-8 p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card 
-                    className={`cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
+              <CardContent className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button 
+                    className={`p-6 rounded-xl border-2 transition-all text-left ${
                       source === 'manual' 
-                        ? 'border-violet-500 shadow-2xl shadow-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50' 
-                        : 'border-slate-200 hover:border-violet-300 bg-white'
+                        ? 'border-emerald-500 bg-emerald-50/50' 
+                        : 'border-slate-200 hover:border-emerald-300 bg-white'
                     }`}
                     onClick={() => setSource('manual')}
                   >
-                    <CardContent className="p-10 text-center">
-                      <div className="p-5 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-3xl inline-block mb-5 shadow-lg">
-                        <Icon name="Edit" size={48} className="text-white" />
-                      </div>
-                      <h3 className="font-black text-2xl mb-3 text-slate-800">Вставить вручную</h3>
-                      <p className="text-base text-slate-600">Есть список из Wordstat</p>
-                    </CardContent>
-                  </Card>
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
+                      <Icon name="Edit" size={20} className="text-emerald-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg text-slate-800 mb-1">Вставить вручную</h3>
+                    <p className="text-sm text-slate-500">Есть список из Wordstat</p>
+                  </button>
 
-                  <Card 
-                    className={`cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
+                  <button 
+                    className={`p-6 rounded-xl border-2 transition-all text-left ${
                       source === 'website' 
-                        ? 'border-fuchsia-500 shadow-2xl shadow-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-pink-50' 
-                        : 'border-slate-200 hover:border-fuchsia-300 bg-white'
+                        ? 'border-emerald-500 bg-emerald-50/50' 
+                        : 'border-slate-200 hover:border-emerald-300 bg-white'
                     }`}
                     onClick={() => setSource('website')}
                   >
-                    <CardContent className="p-10 text-center">
-                      <div className="p-5 bg-gradient-to-br from-fuchsia-500 to-pink-500 rounded-3xl inline-block mb-5 shadow-lg">
-                        <Icon name="Globe" size={48} className="text-white" />
-                      </div>
-                      <h3 className="font-black text-2xl mb-3 text-slate-800">Указать сайт</h3>
-                      <p className="text-base text-slate-600">AI найдёт базисы сам</p>
-                    </CardContent>
-                  </Card>
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-4">
+                      <Icon name="Globe" size={20} className="text-emerald-600" />
+                    </div>
+                    <h3 className="font-semibold text-lg text-slate-800 mb-1">Указать сайт</h3>
+                    <p className="text-sm text-slate-500">AI найдёт базисы сам</p>
+                  </button>
                 </div>
 
                 {source === 'manual' && (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold">Ключевые слова (каждое с новой строки)</Label>
+                  <div className="space-y-3 mt-6">
+                    <Label className="text-sm font-medium text-slate-700">Ключевые слова (каждое с новой строки)</Label>
                     <textarea
-                      className="w-full min-h-[280px] p-4 border-2 rounded-xl resize-y font-mono text-sm focus:ring-4 focus:ring-blue-200 transition-all"
+                      className="w-full min-h-[240px] p-4 border border-slate-200 rounded-lg resize-y font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                       placeholder="купить квартиру&#10;купить квартиру в москве&#10;купить квартиру от застройщика&#10;купить квартиру вторичку"
                       value={manualKeywords}
                       onChange={(e) => setManualKeywords(e.target.value)}
                     />
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span className="text-lg">💡</span>
+                    <p className="text-sm text-slate-500">
                       Введите базовые запросы — AI кластеризует автоматически
                     </p>
                   </div>
                 )}
 
                 {source === 'website' && (
-                  <div className="space-y-3">
-                    <Label className="text-base font-semibold">URL сайта</Label>
+                  <div className="space-y-3 mt-6">
+                    <Label className="text-sm font-medium text-slate-700">URL сайта</Label>
                     <Input
                       type="url"
                       placeholder="https://example.com"
                       value={websiteUrl}
                       onChange={(e) => setWebsiteUrl(e.target.value)}
-                      className="h-14 text-base border-2 focus:ring-4 focus:ring-purple-200"
+                      className="h-12 text-base border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     />
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span className="text-lg">🤖</span>
+                    <p className="text-sm text-slate-500">
                       AI проанализирует сайт и соберёт ключи автоматически
                     </p>
                   </div>
                 )}
 
-                <Button onClick={handleNext} className="w-full h-16 text-xl font-black bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 shadow-xl hover:shadow-2xl transition-all rounded-2xl">
-                  Далее <Icon name="ArrowRight" size={28} className="ml-3" />
+                <Button onClick={handleNext} className="w-full h-12 text-base font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors mt-6">
+                  Далее
                 </Button>
               </CardContent>
             </>
