@@ -11,8 +11,6 @@ import Index from "./pages/Index";
 import Wordstat from "./pages/Wordstat";
 import WordstatNew from "./pages/WordstatNew";
 import TestClustering from "./pages/TestClustering";
-import ClusteringProjects from "./pages/ClusteringProjects";
-import RSYAProjects from "./pages/RSYAProjects";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -29,9 +27,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
           <Route path="/project/:id" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="/clustering-projects" element={<ProtectedRoute><ClusteringProjects /></ProtectedRoute>} />
           <Route path="/clustering" element={<ProtectedRoute><TestClustering /></ProtectedRoute>} />
-          <Route path="/rsya-projects" element={<ProtectedRoute><RSYAProjects /></ProtectedRoute>} />
           <Route path="/rsya-cleaner" element={<ProtectedRoute><RSYACleaner /></ProtectedRoute>} />
           <Route path="/wordstat" element={<ProtectedRoute><WordstatNew /></ProtectedRoute>} />
           <Route path="/wordstat-old" element={<ProtectedRoute><Wordstat /></ProtectedRoute>} />
