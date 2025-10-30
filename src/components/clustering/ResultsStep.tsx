@@ -70,7 +70,7 @@ export default function ResultsStep({
     setClusters(newClusters);
   };
 
-  const handleConfirmSearch = (targetIndex: number) => {
+  const handleConfirmSearch = async (targetIndex: number) => {
     const newClusters = [...clusters];
     const targetCluster = newClusters[targetIndex];
     const searchTerm = targetCluster.searchText.toLowerCase();
@@ -100,13 +100,20 @@ export default function ResultsStep({
         .sort((a, b) => b.count - a.count);
       targetCluster.searchText = '';
 
+      setClusters(newClusters);
+
+      if (onSaveChanges) {
+        await onSaveChanges(
+          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+          minusWords
+        );
+      }
+
       toast({
         title: '✅ Перенесено',
         description: `${movedPhrases.length} фраз`
       });
     }
-
-    setClusters(newClusters);
   };
 
   const handleMinusSearchChange = (value: string) => {
@@ -151,26 +158,40 @@ export default function ResultsStep({
     setClusters(newClusters);
   };
 
-  const deleteCluster = (clusterIndex: number) => {
+  const deleteCluster = async (clusterIndex: number) => {
     if (!confirm(`Удалить кластер "${clusters[clusterIndex].name}"?`)) return;
 
     const newClusters = clusters.filter((_, idx) => idx !== clusterIndex);
     setClusters(newClusters);
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        minusWords
+      );
+    }
 
     toast({
       title: '🗑️ Кластер удалён'
     });
   };
 
-  const removePhrase = (clusterIndex: number, phraseIndex: number) => {
+  const removePhrase = async (clusterIndex: number, phraseIndex: number) => {
     const newClusters = [...clusters];
     newClusters[clusterIndex].phrases = newClusters[clusterIndex].phrases.filter(
       (_, idx) => idx !== phraseIndex
     );
     setClusters(newClusters);
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        minusWords
+      );
+    }
   };
 
-  const addNewCluster = () => {
+  const addNewCluster = async () => {
     const newCluster = {
       name: `Новый кластер ${clusters.length + 1}`,
       intent: 'informational',
@@ -182,7 +203,15 @@ export default function ResultsStep({
       hovering: false
     };
 
-    setClusters([...clusters, newCluster]);
+    const newClusters = [...clusters, newCluster];
+    setClusters(newClusters);
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        minusWords
+      );
+    }
 
     toast({
       title: '✨ Кластер создан'
