@@ -224,18 +224,19 @@ export default function TestClustering() {
           setProcessingProgress(Math.min(currentProgress, 100));
 
           if (idx === PROCESSING_STAGES.length - 1) {
-            setTimeout(() => {
+            setTimeout(async () => {
               setClusters(mockClusters);
               setMinusWords(mockMinusWords);
-              saveResultsToAPI(mockClusters, mockMinusWords);
+              await saveResultsToAPI(mockClusters, mockMinusWords);
               setStep('results');
+              toast.success('Кластеризация завершена!');
             }, stage.duration);
           }
         }, totalDuration);
         totalDuration += stage.duration;
       });
     }
-  }, [step]);
+  }, [step, projectId]);
 
   const exportResults = () => {
     const data = {
