@@ -101,7 +101,10 @@ export default function ResultsStep({
       if (i === clusterIndex) return;
       
       otherCluster.phrases.forEach(p => {
-        if (!p.sourceCluster && p.phrase.toLowerCase().includes(searchTerm)) {
+        const matches = p.phrase.toLowerCase().includes(searchTerm);
+        const alreadyInTarget = ownPhrases.some(own => own.phrase === p.phrase);
+        
+        if (matches && !alreadyInTarget) {
           tempPhrases.push({
             ...p,
             sourceCluster: otherCluster.name,
