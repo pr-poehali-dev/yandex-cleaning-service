@@ -23,6 +23,14 @@ const mockProjects: Project[] = [
   { id: '3', name: 'Ремонт квартир', createdAt: '2024-10-20', keywordsCount: 620, clustersCount: 9 }
 ];
 
+const PROJECT_COLORS = [
+  'from-emerald-500 to-teal-500',
+  'from-green-500 to-emerald-500',
+  'from-teal-500 to-cyan-500',
+  'from-cyan-500 to-blue-500',
+  'from-lime-500 to-green-500',
+];
+
 export default function ClusteringProjects() {
   const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -127,31 +135,42 @@ export default function ClusteringProjects() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project) => (
+                {projects.map((project, idx) => (
                   <Card
                     key={project.id}
-                    className="p-6 hover:shadow-lg transition-all cursor-pointer border-2 hover:border-emerald-300"
+                    className="group relative overflow-hidden hover:shadow-xl transition-all cursor-pointer border-0"
                     onClick={() => handleOpenProject(project.id)}
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
-                        <Icon name="Sparkles" size={24} className="text-white" />
-                      </div>
-                      <span className="text-xs text-slate-500">
-                        {new Date(project.createdAt).toLocaleDateString('ru-RU')}
-                      </span>
-                    </div>
+                    <div className={`absolute inset-0 bg-gradient-to-br ${PROJECT_COLORS[idx % PROJECT_COLORS.length]} opacity-5 group-hover:opacity-10 transition-opacity`} />
                     
-                    <h3 className="text-xl font-bold mb-3 text-slate-900">{project.name}</h3>
-                    
-                    <div className="flex items-center gap-4 text-sm text-slate-600">
-                      <div className="flex items-center gap-1">
-                        <Icon name="Key" size={16} className="text-emerald-500" />
-                        <span>{project.keywordsCount} ключей</span>
+                    <div className="relative p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className={`w-12 h-12 bg-gradient-to-br ${PROJECT_COLORS[idx % PROJECT_COLORS.length]} rounded-xl shadow-lg`} />
+                        <span className="text-xs text-slate-500 bg-white px-2 py-1 rounded-full">
+                          {new Date(project.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Icon name="Grid" size={16} className="text-emerald-500" />
-                        <span>{project.clustersCount} кластеров</span>
+                      
+                      <h3 className="text-xl font-bold mb-4 text-slate-900 group-hover:text-emerald-700 transition-colors">
+                        {project.name}
+                      </h3>
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Ключевых слов</span>
+                          <span className="font-semibold text-slate-900">{project.keywordsCount}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-600">Кластеров</span>
+                          <span className="font-semibold text-slate-900">{project.clustersCount}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <div className="flex items-center text-emerald-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                          Открыть проект
+                          <Icon name="ArrowRight" size={16} className="ml-1" />
+                        </div>
                       </div>
                     </div>
                   </Card>
