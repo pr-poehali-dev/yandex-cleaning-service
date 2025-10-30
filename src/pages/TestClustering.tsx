@@ -526,10 +526,10 @@ export default function TestClustering() {
     <>
       <Header />
       <div className={step === 'results' 
-        ? "min-h-screen bg-white" 
+        ? "min-h-screen bg-white px-4 py-3" 
         : "min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-4 md:p-8"
       }>
-        <div className={step === 'results' ? 'w-full' : 'max-w-3xl mx-auto'}>
+        <div className={step === 'results' ? 'w-full max-w-[98%] mx-auto' : 'max-w-3xl mx-auto'}>
           {step !== 'results' && (
             <div className="text-center mb-16">
               <h1 className="text-5xl font-semibold text-slate-800 mb-3 tracking-tight">
