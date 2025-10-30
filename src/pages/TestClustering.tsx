@@ -314,11 +314,14 @@ export default function TestClustering() {
               
               if (keywords.length > 0) {
                 try {
+                  const regionIds = selectedCities.map(c => c.id);
                   const requestPayload = {
                     keywords: keywords,
-                    regions: selectedCities.map(c => c.id),
+                    regions: regionIds,
                     mode: goal
                   };
+                  console.log('🏙️ Selected cities:', selectedCities);
+                  console.log('🔢 Region IDs being sent:', regionIds);
                   console.log('🔍 Calling Wordstat API with:', requestPayload);
                   console.log('🌐 API URL:', WORDSTAT_API_URL);
                   
