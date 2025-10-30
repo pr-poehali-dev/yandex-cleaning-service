@@ -145,9 +145,17 @@ export default function ResultsStep({
       if (i === clusterIndex) continue;
 
       const cluster = newClusters[i];
-      const matchingPhrases = cluster.phrases.filter(p => 
-        matchesWholeWord(p.phrase, value)
-      );
+      const matchingPhrases = cluster.phrases.filter(p => {
+        const matches = matchesWholeWord(p.phrase, value);
+        
+        // Детальное логирование
+        if (value.trim().toLowerCase() === 'куплю') {
+          console.log(`🔍 Кластер "${cluster.name}" → фраза "${p.phrase}"`);
+          console.log(`   Результат: ${matches ? '✅ НАЙДЕНО' : '❌ НЕ НАЙДЕНО'}`);
+        }
+        
+        return matches;
+      });
 
       if (matchingPhrases.length > 0) {
         cluster.phrases = cluster.phrases.filter(p => 
