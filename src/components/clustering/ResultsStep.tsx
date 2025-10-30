@@ -109,6 +109,68 @@ export default function ResultsStep({
     });
   };
 
+  const deleteCluster = (clusterIndex: number) => {
+    const cluster = clusters[clusterIndex];
+    
+    // Вернуть фразы в историю, если они были перенесены
+    const phrasesToRestore: Phrase[] = [];
+    const phrasesToMinusWords: Phrase[] = [];
+    const newHistory = new Map(moveHistory);
+    
+    cluster.phrases.forEach(p => {
+      const originalClusterIdx = moveHistory.get(p.phrase);
+      if (originalClusterIdx !== undefined && originalClusterIdx !== clusterIndex) {
+        if (originalClusterIdx === -1) {
+          phrasesToMinusWords.push(p);
+        } else {
+          phrasesToRestore.push({ ...p, originalIdx: originalClusterIdx });
+        }
+        newHistory.delete(p.phrase);
+      }
+    });
+
+    // Удалить кластер
+    const newClusters = clusters.filter((_, idx) => idx !== clusterIndex);
+    
+    // Восстановить фразы
+    phrasesToRestore.forEach(p => {
+      const targetIdx = (p as any).originalIdx;
+      if (targetIdx < clusterIndex) {
+        newClusters[targetIdx].phrases.push(p);
+      } else if (targetIdx > clusterIndex) {
+        newClusters[targetIdx - 1].phrases.push(p);
+      }
+    });
+    
+    // Вернуть в минус-фразы
+    if (phrasesToMinusWords.length > 0) {
+      setMinusWords(prev => [...prev, ...phrasesToMinusWords].sort((a, b) => b.count - a.count));
+    }
+    
+    // Обновить индексы в истории (сдвинуть все индексы после удалённого)
+    const updatedHistory = new Map<string, number>();
+    newHistory.forEach((idx, phrase) => {
+      if (idx === -1) {
+        updatedHistory.set(phrase, -1);
+      } else if (idx < clusterIndex) {
+        updatedHistory.set(phrase, idx);
+      } else if (idx > clusterIndex) {
+        updatedHistory.set(phrase, idx - 1);
+      }
+    });
+    
+    setClusters(newClusters);
+    setMoveHistory(updatedHistory);
+    setHasChanges(true);
+    
+    toast({
+      title: '🗑️ Кластер удалён',
+      description: cluster.phrases.length > 0 
+        ? `${cluster.phrases.length} фраз возвращено` 
+        : `"${cluster.name}" удалён`
+    });
+  };
+
   const matchesWholeWord = (phrase: string, searchTerm: string): boolean => {
     const trimmed = searchTerm.trim();
     
@@ -586,6 +648,15 @@ export default function ResultsStep({
                         className="h-7 font-bold bg-transparent border-transparent hover:border-slate-300 focus:border-slate-400 focus:bg-white/90 px-2 flex-1"
                       />
                       <span className="text-xs text-muted-foreground flex-shrink-0">{cluster.phrases.length}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteCluster(idx)}
+                        className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+                        title="Удалить кластер"
+                      >
+                        <Icon name="Trash2" size={14} />
+                      </Button>
                     </div>
                     <div className="flex gap-1.5">
                       <Input
