@@ -188,8 +188,6 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Project not found'})
                 }
             
-            results_data = result[10]
-            
             project = {
                 'id': result[0],
                 'name': result[1],
