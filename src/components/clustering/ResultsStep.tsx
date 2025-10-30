@@ -38,48 +38,39 @@ const CLUSTER_BG_COLORS = [
 ];
 
 export default function ResultsStep({
-  clusters: initialClusters,
-  minusWords: initialMinusWords,
+  clusters: propsClusters,
+  minusWords: propsMinusWords,
   onExport,
   onNewProject,
   projectId,
   onSaveChanges
 }: ResultsStepProps) {
-  const [clusters, setClusters] = useState(
-    initialClusters.map((c, idx) => ({
-      ...c,
-      bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
-      searchText: '',
-      hovering: false
-    }))
-  );
-  const [minusWords, setMinusWords] = useState<Phrase[]>(initialMinusWords);
+  const initialClusters = propsClusters.map((c, idx) => ({
+    ...c,
+    bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
+    searchText: '',
+    hovering: false
+  }));
+  
+  const [clusters, setClusters] = useState(initialClusters);
+  const [minusWords, setMinusWords] = useState<Phrase[]>(propsMinusWords);
   const [minusSearchText, setMinusSearchText] = useState('');
   const { toast } = useToast();
 
+  const clustersDataKey = propsClusters.map(c => c.name).join(',');
+  
   useEffect(() => {
-    console.log('🔄 ResultsStep: Props updated', {
-      clustersCount: initialClusters.length,
-      minusWordsCount: initialMinusWords.length,
-      firstCluster: initialClusters[0]?.name,
-      firstClusterPhrases: initialClusters[0]?.phrases?.length
-    });
-    
-    if (initialClusters.length > 0) {
-      setClusters(
-        initialClusters.map((c, idx) => ({
-          ...c,
-          bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
-          searchText: '',
-          hovering: false
-        }))
-      );
-    }
-    
-    if (initialMinusWords.length > 0) {
-      setMinusWords(initialMinusWords);
-    }
-  }, [initialClusters.length, initialMinusWords.length]);
+    console.log('🔄 ResultsStep: Data changed, updating state');
+    setClusters(
+      propsClusters.map((c, idx) => ({
+        ...c,
+        bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
+        searchText: '',
+        hovering: false
+      }))
+    );
+    setMinusWords(propsMinusWords);
+  }, [clustersDataKey]);
 
   const matchesSearch = (phrase: string, searchTerm: string): boolean => {
     if (!searchTerm.trim()) return false;
