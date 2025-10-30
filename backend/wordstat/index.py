@@ -347,6 +347,51 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'Токен не настроен. Добавьте YANDEX_WORDSTAT_TOKEN.'})
         }
     
+    if method == 'GET':
+        try:
+            api_url = 'https://api.wordstat.yandex.net/v1/getRegionsTree'
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Content-Type': 'application/json; charset=utf-8',
+                'Accept-Language': 'ru'
+            }
+            
+            response = requests.get(api_url, headers=headers, timeout=30)
+            
+            if response.status_code != 200:
+                return {
+                    'statusCode': response.status_code,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': f'API error: {response.status_code}'})
+                }
+            
+            data = response.json()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({'success': True, 'regions': data})
+            }
+        except Exception as e:
+            print(f'[REGIONS ERROR] {str(e)}')
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': str(e)})
+            }
+    
     if method == 'POST':
         body_str = event.get('body', '{}')
         if not body_str or body_str.strip() == '':
