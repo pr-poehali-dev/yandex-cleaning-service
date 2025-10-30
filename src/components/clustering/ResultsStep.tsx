@@ -132,12 +132,12 @@ export default function ResultsStep({
 
       const cluster = newClusters[i];
       const matchingPhrases = cluster.phrases.filter(p =>
-        p.phrase.toLowerCase().includes(searchTerm) && !p.sourceCluster
+        p.phrase.toLowerCase().includes(searchTerm)
       );
 
       if (matchingPhrases.length > 0) {
         cluster.phrases = cluster.phrases.filter(p =>
-          !p.phrase.toLowerCase().includes(searchTerm) || p.sourceCluster
+          !p.phrase.toLowerCase().includes(searchTerm)
         );
         
         const phrasesWithSource = matchingPhrases.map(p => ({
