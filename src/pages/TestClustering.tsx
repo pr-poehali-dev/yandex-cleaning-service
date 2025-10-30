@@ -14,6 +14,7 @@ import ResultsStep from '@/components/clustering/ResultsStep';
 import StepIndicator from '@/components/clustering/StepIndicator';
 
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
+const WORDSTAT_API_URL = 'https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8';
 
 type Step = 'source' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
 type Source = 'manual' | 'website' | 'wordstat';
@@ -300,14 +301,62 @@ export default function TestClustering() {
             setTimeout(async () => {
               console.log('✨ PROCESSING COMPLETE, CALLING SAVE...');
               
-              const keywords = source === 'manual' 
-                ? manualKeywords.split('\n').filter(k => k.trim())
-                : source === 'wordstat'
-                ? [wordstatQuery]
-                : [];
+              let generatedClusters: Cluster[] = [];
+              let generatedMinusWords: string[] = [];
               
-              const generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
-              const generatedMinusWords = generateMinusWords(keywords);
+              if (source === 'wordstat' && wordstatQuery.trim()) {
+                try {
+                  console.log('🔍 Calling Wordstat API...');
+                  const response = await fetch(WORDSTAT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      query: wordstatQuery,
+                      regions: selectedCities.map(c => c.id),
+                      mode: goal
+                    })
+                  });
+                  
+                  if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Wordstat response:', data);
+                    
+                    generatedClusters = (data.clusters || []).map((cluster: any, idx: number) => ({
+                      name: cluster.cluster_name,
+                      intent: cluster.intent || 'commercial',
+                      color: ['blue', 'emerald', 'purple', 'orange'][idx % 4],
+                      icon: ['Home', 'Building2', 'Globe', 'ShoppingCart'][idx % 4],
+                      phrases: cluster.phrases.map((p: any) => ({
+                        phrase: p.phrase,
+                        count: p.count
+                      }))
+                    }));
+                    
+                    const minusCats = data.minus_words || {};
+                    generatedMinusWords = Object.values(minusCats).flatMap((cat: any) => 
+                      cat.phrases.map((p: any) => p.phrase)
+                    ).slice(0, 20);
+                  } else {
+                    console.error('❌ Wordstat API error');
+                    toast.error('Ошибка API Wordstat');
+                  }
+                } catch (error) {
+                  console.error('❌ Wordstat fetch error:', error);
+                  toast.error('Ошибка соединения с Wordstat');
+                }
+              } else {
+                const keywords = source === 'manual' 
+                  ? manualKeywords.split('\n').filter(k => k.trim())
+                  : [];
+                
+                generatedClusters = generateClustersFromKeywords(keywords, selectedIntents);
+                generatedMinusWords = generateMinusWords(keywords);
+              }
+              
+              if (generatedClusters.length === 0) {
+                generatedClusters = mockClusters;
+                generatedMinusWords = mockMinusWords;
+              }
               
               setClusters(generatedClusters);
               setMinusWords(generatedMinusWords);
