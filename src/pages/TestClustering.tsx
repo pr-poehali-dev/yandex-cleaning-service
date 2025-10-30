@@ -275,12 +275,12 @@ export default function TestClustering() {
                   onClick={() => setSource('manual')}
                   className={`p-6 rounded-xl border-2 transition-all ${
                     source === 'manual'
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-emerald-400 bg-emerald-50'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <Icon name="Type" size={32} className={source === 'manual' ? 'text-emerald-600' : 'text-slate-400'} />
-                  <h3 className="font-semibold mt-3 text-lg">Вручную</h3>
+                  <div className="text-4xl mb-3">📝</div>
+                  <h3 className="font-semibold text-lg">Вручную</h3>
                   <p className="text-sm text-slate-500 mt-1">Вставить список ключей</p>
                 </button>
 
@@ -288,13 +288,13 @@ export default function TestClustering() {
                   onClick={() => setSource('website')}
                   className={`p-6 rounded-xl border-2 transition-all ${
                     source === 'website'
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-emerald-400 bg-emerald-50'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
                   }`}
                 >
-                  <Icon name="Globe" size={32} className={source === 'website' ? 'text-emerald-600' : 'text-slate-400'} />
-                  <h3 className="font-semibold mt-3 text-lg">С сайта</h3>
-                  <p className="text-sm text-slate-500 mt-1">Парсинг из мета-тегов</p>
+                  <div className="text-4xl mb-3">🌐</div>
+                  <h3 className="font-semibold text-lg">С сайта</h3>
+                  <p className="text-sm text-slate-500 mt-1">AI соберёт ключи с сайта</p>
                 </button>
               </div>
 
@@ -323,7 +323,7 @@ export default function TestClustering() {
 
               <Button 
                 onClick={handleNext}
-                className="w-full py-6 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full py-6 text-lg bg-emerald-500 hover:bg-emerald-600 text-white"
               >
                 Далее <Icon name="ArrowRight" size={20} className="ml-2" />
               </Button>
@@ -392,7 +392,7 @@ export default function TestClustering() {
                 </Button>
                 <Button 
                   onClick={handleNext}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg"
                 >
                   Далее <Icon name="ArrowRight" size={20} className="ml-2" />
                 </Button>
@@ -446,7 +446,7 @@ export default function TestClustering() {
                 </Button>
                 <Button 
                   onClick={handleNext}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-lg"
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-6 text-lg"
                 >
                   Далее <Icon name="ArrowRight" size={20} className="ml-2" />
                 </Button>
@@ -468,7 +468,7 @@ export default function TestClustering() {
                     key={intent.id}
                     className={`flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedIntents.includes(intent.id)
-                        ? 'border-emerald-500 bg-emerald-50'
+                        ? 'border-emerald-400 bg-emerald-50'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >
@@ -478,10 +478,7 @@ export default function TestClustering() {
                       className="mt-1"
                     />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{intent.emoji}</span>
-                        <h3 className="font-semibold text-lg">{intent.label}</h3>
-                      </div>
+                      <h3 className="font-semibold text-lg">{intent.label}</h3>
                       <p className="text-sm text-slate-500 mt-1">{intent.description}</p>
                     </div>
                   </label>
@@ -498,7 +495,7 @@ export default function TestClustering() {
                 </Button>
                 <Button 
                   onClick={handleNext}
-                  className="flex-1 py-6 text-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="flex-1 py-6 text-lg bg-emerald-500 hover:bg-emerald-600 text-white"
                 >
                   Начать анализ <Icon name="Sparkles" size={20} className="ml-2" />
                 </Button>
@@ -534,11 +531,11 @@ export default function TestClustering() {
 
         {step === 'results' && (
           <div key={renderKey} className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-3xl font-bold text-slate-800">Результаты</h2>
                 <p className="text-slate-500 mt-1">
-                  {clusters.length} кластеров • {totalPhrases} фраз • {minusWords.length} минус-слов
+                  Анализ завершён
                 </p>
               </div>
               <div className="flex gap-3">
@@ -549,6 +546,32 @@ export default function TestClustering() {
                   <Icon name="Download" size={18} className="mr-2" /> Минус-слова
                 </Button>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <Card className="relative overflow-hidden shadow-lg">
+                <div className="relative p-6 bg-white">
+                  <Icon name="Layers" className="h-8 w-8 text-emerald-500 mb-3" />
+                  <div className="text-4xl font-bold text-slate-900 mb-2">{clusters.length}</div>
+                  <div className="text-sm text-slate-600 font-medium">Кластеров</div>
+                </div>
+              </Card>
+
+              <Card className="relative overflow-hidden shadow-lg">
+                <div className="relative p-6 bg-white">
+                  <Icon name="Hash" className="h-8 w-8 text-emerald-500 mb-3" />
+                  <div className="text-4xl font-bold text-slate-900 mb-2">{totalPhrases}</div>
+                  <div className="text-sm text-slate-600 font-medium">Ключевых фраз</div>
+                </div>
+              </Card>
+
+              <Card className="relative overflow-hidden shadow-lg">
+                <div className="relative p-6 bg-white">
+                  <Icon name="Ban" className="h-8 w-8 text-slate-500 mb-3" />
+                  <div className="text-4xl font-bold text-slate-900 mb-2">{minusWords.length}</div>
+                  <div className="text-sm text-slate-600 font-medium">Минус-слов</div>
+                </div>
+              </Card>
             </div>
 
             <div className="grid gap-4">

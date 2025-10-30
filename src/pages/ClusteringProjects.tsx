@@ -89,7 +89,7 @@ export default function ClusteringProjects() {
                 <DialogTrigger asChild>
                   <Button 
                     size="lg"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white"
                   >
                     <Icon name="Plus" size={20} className="mr-2" />
                     Создать проект
@@ -147,7 +147,7 @@ export default function ClusteringProjects() {
                 <p className="text-slate-500 mb-6">Создайте первый проект для начала работы</p>
                 <Button 
                   onClick={() => setIsDialogOpen(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
                 >
                   <Icon name="Plus" size={20} className="mr-2" />
                   Создать проект

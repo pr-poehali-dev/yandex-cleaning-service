@@ -60,7 +60,7 @@ export default function RSYAConnectionCard({
       <CardContent className="space-y-4">
         {!showCodeInput ? (
           <div className="flex gap-2">
-            <Button onClick={onConnect} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Button onClick={onConnect} className="bg-emerald-500 hover:bg-emerald-600 text-white">
               <Icon name="Key" className="h-4 w-4 mr-2" />
               Авторизоваться через OAuth
             </Button>

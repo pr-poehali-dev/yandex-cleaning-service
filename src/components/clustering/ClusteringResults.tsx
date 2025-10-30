@@ -57,7 +57,7 @@ export default function ClusteringResults({
               exportMinusWords();
             }}
             size="lg"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white"
           >
             <Icon name="Download" className="mr-2 h-5 w-5" />
             Экспортировать всё

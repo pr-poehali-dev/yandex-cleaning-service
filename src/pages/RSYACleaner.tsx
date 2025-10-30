@@ -248,7 +248,7 @@ export default function RSYACleaner() {
                     onClick={handleClean}
                     disabled={loading || selectedCampaigns.length === 0 || filters.length === 0}
                     size="lg"
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
                   >
                     {loading ? (
                       <>
