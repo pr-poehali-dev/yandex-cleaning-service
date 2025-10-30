@@ -93,10 +93,17 @@ export default function ResultsStep({
     const words = phraseLower.split(/[\s\-\.\,]+/).filter(w => w.length > 0);
     
     // Ищем только те слова, которые НАЧИНАЮТСЯ с поискового запроса
-    // "куп" найдёт: "купить", "куплю", НО НЕ "закупить" 
-    // "вторич" найдёт: "вторичка", "вторичный", НО НЕ "авторичка"
-    // "куплю" найдёт: "куплю", НО НЕ "купить"
-    return words.some(word => word.startsWith(searchLower));
+    const matches = words.some(word => word.startsWith(searchLower));
+    
+    // Детальное логирование
+    if (searchLower === 'куплю') {
+      console.log(`🔍 Поиск "${searchTerm}" в "${phrase}"`);
+      console.log(`   Слова:`, words);
+      console.log(`   Совпадения:`, words.filter(w => w.startsWith(searchLower)));
+      console.log(`   Результат: ${matches ? '✅ ДА' : '❌ НЕТ'}`);
+    }
+    
+    return matches;
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
