@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
@@ -56,6 +56,23 @@ export default function ResultsStep({
   const [minusWords, setMinusWords] = useState<Phrase[]>(initialMinusWords);
   const [minusSearchText, setMinusSearchText] = useState('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    console.log('🔄 ResultsStep: initialClusters updated', initialClusters.length);
+    setClusters(
+      initialClusters.map((c, idx) => ({
+        ...c,
+        bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
+        searchText: '',
+        hovering: false
+      }))
+    );
+  }, [initialClusters]);
+
+  useEffect(() => {
+    console.log('🔄 ResultsStep: initialMinusWords updated', initialMinusWords.length);
+    setMinusWords(initialMinusWords);
+  }, [initialMinusWords]);
 
   const matchesSearch = (phrase: string, searchTerm: string): boolean => {
     if (!searchTerm.trim()) return false;
