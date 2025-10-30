@@ -90,6 +90,8 @@ export default function ResultsStep({
     const cluster = clusters[clusterIndex];
     const searchTerm = searchText?.toLowerCase().trim() || '';
     
+    console.log('🔍 FILTER:', { clusterIndex, searchTerm, searchText });
+    
     if (!searchTerm) {
       return cluster.phrases.filter(p => !p.isTemporary);
     }
@@ -100,8 +102,15 @@ export default function ResultsStep({
     clusters.forEach((otherCluster, i) => {
       if (i === clusterIndex) return;
       
+      console.log(`  📁 Cluster ${i}: "${otherCluster.name}", phrases: ${otherCluster.phrases.length}`);
+      
       otherCluster.phrases.forEach(p => {
-        if (!p.sourceCluster && p.phrase.toLowerCase().includes(searchTerm)) {
+        const matches = p.phrase.toLowerCase().includes(searchTerm);
+        if (matches) {
+          console.log(`    ${p.sourceCluster ? '⏭️' : '✅'} "${p.phrase}" hasSource:${!!p.sourceCluster}`);
+        }
+        
+        if (!p.sourceCluster && matches) {
           tempPhrases.push({
             ...p,
             sourceCluster: otherCluster.name,
@@ -112,6 +121,7 @@ export default function ResultsStep({
       });
     });
     
+    console.log('📊 Result:', tempPhrases.length);
     return tempPhrases.sort((a, b) => b.count - a.count);
   };
 
