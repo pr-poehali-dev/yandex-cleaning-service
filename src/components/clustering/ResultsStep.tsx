@@ -107,6 +107,8 @@ export default function ResultsStep({
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
+    console.log(`🔍 handleSearchChange ВЫЗВАНА! Кластер #${clusterIndex}, значение: "${value}"`);
+    
     const newClusters = [...clusters];
     const targetCluster = newClusters[clusterIndex];
     const previousSearch = targetCluster.searchText;
