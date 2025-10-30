@@ -67,6 +67,8 @@ export default function ResultsStep({
   const [minusSearchText, setMinusSearchText] = useState('');
   const [draggedCluster, setDraggedCluster] = useState<number | null>(null);
   const [draggedPhrase, setDraggedPhrase] = useState<{clusterIdx: number, phraseIdx: number} | null>(null);
+  const [excludeRedPhrases, setExcludeRedPhrases] = useState(true);
+  const [includeFrequency, setIncludeFrequency] = useState(false);
   const { toast } = useToast();
 
   const clustersDataKey = propsClusters.map(c => c.name).join(',');
@@ -334,9 +336,11 @@ export default function ResultsStep({
   };
 
   const copyClusterPhrases = (phrases: Phrase[]) => {
-    const text = phrases.map(p => p.phrase).join('\n');
+    const text = phrases
+      .map(p => includeFrequency ? `${p.phrase}\t${p.count}` : p.phrase)
+      .join('\n');
     navigator.clipboard.writeText(text);
-    toast({ title: '📋 Скопировано', description: `${phrases.length} фраз` });
+    toast({ title: '📋 Скопировано', description: `${phrases.length} фраз${includeFrequency ? ' с частотностью' : ''}` });
   };
 
   const removeMinusWord = async (minusIndex: number) => {
@@ -376,17 +380,33 @@ export default function ResultsStep({
     toast({ title: '📋 Скопировано', description: `${minusWords.length} минус-фраз` });
   };
 
-  const exportToCSV = () => {
-    let csv = 'Кластер,Фраза,Частотность\n';
+  const exportToExcel = () => {
+    let csv = '';
+    let totalExported = 0;
 
     clusters.forEach(cluster => {
-      cluster.phrases.forEach(phrase => {
-        csv += `"${cluster.name}","${phrase.phrase}",${phrase.count}\n`;
+      csv += `${cluster.name}\n`;
+      
+      const phrasesToExport = cluster.phrases.filter(p => {
+        if (excludeRedPhrases && p.isMinusWord) return false;
+        return true;
       });
-    });
 
-    minusWords.forEach(phrase => {
-      csv += `"Минус-слова","${phrase.phrase}",${phrase.count}\n`;
+      phrasesToExport.forEach(phrase => {
+        if (includeFrequency) {
+          csv += `${phrase.phrase}\t${phrase.count}`;
+        } else {
+          csv += phrase.phrase;
+        }
+        
+        if (phrase.isMinusWord && !excludeRedPhrases) {
+          csv += '\t[МИНУС-СЛОВО]';
+        }
+        csv += '\n';
+        totalExported++;
+      });
+      
+      csv += '\n';
     });
 
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -395,7 +415,10 @@ export default function ResultsStep({
     link.download = `кластеры_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
 
-    toast({ title: '📊 Экспорт завершен' });
+    toast({ 
+      title: '📊 Экспорт завершен',
+      description: `Выгружено ${totalExported} фраз из ${clusters.length} кластеров`
+    });
   };
 
   const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0) + minusWords.length;
@@ -488,14 +511,31 @@ export default function ResultsStep({
         <div className="px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-800">Результаты кластеризации</h2>
-            <div className="flex gap-3">
-              <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
-                <Icon name="Download" size={16} />
-                Excel
-              </Button>
-              <Button onClick={onExport} size="sm" variant="outline" className="gap-2">
-                <Icon name="FileText" size={16} />
-                Экспорт
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 text-sm bg-white rounded-lg px-4 py-2 border border-gray-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={excludeRedPhrases}
+                    onChange={(e) => setExcludeRedPhrases(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                  />
+                  <span className="text-gray-700">Не выгружать красные фразы</span>
+                </label>
+                <div className="h-4 w-px bg-gray-300" />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeFrequency}
+                    onChange={(e) => setIncludeFrequency(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                  />
+                  <span className="text-gray-700">С частотностью</span>
+                </label>
+              </div>
+              <Button onClick={exportToExcel} size="sm" className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+                <Icon name="FileSpreadsheet" size={16} />
+                Выгрузить в Excel
               </Button>
             </div>
           </div>
