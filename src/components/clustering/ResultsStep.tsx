@@ -80,58 +80,10 @@ export default function ResultsStep({
     return phrase.toLowerCase().includes(searchTerm.toLowerCase());
   };
 
-  const handleSearchChange = async (clusterIndex: number, value: string) => {
+  const handleSearchChange = (clusterIndex: number, value: string) => {
     const newClusters = [...clusters];
     newClusters[clusterIndex].searchText = value;
-    
-    if (!value.trim()) {
-      setClusters(newClusters);
-      return;
-    }
-    
-    const targetCluster = newClusters[clusterIndex];
-    const searchTerm = value.toLowerCase();
-    const movedPhrases: Phrase[] = [];
-
-    for (let i = 0; i < newClusters.length; i++) {
-      if (i === clusterIndex) continue;
-
-      const cluster = newClusters[i];
-      const matchingPhrases = cluster.phrases.filter(p =>
-        p.phrase.toLowerCase().includes(searchTerm)
-      );
-
-      if (matchingPhrases.length > 0) {
-        cluster.phrases = cluster.phrases.filter(p =>
-          !p.phrase.toLowerCase().includes(searchTerm)
-        );
-        
-        const phrasesWithSource = matchingPhrases.map(p => ({
-          ...p,
-          sourceCluster: p.sourceCluster || cluster.name,
-          sourceColor: p.sourceColor || cluster.bgColor,
-          isTemporary: false
-        }));
-        
-        movedPhrases.push(...phrasesWithSource);
-      }
-    }
-
-    if (movedPhrases.length > 0) {
-      targetCluster.phrases = [...targetCluster.phrases, ...movedPhrases]
-        .sort((a, b) => b.count - a.count);
-
-      setClusters(newClusters);
-
-      if (onSaveChanges) {
-        await onSaveChanges(
-          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
-          minusWords
-        );
-      }
-    } else {
-      setClusters(newClusters);
-    }
+    setClusters(newClusters);
   };
 
   const getFilteredPhrases = (clusterIndex: number, searchText: string) => {
