@@ -16,6 +16,12 @@ interface Cluster {
   phrases: Phrase[];
   color: string;
   searchText: string;
+  highlightedPhrases?: Set<string>;
+}
+
+interface MinusWord {
+  word: string;
+  count: number;
 }
 
 interface ExcelClustersTableProps {
@@ -38,12 +44,16 @@ function DraggablePhrase({
   phrase, 
   onRemove,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  isHighlighted,
+  highlightColor
 }: { 
   phrase: Phrase; 
   onRemove: () => void;
   onDragStart: (phrase: Phrase) => void;
   onDragEnd: (phrase: Phrase) => void;
+  isHighlighted?: boolean;
+  highlightColor?: string;
 }) {
   return (
     <div
@@ -55,6 +65,11 @@ function DraggablePhrase({
       }}
       onDragEnd={() => onDragEnd(phrase)}
       className="px-2 py-1 border-b border-slate-200 hover:bg-slate-50 cursor-move flex items-center justify-between group"
+      style={isHighlighted ? { 
+        backgroundColor: highlightColor || '#FFF59D',
+        borderLeft: `3px solid ${highlightColor || '#FBC02D'}`,
+        fontWeight: 600
+      } : {}}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <Icon name="GripVertical" size={12} className="text-slate-400 flex-shrink-0" />
@@ -82,6 +97,7 @@ export default function ExcelClustersTable({
 }: ExcelClustersTableProps) {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [minusPhrases, setMinusPhrases] = useState<Phrase[]>([]);
+  const [minusWords, setMinusWords] = useState<MinusWord[]>([]);
   const [minusSearchText, setMinusSearchText] = useState('');
   const [draggedPhrase, setDraggedPhrase] = useState<Phrase | null>(null);
   const [dragOverCluster, setDragOverCluster] = useState<string | null>(null);
@@ -111,15 +127,40 @@ export default function ExcelClustersTable({
     targetCluster.searchText = value;
 
     if (!value.trim()) {
+      for (const cluster of newClusters) {
+        cluster.highlightedPhrases = undefined;
+      }
       setClusters(newClusters);
       return;
     }
 
     const searchLower = value.toLowerCase();
+    const highlightedSet = new Set<string>();
+
+    for (let i = 0; i < newClusters.length; i++) {
+      const cluster = newClusters[i];
+      cluster.phrases.forEach(p => {
+        if (p.phrase.toLowerCase().includes(searchLower)) {
+          highlightedSet.add(p.phrase);
+        }
+      });
+      cluster.highlightedPhrases = highlightedSet;
+    }
+
+    setClusters(newClusters);
+  };
+
+  const moveHighlightedPhrases = (targetClusterIndex: number) => {
+    const newClusters = [...clusters];
+    const targetCluster = newClusters[targetClusterIndex];
+    const searchLower = targetCluster.searchText.toLowerCase();
+
+    if (!searchLower) return;
+
     const movedPhrases: Phrase[] = [];
 
     for (let i = 0; i < newClusters.length; i++) {
-      if (i === clusterIndex) continue;
+      if (i === targetClusterIndex) continue;
 
       const cluster = newClusters[i];
       const matchingPhrases = cluster.phrases.filter(p => 
@@ -134,24 +175,20 @@ export default function ExcelClustersTable({
       }
     }
 
-    const minusMatching = minusPhrases.filter(p => 
-      p.phrase.toLowerCase().includes(searchLower)
-    );
-    if (minusMatching.length > 0) {
-      setMinusPhrases(minusPhrases.filter(p => 
-        !p.phrase.toLowerCase().includes(searchLower)
-      ));
-      movedPhrases.push(...minusMatching);
-    }
-
     if (movedPhrases.length > 0) {
       targetCluster.phrases = [...targetCluster.phrases, ...movedPhrases]
         .sort((a, b) => b.count - a.count);
+      targetCluster.searchText = '';
+      targetCluster.highlightedPhrases = undefined;
       
       toast({
         title: '✅ Перенесено',
         description: `${movedPhrases.length} фраз → "${targetCluster.cluster_name}"`
       });
+    }
+
+    for (const cluster of newClusters) {
+      cluster.highlightedPhrases = undefined;
     }
 
     setClusters(newClusters);
@@ -162,79 +199,62 @@ export default function ExcelClustersTable({
 
     if (!value.trim()) return;
 
-    const searchLower = value.toLowerCase();
-    const movedPhrases: Phrase[] = [];
+    const minusWord = value.trim().toLowerCase();
+    let phrasesRemoved = 0;
 
     const newClusters = clusters.map(cluster => {
-      const matchingPhrases = cluster.phrases.filter(p => 
-        p.phrase.toLowerCase().includes(searchLower)
-      );
+      const filteredPhrases = cluster.phrases.filter(p => {
+        const hasMinusWord = p.phrase.toLowerCase().includes(minusWord);
+        if (hasMinusWord) phrasesRemoved++;
+        return !hasMinusWord;
+      });
 
-      if (matchingPhrases.length > 0) {
-        movedPhrases.push(...matchingPhrases);
-        return {
-          ...cluster,
-          phrases: cluster.phrases.filter(p => 
-            !p.phrase.toLowerCase().includes(searchLower)
-          )
-        };
-      }
-
-      return cluster;
+      return {
+        ...cluster,
+        phrases: filteredPhrases
+      };
     });
 
-    if (movedPhrases.length > 0) {
-      setMinusPhrases(prev => [...prev, ...movedPhrases].sort((a, b) => b.count - a.count));
-      setClusters(newClusters);
-      
-      toast({
-        title: '🚫 В минус-слова',
-        description: `${movedPhrases.length} фраз перенесено`
-      });
+    const existingMinusWord = minusWords.find(m => m.word === minusWord);
+    if (existingMinusWord) {
+      existingMinusWord.count += phrasesRemoved;
+      setMinusWords([...minusWords]);
+    } else {
+      setMinusWords(prev => [...prev, { word: minusWord, count: phrasesRemoved }]);
     }
+
+    setClusters(newClusters);
+    setMinusSearchText('');
+    
+    toast({
+      title: '🚫 Минус-слово добавлено',
+      description: `"${minusWord}" — удалено ${phrasesRemoved} фраз`
+    });
   };
 
   const handleDrop = (targetClusterId: string, phraseId: string) => {
     const newClusters = [...clusters];
     let movedPhrase: Phrase | undefined;
-    let sourceClusterIndex = -1;
 
-    if (phraseId.startsWith('minus-')) {
-      const idx = minusPhrases.findIndex(p => p.id === phraseId);
+    for (let i = 0; i < newClusters.length; i++) {
+      const idx = newClusters[i].phrases.findIndex(p => p.id === phraseId);
       if (idx !== -1) {
-        movedPhrase = minusPhrases[idx];
-        setMinusPhrases(minusPhrases.filter((_, i) => i !== idx));
-      }
-    } else {
-      for (let i = 0; i < newClusters.length; i++) {
-        const idx = newClusters[i].phrases.findIndex(p => p.id === phraseId);
-        if (idx !== -1) {
-          movedPhrase = newClusters[i].phrases[idx];
-          sourceClusterIndex = i;
-          newClusters[i].phrases = newClusters[i].phrases.filter((_, j) => j !== idx);
-          break;
-        }
+        movedPhrase = newClusters[i].phrases[idx];
+        newClusters[i].phrases = newClusters[i].phrases.filter((_, j) => j !== idx);
+        break;
       }
     }
 
     if (!movedPhrase) return;
 
-    if (targetClusterId === 'minus-drop') {
-      setMinusPhrases(prev => [...prev, movedPhrase!]);
+    const targetIndex = newClusters.findIndex(c => c.id === targetClusterId);
+    if (targetIndex !== -1) {
+      newClusters[targetIndex].phrases.push(movedPhrase);
+      newClusters[targetIndex].phrases.sort((a, b) => b.count - a.count);
       toast({
-        title: '🚫 В минус-слова',
-        description: `"${movedPhrase.phrase}"`
+        title: '✅ Перенесено',
+        description: `→ "${newClusters[targetIndex].cluster_name}"`
       });
-    } else {
-      const targetIndex = newClusters.findIndex(c => c.id === targetClusterId);
-      if (targetIndex !== -1) {
-        newClusters[targetIndex].phrases.push(movedPhrase);
-        newClusters[targetIndex].phrases.sort((a, b) => b.count - a.count);
-        toast({
-          title: '✅ Перенесено',
-          description: `→ "${newClusters[targetIndex].cluster_name}"`
-        });
-      }
     }
 
     setClusters(newClusters);
@@ -249,10 +269,6 @@ export default function ExcelClustersTable({
     setClusters(newClusters);
   };
 
-  const removeMinusPhrase = (phraseId: string) => {
-    setMinusPhrases(prev => prev.filter(p => p.id !== phraseId));
-  };
-
   const renameCluster = (clusterIndex: number, newName: string) => {
     const newClusters = [...clusters];
     newClusters[clusterIndex].cluster_name = newName;
@@ -262,13 +278,11 @@ export default function ExcelClustersTable({
   const deleteCluster = (clusterIndex: number) => {
     if (!confirm(`Удалить кластер "${clusters[clusterIndex].cluster_name}"?`)) return;
     
-    const deletedPhrases = clusters[clusterIndex].phrases;
-    setMinusPhrases(prev => [...prev, ...deletedPhrases]);
     setClusters(clusters.filter((_, i) => i !== clusterIndex));
     
     toast({
       title: '🗑️ Кластер удалён',
-      description: `${deletedPhrases.length} фраз перенесено в минус-слова`
+      description: 'Фразы удалены из результатов'
     });
   };
 
@@ -281,8 +295,9 @@ export default function ExcelClustersTable({
       });
     });
 
-    minusPhrases.forEach(phrase => {
-      csv += `"Минус-слова","${phrase.phrase}",${phrase.count}\n`;
+    csv += '\nМинус-слова (включения)\n';
+    minusWords.forEach(minusWord => {
+      csv += `"Минус-слово","${minusWord.word}",${minusWord.count}\n`;
     });
 
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -301,17 +316,17 @@ export default function ExcelClustersTable({
     toast({ title: '📋 Скопировано', description: `${cluster.phrases.length} фраз` });
   };
 
-  const copyMinusPhrases = () => {
-    const text = minusPhrases.map(p => p.phrase).join('\n');
+  const copyMinusWords = () => {
+    const text = minusWords.map(m => m.word).join('\n');
     navigator.clipboard.writeText(text);
-    toast({ title: '📋 Скопировано', description: `${minusPhrases.length} минус-фраз` });
+    toast({ title: '📋 Скопировано', description: `${minusWords.length} минус-слов` });
   };
 
-  const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0) + minusPhrases.length;
-  const maxPhrasesCount = Math.max(
-    ...clusters.map(c => c.phrases.length),
-    minusPhrases.length
-  );
+  const removeMinusWord = (word: string) => {
+    setMinusWords(prev => prev.filter(m => m.word !== word));
+  };
+
+  const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
 
   return (
       <div className="space-y-4">
@@ -319,7 +334,10 @@ export default function ExcelClustersTable({
           <div>
             <h2 className="text-xl font-bold">Кластеры — Excel режим</h2>
             <p className="text-xs text-muted-foreground">
-              Всего {totalPhrases} фраз • Перетаскивайте фразы между колонками
+              Всего {totalPhrases} фраз • {minusWords.length} минус-слов
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              💡 Введите текст в поле кластера → подсветятся все фразы → Enter для переноса
             </p>
           </div>
           <Button onClick={exportToCSV} size="sm" className="gap-2">
@@ -353,14 +371,38 @@ export default function ExcelClustersTable({
                           <Icon name="Trash2" size={12} />
                         </button>
                       </div>
-                      <Input
-                        placeholder="Введите текст..."
-                        value={cluster.searchText}
-                        onChange={(e) => handleSearchChange(idx, e.target.value)}
-                        className="h-6 text-xs"
-                      />
+                      <div className="flex gap-1">
+                        <Input
+                          placeholder="Найти фразы..."
+                          value={cluster.searchText}
+                          onChange={(e) => handleSearchChange(idx, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              moveHighlightedPhrases(idx);
+                            }
+                          }}
+                          className="h-6 text-xs flex-1"
+                        />
+                        {cluster.searchText && (
+                          <Button
+                            size="sm"
+                            onClick={() => moveHighlightedPhrases(idx)}
+                            className="h-6 px-2"
+                            title="Перенести найденные фразы"
+                          >
+                            <Icon name="ArrowDown" size={12} />
+                          </Button>
+                        )}
+                      </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">{cluster.phrases.length} фраз</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {cluster.phrases.length} фраз
+                          {cluster.highlightedPhrases && cluster.highlightedPhrases.size > 0 && (
+                            <span className="ml-1 text-blue-600 font-bold">
+                              ({cluster.highlightedPhrases.size} найдено)
+                            </span>
+                          )}
+                        </span>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -383,17 +425,22 @@ export default function ExcelClustersTable({
                       <span className="font-bold text-xs">Минус-слова</span>
                     </div>
                     <Input
-                      placeholder="Введите текст..."
+                      placeholder="Введите минус-слово..."
                       value={minusSearchText}
-                      onChange={(e) => handleMinusSearchChange(e.target.value)}
+                      onChange={(e) => setMinusSearchText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleMinusSearchChange(minusSearchText);
+                        }
+                      }}
                       className="h-6 text-xs"
                     />
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{minusPhrases.length} фраз</span>
+                      <span className="text-[10px] text-muted-foreground">{minusWords.length} слов</span>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={copyMinusPhrases}
+                        onClick={copyMinusWords}
                         className="h-5 px-1 text-[10px]"
                       >
                         <Icon name="Copy" size={10} className="mr-1" />
@@ -426,43 +473,44 @@ export default function ExcelClustersTable({
                       <div className="absolute inset-0 bg-blue-200 opacity-30 pointer-events-none z-10" />
                     )}
                     <div className="min-h-[100px]">
-                      {cluster.phrases.map((phrase) => (
-                        <DraggablePhrase
-                          key={phrase.id}
-                          phrase={phrase}
-                          onDragStart={() => setDraggedPhrase(phrase)}
-                          onDragEnd={() => setDraggedPhrase(null)}
-                          onRemove={() => removePhrase(colIdx, phrase.id)}
-                        />
-                      ))}
+                      {cluster.phrases.map((phrase) => {
+                        const isHighlighted = cluster.highlightedPhrases?.has(phrase.phrase) || false;
+                        return (
+                          <DraggablePhrase
+                            key={phrase.id}
+                            phrase={phrase}
+                            onDragStart={() => setDraggedPhrase(phrase)}
+                            onDragEnd={() => setDraggedPhrase(null)}
+                            onRemove={() => removePhrase(colIdx, phrase.id)}
+                            isHighlighted={isHighlighted}
+                            highlightColor={cluster.color}
+                          />
+                        );
+                      })}
                     </div>
                   </td>
                 ))}
-                <td 
-                  className="border-r align-top bg-red-50 p-0 relative"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOverCluster('minus-drop');
-                  }}
-                  onDragLeave={() => setDragOverCluster(null)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const phraseId = e.dataTransfer.getData('phraseId');
-                    if (phraseId) handleDrop('minus-drop', phraseId);
-                  }}
-                >
-                  {dragOverCluster === 'minus-drop' && (
-                    <div className="absolute inset-0 bg-red-200 opacity-30 pointer-events-none z-10" />
-                  )}
+                <td className="border-r align-top bg-red-50 p-0">
                   <div className="min-h-[100px]">
-                    {minusPhrases.map((phrase) => (
-                      <DraggablePhrase
-                        key={phrase.id}
-                        phrase={phrase}
-                        onDragStart={() => setDraggedPhrase(phrase)}
-                        onDragEnd={() => setDraggedPhrase(null)}
-                        onRemove={() => removeMinusPhrase(phrase.id)}
-                      />
+                    {minusWords.map((minusWord, idx) => (
+                      <div 
+                        key={idx}
+                        className="px-2 py-1 border-b border-red-200 hover:bg-red-100 flex items-center justify-between group"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Icon name="Ban" size={12} className="text-red-500 flex-shrink-0" />
+                          <span className="truncate text-xs font-medium text-red-700">{minusWord.word}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-red-600 font-mono">-{minusWord.count}</span>
+                          <button
+                            onClick={() => removeMinusWord(minusWord.word)}
+                            className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700"
+                          >
+                            <Icon name="X" size={12} />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </td>
