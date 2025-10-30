@@ -49,12 +49,14 @@ export default function ResultsStep({
     initialClusters.map((c, idx) => ({
       ...c,
       bgColor: CLUSTER_BG_COLORS[idx % CLUSTER_BG_COLORS.length],
-      searchText: ''
+      searchText: '',
+      hovering: false
     }))
   );
   const [minusWords, setMinusWords] = useState<Phrase[]>(
     initialMinusWords.map(word => ({ phrase: word, count: 0 }))
   );
+  const [minusSearchText, setMinusSearchText] = useState('');
   const { toast } = useToast();
 
   const matchesSearch = (phrase: string, searchTerm: string): boolean => {
@@ -107,10 +109,96 @@ export default function ResultsStep({
     setClusters(newClusters);
   };
 
+  const handleMinusSearchChange = (value: string) => {
+    setMinusSearchText(value);
+  };
+
+  const handleConfirmMinusSearch = () => {
+    const searchTerm = minusSearchText.toLowerCase();
+    if (!searchTerm) return;
+
+    const newClusters = [...clusters];
+    const removedPhrases: Phrase[] = [];
+
+    for (const cluster of newClusters) {
+      const matchingPhrases = cluster.phrases.filter(p =>
+        p.phrase.toLowerCase().includes(searchTerm)
+      );
+
+      if (matchingPhrases.length > 0) {
+        cluster.phrases = cluster.phrases.filter(p =>
+          !p.phrase.toLowerCase().includes(searchTerm)
+        );
+        removedPhrases.push(...matchingPhrases);
+      }
+    }
+
+    if (removedPhrases.length > 0) {
+      setMinusWords([...minusWords, ...removedPhrases].sort((a, b) => b.count - a.count));
+      setClusters(newClusters);
+      setMinusSearchText('');
+
+      toast({
+        title: '🚫 Добавлено в минус-слова',
+        description: `${removedPhrases.length} фраз`
+      });
+    }
+  };
+
+  const renameCluster = (clusterIndex: number, newName: string) => {
+    const newClusters = [...clusters];
+    newClusters[clusterIndex].name = newName;
+    setClusters(newClusters);
+  };
+
+  const deleteCluster = (clusterIndex: number) => {
+    if (!confirm(`Удалить кластер "${clusters[clusterIndex].name}"?`)) return;
+
+    const newClusters = clusters.filter((_, idx) => idx !== clusterIndex);
+    setClusters(newClusters);
+
+    toast({
+      title: '🗑️ Кластер удалён'
+    });
+  };
+
+  const removePhrase = (clusterIndex: number, phraseIndex: number) => {
+    const newClusters = [...clusters];
+    newClusters[clusterIndex].phrases = newClusters[clusterIndex].phrases.filter(
+      (_, idx) => idx !== phraseIndex
+    );
+    setClusters(newClusters);
+  };
+
+  const addNewCluster = () => {
+    const newCluster = {
+      name: `Новый кластер ${clusters.length + 1}`,
+      intent: 'informational',
+      color: 'gray',
+      icon: 'Folder',
+      phrases: [],
+      bgColor: CLUSTER_BG_COLORS[clusters.length % CLUSTER_BG_COLORS.length],
+      searchText: '',
+      hovering: false
+    };
+
+    setClusters([...clusters, newCluster]);
+
+    toast({
+      title: '✨ Кластер создан'
+    });
+  };
+
   const copyClusterPhrases = (phrases: Phrase[]) => {
     const text = phrases.map(p => p.phrase).join('\n');
     navigator.clipboard.writeText(text);
     toast({ title: '📋 Скопировано', description: `${phrases.length} фраз` });
+  };
+
+  const copyMinusPhrases = () => {
+    const text = minusWords.map(p => p.phrase).join('\n');
+    navigator.clipboard.writeText(text);
+    toast({ title: '📋 Скопировано', description: `${minusWords.length} минус-фраз` });
   };
 
   const exportToCSV = () => {
@@ -122,6 +210,10 @@ export default function ResultsStep({
       });
     });
 
+    minusWords.forEach(phrase => {
+      csv += `"Минус-слова","${phrase.phrase}",${phrase.count}\n`;
+    });
+
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -131,7 +223,7 @@ export default function ResultsStep({
     toast({ title: '📊 Экспорт завершен' });
   };
 
-  const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0);
+  const totalPhrases = clusters.reduce((sum, c) => sum + c.phrases.length, 0) + minusWords.length;
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -165,49 +257,77 @@ export default function ResultsStep({
           {clusters.map((cluster, idx) => (
             <div
               key={idx}
-              className="flex-shrink-0 border-r border-gray-300 flex flex-col"
+              className="flex-shrink-0 border-r border-gray-300 flex flex-col group relative"
               style={{ 
                 width: '280px',
                 backgroundColor: cluster.bgColor
               }}
+              onMouseEnter={() => {
+                const newClusters = [...clusters];
+                newClusters[idx].hovering = true;
+                setClusters(newClusters);
+              }}
+              onMouseLeave={() => {
+                const newClusters = [...clusters];
+                newClusters[idx].hovering = false;
+                setClusters(newClusters);
+              }}
             >
+              {cluster.hovering && (
+                <button
+                  onClick={addNewCluster}
+                  className="absolute -right-3 top-3 z-10 w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <Icon name="Plus" size={14} />
+                </button>
+              )}
+
               <div className="p-3 border-b border-gray-200 bg-white/60">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon name={cluster.icon as any} size={18} className="text-gray-700" />
-                  <span className="font-semibold text-sm text-gray-800 flex-1">
-                    {cluster.name}
-                  </span>
-                  <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full">
-                    {cluster.phrases.length}
-                  </span>
+                  <Input
+                    value={cluster.name}
+                    onChange={(e) => renameCluster(idx, e.target.value)}
+                    className="font-semibold text-sm h-7 border-transparent hover:border-gray-300 focus:border-gray-400 bg-transparent flex-1"
+                  />
+                  <button
+                    onClick={() => deleteCluster(idx)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Icon name="Trash2" size={14} />
+                  </button>
                 </div>
 
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 mb-2">
                   <Input
-                    placeholder="🔍 Поиск..."
+                    placeholder="Поиск..."
                     value={cluster.searchText}
                     onChange={(e) => handleSearchChange(idx, e.target.value)}
-                    className="h-8 text-sm bg-white border-gray-300"
+                    className="h-8 text-sm bg-white border-gray-300 flex-1"
                   />
                   {cluster.searchText && (
                     <Button
                       size="sm"
                       onClick={() => handleConfirmSearch(idx)}
-                      className="h-8 px-3 bg-blue-600 hover:bg-blue-700"
+                      className="h-8 px-3 bg-emerald-600 hover:bg-emerald-700 flex-shrink-0"
                     >
-                      <Icon name="Plus" size={14} />
+                      <Icon name="Check" size={14} />
                     </Button>
                   )}
+                </div>
+
+                <div className="text-xs text-gray-500 mb-2">
+                  {cluster.phrases.length} фраз
                 </div>
 
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copyClusterPhrases(cluster.phrases)}
-                  className="w-full mt-2 text-xs h-7 hover:bg-white/80"
+                  className="w-full text-xs h-7 hover:bg-white/80"
                 >
                   <Icon name="Copy" size={12} className="mr-1.5" />
-                  Копировать {cluster.phrases.length} фраз
+                  Копировать
                 </Button>
               </div>
 
@@ -218,17 +338,27 @@ export default function ResultsStep({
                   return (
                     <div
                       key={pIdx}
-                      className="px-3 py-2 border-b border-gray-200 hover:bg-white/40"
+                      className="px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/phrase"
                       style={isHighlighted ? {
                         backgroundColor: '#FFF59D',
                         fontWeight: 600
                       } : {}}
                     >
-                      <div className="text-sm text-gray-800 leading-snug mb-1">
-                        {phrase.phrase}
-                      </div>
-                      <div className="text-xs text-gray-500 font-mono">
-                        {phrase.count.toLocaleString()}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-gray-800 leading-snug mb-1">
+                            {phrase.phrase}
+                          </div>
+                          <div className="text-xs text-gray-500 font-mono">
+                            {phrase.count.toLocaleString()}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removePhrase(idx, pIdx)}
+                          className="opacity-0 group-hover/phrase:opacity-100 text-red-500 hover:text-red-700 flex-shrink-0"
+                        >
+                          <Icon name="X" size={12} />
+                        </button>
                       </div>
                     </div>
                   );
@@ -236,6 +366,74 @@ export default function ResultsStep({
               </div>
             </div>
           ))}
+
+          <div
+            className="flex-shrink-0 border-r border-gray-300 flex flex-col"
+            style={{ 
+              width: '280px',
+              backgroundColor: '#FFE8E8'
+            }}
+          >
+            <div className="p-3 border-b border-gray-200 bg-white/60">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon name="Ban" size={18} className="text-red-700" />
+                <span className="font-semibold text-sm text-red-700 flex-1">
+                  Минус-слова
+                </span>
+                <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full">
+                  {minusWords.length}
+                </span>
+              </div>
+
+              <div className="flex gap-1.5 mb-2">
+                <Input
+                  placeholder="Поиск..."
+                  value={minusSearchText}
+                  onChange={(e) => handleMinusSearchChange(e.target.value)}
+                  className="h-8 text-sm bg-white border-red-300 flex-1"
+                />
+                {minusSearchText && (
+                  <Button
+                    size="sm"
+                    onClick={handleConfirmMinusSearch}
+                    className="h-8 px-3 bg-red-600 hover:bg-red-700 flex-shrink-0"
+                  >
+                    <Icon name="Check" size={14} />
+                  </Button>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-500 mb-2">
+                {minusWords.length} фраз
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyMinusPhrases}
+                className="w-full text-xs h-7 hover:bg-white/80"
+              >
+                <Icon name="Copy" size={12} className="mr-1.5" />
+                Копировать
+              </Button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {minusWords.map((phrase, pIdx) => (
+                <div
+                  key={pIdx}
+                  className="px-3 py-2 border-b border-gray-200 hover:bg-white/40"
+                >
+                  <div className="text-sm text-gray-800 leading-snug mb-1">
+                    {phrase.phrase}
+                  </div>
+                  <div className="text-xs text-gray-500 font-mono">
+                    {phrase.count > 0 ? phrase.count.toLocaleString() : '—'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
