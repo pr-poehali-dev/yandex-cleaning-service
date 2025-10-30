@@ -82,7 +82,7 @@ export default function WordstatNew() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           keywords: keywords.split('\n').filter(k => k.trim()),
-          region_id: region,
+          regions: [parseInt(region)],
           clustering_mode: mode
         })
       });
