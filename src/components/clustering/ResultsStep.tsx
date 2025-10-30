@@ -91,30 +91,26 @@ export default function ResultsStep({
     const searchTerm = cluster.searchText?.toLowerCase().trim() || '';
     
     if (!searchTerm) {
-      return cluster.phrases;
+      return cluster.phrases.filter(p => !p.isTemporary);
     }
 
     const ownPhrases = cluster.phrases.filter(p => !p.isTemporary);
     const tempPhrases = [...ownPhrases];
     
-    for (let i = 0; i < clusters.length; i++) {
-      if (i === clusterIndex) continue;
+    clusters.forEach((otherCluster, i) => {
+      if (i === clusterIndex) return;
       
-      const otherCluster = clusters[i];
-      const matchingPhrases = otherCluster.phrases
-        .filter(p => {
-          const hasSource = p.sourceCluster && !p.isTemporary;
-          return p.phrase.toLowerCase().includes(searchTerm) && !hasSource;
-        })
-        .map(p => ({
-          ...p,
-          sourceCluster: otherCluster.name,
-          sourceColor: otherCluster.bgColor,
-          isTemporary: true
-        }));
-      
-      tempPhrases.push(...matchingPhrases);
-    }
+      otherCluster.phrases.forEach(p => {
+        if (!p.sourceCluster && p.phrase.toLowerCase().includes(searchTerm)) {
+          tempPhrases.push({
+            ...p,
+            sourceCluster: otherCluster.name,
+            sourceColor: otherCluster.bgColor,
+            isTemporary: true
+          });
+        }
+      });
+    });
     
     return tempPhrases.sort((a, b) => b.count - a.count);
   };
