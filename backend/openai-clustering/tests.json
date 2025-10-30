@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Cluster phrases with OpenAI",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "phrases": [
+          {"phrase": "купить квартиру москва", "count": 15000},
+          {"phrase": "купить квартиру недорого", "count": 12000}
+        ],
+        "mode": "context"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "clusters": "array",
+        "minus_words": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
