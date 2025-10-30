@@ -165,7 +165,9 @@ export default function TestClustering() {
   }, [projectId]);
 
   useEffect(() => {
+    console.log('🔍 useEffect check:', { step, isWordstatLoading });
     if (step === 'processing' && !isWordstatLoading) {
+      console.log('⚠️ GENERATING FAKE DATA (this should not happen!)');
       let totalDuration = 0;
       let currentProgress = 0;
 
