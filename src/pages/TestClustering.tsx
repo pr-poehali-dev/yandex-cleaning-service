@@ -77,7 +77,7 @@ export default function TestClustering() {
     <>
       <AppSidebar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-8 ml-64">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
         {step === 'input' ? (
           <ClusteringInputStep
             keywords={keywords}
