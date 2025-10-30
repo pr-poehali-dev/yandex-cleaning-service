@@ -90,8 +90,6 @@ export default function ResultsStep({
     const cluster = clusters[clusterIndex];
     const searchTerm = searchText?.toLowerCase().trim() || '';
     
-    console.log('🔍 FILTER:', { clusterIndex, searchTerm, searchText });
-    
     if (!searchTerm) {
       return cluster.phrases.filter(p => !p.isTemporary);
     }
@@ -102,15 +100,8 @@ export default function ResultsStep({
     clusters.forEach((otherCluster, i) => {
       if (i === clusterIndex) return;
       
-      console.log(`  📁 Cluster ${i}: "${otherCluster.name}", phrases: ${otherCluster.phrases.length}`);
-      
       otherCluster.phrases.forEach(p => {
-        const matches = p.phrase.toLowerCase().includes(searchTerm);
-        if (matches) {
-          console.log(`    ${p.sourceCluster ? '⏭️' : '✅'} "${p.phrase}" hasSource:${!!p.sourceCluster}`);
-        }
-        
-        if (!p.sourceCluster && matches) {
+        if (!p.sourceCluster && p.phrase.toLowerCase().includes(searchTerm)) {
           tempPhrases.push({
             ...p,
             sourceCluster: otherCluster.name,
@@ -121,7 +112,6 @@ export default function ResultsStep({
       });
     });
     
-    console.log('📊 Result:', tempPhrases.length);
     return tempPhrases.sort((a, b) => b.count - a.count);
   };
 
@@ -462,12 +452,17 @@ export default function ResultsStep({
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={() => removePhrase(idx, pIdx)}
-                          className="opacity-0 group-hover/phrase:opacity-100 text-gray-700 hover:text-gray-900 flex-shrink-0"
-                        >
-                          <Icon name="X" size={14} />
-                        </button>
+                        {!phrase.isTemporary && (
+                          <button
+                            onClick={() => {
+                              const originalIndex = cluster.phrases.findIndex(p => p.phrase === phrase.phrase);
+                              removePhrase(idx, originalIndex);
+                            }}
+                            className="opacity-0 group-hover/phrase:opacity-100 text-gray-700 hover:text-gray-900 flex-shrink-0"
+                          >
+                            <Icon name="X" size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
