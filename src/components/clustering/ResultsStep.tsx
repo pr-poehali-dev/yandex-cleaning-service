@@ -242,125 +242,123 @@ export default function ResultsStep({
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold">Результаты кластеризации</h2>
-          <p className="text-xs text-muted-foreground">
-            Всего {totalPhrases} фраз • Введите текст в поле кластера для автопереноса
-            {hasChanges && <span className="text-orange-600 font-medium ml-2">• Есть несохранённые изменения</span>}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {hasChanges && (
-            <>
-              <Button onClick={handleReset} size="sm" variant="outline" className="gap-2">
-                <Icon name="RotateCcw" size={16} />
-                Отменить
-              </Button>
-              <Button onClick={handleSave} size="sm" disabled={isSaving} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-                <Icon name={isSaving ? "Loader2" : "Save"} size={16} className={isSaving ? "animate-spin" : ""} />
-                {isSaving ? 'Сохранение...' : 'Сохранить'}
-              </Button>
-            </>
-          )}
-          <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-2">
-            <Icon name="Download" size={16} />
-            Excel
-          </Button>
-          <Button onClick={onExport} size="sm" variant="outline" className="gap-2">
-            <Icon name="FileText" size={16} />
-            Экспорт
-          </Button>
-          <Button onClick={onNewProject} size="sm" className="gap-2">
-            <Icon name="ArrowLeft" size={16} />
-            К проектам
-          </Button>
+    <div className="flex flex-col h-screen">
+      <div className="flex-shrink-0 border-b bg-white shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div>
+            <h2 className="text-lg font-bold">Результаты кластеризации</h2>
+            <p className="text-xs text-muted-foreground">
+              {totalPhrases} фраз • Введите текст в поле кластера для автопереноса
+              {hasChanges && <span className="text-orange-600 font-semibold ml-2">⚠️ Есть несохранённые изменения</span>}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {hasChanges && (
+              <>
+                <Button onClick={handleReset} size="sm" variant="outline" className="gap-1.5">
+                  <Icon name="RotateCcw" size={14} />
+                  Отменить
+                </Button>
+                <Button onClick={handleSave} size="sm" disabled={isSaving} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+                  <Icon name={isSaving ? "Loader2" : "Save"} size={14} className={isSaving ? "animate-spin" : ""} />
+                  {isSaving ? 'Сохранение...' : 'Сохранить'}
+                </Button>
+              </>
+            )}
+            <Button onClick={exportToCSV} size="sm" variant="outline" className="gap-1.5">
+              <Icon name="Download" size={14} />
+              Excel
+            </Button>
+            <Button onClick={onExport} size="sm" variant="outline" className="gap-1.5">
+              <Icon name="FileText" size={14} />
+              Экспорт
+            </Button>
+            <Button onClick={onNewProject} size="sm" className="gap-1.5">
+              <Icon name="ArrowLeft" size={14} />
+              К проектам
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="overflow-auto border rounded-lg shadow-lg max-h-[75vh]">
-        <table className="w-full border-collapse text-xs">
-          <thead className="sticky top-0 bg-slate-100 z-10">
-            <tr className="border-b-2 border-slate-300">
+      <div className="flex-1 overflow-auto">
+        <table className="w-full border-collapse text-sm">
+          <thead className="sticky top-0 z-20 shadow-md">
+            <tr>
               {clusters.map((cluster, idx) => (
                 <th 
                   key={idx} 
-                  className="px-2 py-2 text-left font-bold text-slate-700 border-r min-w-[220px]"
+                  className="px-3 py-3 text-left border-r border-white/30 min-w-[280px] max-w-[380px]"
                   style={{ backgroundColor: cluster.bgColor }}
                 >
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <Icon name={cluster.icon as any} size={14} />
-                      <span className="font-bold text-xs">{cluster.name}</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Icon name={cluster.icon as any} size={16} className="flex-shrink-0" />
+                      <span className="font-bold truncate">{cluster.name}</span>
+                      <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">{cluster.phrases.length}</span>
                     </div>
                     <Input
-                      placeholder="Введите текст..."
+                      placeholder="🔍 Искать и перенести сюда..."
                       value={cluster.searchText}
                       onChange={(e) => handleSearchChange(idx, e.target.value)}
-                      className="h-7 text-xs"
+                      className="h-8 text-sm bg-white/80 border-slate-300 focus:bg-white"
                     />
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">{cluster.phrases.length} фраз</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyClusterPhrases(idx)}
-                        className="h-5 px-1 text-[10px]"
-                      >
-                        <Icon name="Copy" size={10} className="mr-1" />
-                        Копировать
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyClusterPhrases(idx)}
+                      className="h-6 w-full text-xs hover:bg-white/60"
+                    >
+                      <Icon name="Copy" size={12} className="mr-1.5" />
+                      Копировать {cluster.phrases.length} фраз
+                    </Button>
                   </div>
                 </th>
               ))}
               <th 
-                className="px-2 py-2 text-left font-bold border-r min-w-[220px] bg-red-100"
+                className="px-3 py-3 text-left border-r border-white/30 min-w-[280px] max-w-[380px] bg-red-100"
               >
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-red-700">
-                    <Icon name="Ban" size={14} />
-                    <span className="font-bold text-xs">Минус-слова</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <Icon name="Ban" size={16} className="flex-shrink-0" />
+                    <span className="font-bold">Минус-слова</span>
+                    <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">{minusWords.length}</span>
                   </div>
                   <Input
-                    placeholder="Введите текст..."
+                    placeholder="🚫 Искать и убрать из кластеров..."
                     value={minusSearchText}
                     onChange={(e) => handleMinusSearchChange(e.target.value)}
-                    className="h-7 text-xs"
+                    className="h-8 text-sm bg-white/80 border-red-300 focus:bg-white"
                   />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">{minusWords.length} фраз</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={copyMinusPhrases}
-                      className="h-5 px-1 text-[10px]"
-                    >
-                      <Icon name="Copy" size={10} className="mr-1" />
-                      Копировать
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyMinusPhrases}
+                    className="h-6 w-full text-xs hover:bg-white/60"
+                  >
+                    <Icon name="Copy" size={12} className="mr-1.5" />
+                    Копировать {minusWords.length} фраз
+                  </Button>
                 </div>
               </th>
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: maxPhrasesCount }).map((_, rowIdx) => (
-              <tr key={rowIdx} className="border-b hover:bg-slate-50">
+              <tr key={rowIdx} className="border-b border-slate-200">
                 {clusters.map((cluster, clusterIdx) => {
                   const phrase = cluster.phrases[rowIdx];
                   return (
                     <td 
                       key={clusterIdx}
-                      className="px-2 py-1.5 border-r align-top"
-                      style={{ backgroundColor: phrase ? cluster.bgColor : 'transparent' }}
+                      className="px-3 py-2 border-r border-slate-200 align-top"
+                      style={{ backgroundColor: phrase ? `${cluster.bgColor}40` : 'white' }}
                     >
                       {phrase && (
-                        <div className="flex items-start justify-between group">
-                          <div className="flex-1 pr-2">
-                            <div className="text-xs leading-tight">{phrase.phrase}</div>
-                            <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                        <div className="flex items-start justify-between gap-2 group hover:bg-white/60 rounded px-1 -mx-1">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm leading-snug break-words">{phrase.phrase}</div>
+                            <div className="text-xs text-slate-500 font-mono mt-0.5">
                               {phrase.count.toLocaleString()}
                             </div>
                           </div>
@@ -368,9 +366,9 @@ export default function ResultsStep({
                             variant="ghost"
                             size="sm"
                             onClick={() => removePhrase(clusterIdx, phrase.phrase)}
-                            className="opacity-0 group-hover:opacity-100 h-5 w-5 p-0 flex-shrink-0"
+                            className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 flex-shrink-0 hover:bg-red-100"
                           >
-                            <Icon name="X" size={10} />
+                            <Icon name="X" size={12} />
                           </Button>
                         </div>
                       )}
@@ -378,14 +376,14 @@ export default function ResultsStep({
                   );
                 })}
                 <td 
-                  className="px-2 py-1.5 border-r align-top bg-red-50"
+                  className="px-3 py-2 border-r border-slate-200 align-top bg-red-50/40"
                 >
                   {minusWords[rowIdx] && (
-                    <div className="flex items-start justify-between group">
-                      <div className="flex-1 pr-2">
-                        <div className="text-xs leading-tight">{minusWords[rowIdx].phrase}</div>
+                    <div className="flex items-start justify-between gap-2 group hover:bg-white/60 rounded px-1 -mx-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm leading-snug break-words">{minusWords[rowIdx].phrase}</div>
                         {minusWords[rowIdx].count > 0 && (
-                          <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                          <div className="text-xs text-slate-500 font-mono mt-0.5">
                             {minusWords[rowIdx].count.toLocaleString()}
                           </div>
                         )}
@@ -394,9 +392,9 @@ export default function ResultsStep({
                         variant="ghost"
                         size="sm"
                         onClick={() => removeMinusPhrase(minusWords[rowIdx].phrase)}
-                        className="opacity-0 group-hover:opacity-100 h-5 w-5 p-0 flex-shrink-0"
+                        className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 flex-shrink-0 hover:bg-red-100"
                       >
-                        <Icon name="X" size={10} />
+                        <Icon name="X" size={12} />
                       </Button>
                     </div>
                   )}
