@@ -38,6 +38,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         if endpoint == 'auth':
             return handle_auth(event, cur, conn)
+        elif endpoint == 'verify':
+            return handle_verify(event, cur, conn)
         elif endpoint == 'projects':
             return handle_projects(event, cur, conn)
         else:
@@ -143,6 +145,46 @@ def handle_auth(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
         'body': json.dumps({'error': 'Invalid action'})
     }
+
+def handle_verify(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
+    '''Проверяет валидность токена сессии'''
+    method = event.get('httpMethod', 'GET')
+    
+    if method != 'GET':
+        return {
+            'statusCode': 405,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Method not allowed'})
+        }
+    
+    headers = event.get('headers', {})
+    session_token = headers.get('x-session-token') or headers.get('X-Session-Token')
+    
+    if not session_token:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'valid': False, 'error': 'No token provided'})
+        }
+    
+    user_id = verify_session(cur, session_token)
+    
+    if user_id:
+        cur.execute("SELECT phone FROM users WHERE id = %s", (user_id,))
+        result = cur.fetchone()
+        phone = result[0] if result else None
+        
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'valid': True, 'userId': user_id, 'phone': phone})
+        }
+    else:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'valid': False, 'error': 'Invalid or expired token'})
+        }
 
 def verify_session(cur, session_token: str) -> Optional[int]:
     '''Проверяет токен сессии и возвращает user_id или None'''

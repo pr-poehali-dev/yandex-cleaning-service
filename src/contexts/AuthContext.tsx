@@ -31,22 +31,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [sessionToken, setSessionToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('sessionToken');
-    const storedUser = localStorage.getItem('user');
-    if (storedToken && storedUser) {
+    const verifyStoredToken = async () => {
+      const storedToken = localStorage.getItem('sessionToken');
+      const storedUser = localStorage.getItem('user');
+      
+      if (!storedToken || !storedUser) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const parsedUser = JSON.parse(storedUser);
-        if (typeof parsedUser.id === 'number' && parsedUser.sessionToken) {
-          setUser(parsedUser);
-          setSessionToken(parsedUser.sessionToken);
+        
+        const response = await fetch('https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f?endpoint=verify', {
+          method: 'GET',
+          headers: {
+            'X-Session-Token': storedToken
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.valid) {
+            setUser(parsedUser);
+            setSessionToken(storedToken);
+          } else {
+            localStorage.clear();
+          }
         } else {
           localStorage.clear();
         }
-      } catch {
+      } catch (error) {
+        console.error('Token verification failed:', error);
         localStorage.clear();
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    verifyStoredToken();
   }, []);
 
   const login = async (phone: string) => {
