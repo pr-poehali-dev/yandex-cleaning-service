@@ -260,10 +260,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'TextCampaign': {
                                 'BiddingStrategy': {
                                     'Search': {
-                                        'BiddingStrategyType': 'SERVING_OFF'
+                                        'BiddingStrategyType': 'LOWEST_COST'
                                     },
                                     'Network': {
-                                        'BiddingStrategyType': 'NETWORK_DEFAULT'
+                                        'BiddingStrategyType': 'NETWORK_DEFAULT',
+                                        'LimitPercent': 100
                                     }
                                 },
                                 'Settings': []
