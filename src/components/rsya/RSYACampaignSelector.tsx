@@ -3,11 +3,23 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 
+interface PlatformStats {
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cost: number;
+  cpc: number;
+  conversions: number;
+  conversion_rate: number;
+  avg_position: number;
+}
+
 interface Platform {
   adgroup_id: string;
   adgroup_name: string;
   status: string;
   network_enabled: boolean;
+  stats?: PlatformStats;
 }
 
 interface Campaign {
@@ -101,22 +113,55 @@ export default function RSYACampaignSelector({
               </div>
               
               {campaign.platforms && campaign.platforms.length > 0 && (
-                <div className="bg-slate-50 px-3 py-2 border-t border-slate-200">
-                  <div className="text-xs font-medium text-slate-600 mb-2">Площадки РСЯ:</div>
-                  <div className="space-y-1">
+                <div className="bg-slate-50 border-t border-slate-200">
+                  <div className="px-3 py-2 border-b border-slate-200 bg-white">
+                    <div className="grid grid-cols-8 gap-2 text-xs font-medium text-slate-600">
+                      <div className="col-span-2">Площадка</div>
+                      <div className="text-right">Показы</div>
+                      <div className="text-right">Клики</div>
+                      <div className="text-right">CTR %</div>
+                      <div className="text-right">Расход ₽</div>
+                      <div className="text-right">CPC ₽</div>
+                      <div className="text-right">Конв.</div>
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
                     {campaign.platforms.map((platform) => (
-                      <div key={platform.adgroup_id} className="flex items-center justify-between text-xs">
-                        <span className="text-slate-700">{platform.adgroup_name}</span>
-                        <div className="flex gap-2">
-                          <Badge variant="outline" className="text-xs px-1.5 py-0">
-                            {platform.status}
+                      <div 
+                        key={platform.adgroup_id} 
+                        className="grid grid-cols-8 gap-2 px-3 py-2 text-xs border-b border-slate-100 hover:bg-white transition-colors"
+                      >
+                        <div className="col-span-2 flex items-center gap-2">
+                          <span className="font-medium text-slate-900 truncate">{platform.adgroup_name}</span>
+                          <Badge 
+                            variant={platform.status === 'ACTIVE' ? 'default' : 'secondary'} 
+                            className="text-xs px-1 py-0"
+                          >
+                            {platform.status === 'ACTIVE' ? 'Акт' : platform.status === 'PAUSED' ? 'Пауза' : 'Откл'}
                           </Badge>
-                          {platform.network_enabled && (
-                            <Badge variant="default" className="text-xs px-1.5 py-0 bg-green-600">
-                              РСЯ
-                            </Badge>
-                          )}
                         </div>
+                        {platform.stats ? (
+                          <>
+                            <div className="text-right text-slate-700">{platform.stats.impressions.toLocaleString()}</div>
+                            <div className="text-right text-slate-700">{platform.stats.clicks.toLocaleString()}</div>
+                            <div className="text-right text-slate-700">{platform.stats.ctr}%</div>
+                            <div className="text-right text-slate-700">{platform.stats.cost.toLocaleString()}</div>
+                            <div className="text-right text-slate-700">{platform.stats.cpc}</div>
+                            <div className="text-right">
+                              <span className="text-slate-700">{platform.stats.conversions}</span>
+                              <span className="text-slate-400 ml-1">({platform.stats.conversion_rate}%)</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-right text-slate-400">—</div>
+                            <div className="text-right text-slate-400">—</div>
+                            <div className="text-right text-slate-400">—</div>
+                            <div className="text-right text-slate-400">—</div>
+                            <div className="text-right text-slate-400">—</div>
+                            <div className="text-right text-slate-400">—</div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>

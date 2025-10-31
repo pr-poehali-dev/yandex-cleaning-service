@@ -13,11 +13,23 @@ interface Filter {
   pattern: string;
 }
 
+interface PlatformStats {
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cost: number;
+  cpc: number;
+  conversions: number;
+  conversion_rate: number;
+  avg_position: number;
+}
+
 interface Platform {
   adgroup_id: string;
   adgroup_name: string;
   status: string;
   network_enabled: boolean;
+  stats?: PlatformStats;
 }
 
 interface Campaign {

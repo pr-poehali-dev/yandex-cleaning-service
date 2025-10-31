@@ -171,26 +171,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     # Если площадок нет, добавляем тестовые для демонстрации
                     if len(platforms) == 0 and is_sandbox:
-                        platforms = [
-                            {
-                                'adgroup_id': f'{campaign_id}_1',
-                                'adgroup_name': 'mail.ru',
-                                'status': 'ACTIVE',
-                                'network_enabled': True
-                            },
-                            {
-                                'adgroup_id': f'{campaign_id}_2', 
-                                'adgroup_name': 'dzen.ru',
-                                'status': 'ACTIVE',
-                                'network_enabled': True
-                            },
-                            {
-                                'adgroup_id': f'{campaign_id}_3',
-                                'adgroup_name': 'yandex.ru',
-                                'status': 'ACTIVE',
-                                'network_enabled': True
-                            }
+                        import random
+                        
+                        test_domains = [
+                            'mail.ru', 'dzen.ru', 'yandex.ru', 'vk.com', 'ok.ru',
+                            'rambler.ru', 'lenta.ru', 'ria.ru', 'gazeta.ru', 'kommersant.ru',
+                            'rbc.ru', 'vedomosti.ru', 'forbes.ru', 'tass.ru', 'interfax.ru',
+                            'sports.ru', 'championat.com', 'kp.ru', 'mk.ru', 'aif.ru',
+                            'vc.ru', 'habr.com', 'pikabu.ru', 'drive2.ru', 'avito.ru',
+                            'auto.ru', 'cian.ru', 'domofond.ru', 'youla.ru', 'wildberries.ru',
+                            'ozon.ru', 'lamoda.ru', 'citilink.ru', 'mvideo.ru', 'eldorado.ru',
+                            'dns-shop.ru', 'aliexpress.ru', 'sberbank.ru', 'tinkoff.ru', 'vtb.ru',
+                            'alfabank.ru', 'gosuslugi.ru', 'mos.ru', 'spb.ru', 'travel.ru',
+                            'aviasales.ru', 'booking.com', 'tripadvisor.ru', 'hotels.ru', 'tutu.ru'
                         ]
+                        
+                        for i in range(100):
+                            domain = random.choice(test_domains) if i >= len(test_domains) else test_domains[i % len(test_domains)]
+                            
+                            # Генерируем случайную статистику
+                            impressions = random.randint(1000, 50000)
+                            clicks = random.randint(10, int(impressions * 0.05))
+                            ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
+                            cost = random.randint(500, 50000)
+                            cpc = round(cost / clicks, 2) if clicks > 0 else 0
+                            conversions = random.randint(0, int(clicks * 0.15))
+                            conversion_rate = round((conversions / clicks) * 100, 2) if clicks > 0 else 0
+                            
+                            platforms.append({
+                                'adgroup_id': f'{campaign_id}_{i+1}',
+                                'adgroup_name': domain,
+                                'status': random.choice(['ACTIVE', 'PAUSED', 'SUSPENDED']),
+                                'network_enabled': True,
+                                'stats': {
+                                    'impressions': impressions,
+                                    'clicks': clicks,
+                                    'ctr': ctr,
+                                    'cost': cost,
+                                    'cpc': cpc,
+                                    'conversions': conversions,
+                                    'conversion_rate': conversion_rate,
+                                    'avg_position': round(random.uniform(1, 10), 1)
+                                }
+                            })
                     
                     campaigns.append({
                         'id': campaign_id,
