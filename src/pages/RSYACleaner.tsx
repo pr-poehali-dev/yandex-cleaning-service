@@ -13,6 +13,12 @@ interface Filter {
   pattern: string;
 }
 
+interface GoalStats {
+  conversions: number;
+  conversion_rate: number;
+  cost_per_goal: number;
+}
+
 interface PlatformStats {
   impressions: number;
   clicks: number;
@@ -22,6 +28,7 @@ interface PlatformStats {
   conversions: number;
   conversion_rate: number;
   avg_position: number;
+  goals?: Record<string, GoalStats>;
 }
 
 interface Platform {
@@ -32,12 +39,19 @@ interface Platform {
   stats?: PlatformStats;
 }
 
+interface Goal {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface Campaign {
   id: string;
   name: string;
   type: string;
   status: string;
   platforms?: Platform[];
+  goals?: Goal[];
 }
 
 const DEFAULT_FILTERS: Filter[] = [
@@ -60,6 +74,7 @@ export default function RSYACleaner() {
   const [authCode, setAuthCode] = useState('');
   const [clientLogin, setClientLogin] = useState('');
   const [useSandbox, setUseSandbox] = useState(true);
+  const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -388,6 +403,8 @@ export default function RSYACleaner() {
                 onToggleCampaign={toggleCampaign}
                 onSelectAll={selectAllCampaigns}
                 onDeselectAll={deselectAllCampaigns}
+                selectedGoal={selectedGoal}
+                onSelectGoal={setSelectedGoal}
               />
             )}
 

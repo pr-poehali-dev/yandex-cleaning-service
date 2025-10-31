@@ -170,8 +170,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         print(f'[DEBUG] AdGroups request failed with status {adgroups_response.status_code}')
                     
                     # Если площадок нет, добавляем тестовые для демонстрации
+                    goals = []
                     if len(platforms) == 0 and is_sandbox:
                         import random
+                        
+                        # Генерируем цели для кампании
+                        goals = [
+                            {'id': '1', 'name': 'Заявка', 'type': 'GOAL'},
+                            {'id': '2', 'name': 'Покупка', 'type': 'GOAL'},
+                            {'id': '3', 'name': 'Регистрация', 'type': 'GOAL'},
+                            {'id': '4', 'name': 'Добавление в корзину', 'type': 'GOAL'},
+                            {'id': '5', 'name': 'Звонок', 'type': 'GOAL'},
+                            {'id': '6', 'name': 'Подписка', 'type': 'GOAL'}
+                        ]
                         
                         test_domains = [
                             'mail.ru', 'dzen.ru', 'yandex.ru', 'vk.com', 'ok.ru',
@@ -198,6 +209,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             conversions = random.randint(0, int(clicks * 0.15))
                             conversion_rate = round((conversions / clicks) * 100, 2) if clicks > 0 else 0
                             
+                            # Генерируем статистику по целям
+                            goals_stats = {}
+                            for goal in goals:
+                                goal_conversions = random.randint(0, conversions)
+                                goals_stats[goal['id']] = {
+                                    'conversions': goal_conversions,
+                                    'conversion_rate': round((goal_conversions / clicks) * 100, 2) if clicks > 0 else 0,
+                                    'cost_per_goal': round(cost / goal_conversions, 2) if goal_conversions > 0 else 0
+                                }
+                            
                             platforms.append({
                                 'adgroup_id': f'{campaign_id}_{i+1}',
                                 'adgroup_name': domain,
@@ -211,7 +232,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                     'cpc': cpc,
                                     'conversions': conversions,
                                     'conversion_rate': conversion_rate,
-                                    'avg_position': round(random.uniform(1, 10), 1)
+                                    'avg_position': round(random.uniform(1, 10), 1),
+                                    'goals': goals_stats
                                 }
                             })
                     
@@ -220,7 +242,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'name': c.get('Name'),
                         'type': campaign_type,
                         'status': c.get('Status'),
-                        'platforms': platforms
+                        'platforms': platforms,
+                        'goals': goals
                     })
             
             print(f'[DEBUG] Filtered {len(campaigns)} TEXT_CAMPAIGN campaigns with platforms')
