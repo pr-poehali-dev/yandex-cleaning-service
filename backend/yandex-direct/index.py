@@ -255,15 +255,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'method': 'add',
                     'params': {
                         'Campaigns': [{
-                            'Name': f'Тестовая РСЯ кампания',
+                            'Name': f'Тестовая РСЯ кампания {datetime.now().strftime("%H:%M")}',
                             'StartDate': tomorrow,
                             'TextCampaign': {
                                 'BiddingStrategy': {
                                     'Search': {
-                                        'BiddingStrategyType': 'HIGHEST_POSITION'
+                                        'BiddingStrategyType': 'SERVING_OFF'
                                     },
                                     'Network': {
-                                        'BiddingStrategyType': 'SERVING_OFF'
+                                        'BiddingStrategyType': 'NETWORK_DEFAULT',
+                                        'NetworkBiddingStrategy': {
+                                            'AverageCpc': {
+                                                'AverageCpc': 3000000,
+                                                'WeeklySpendLimit': 'OFF'
+                                            }
+                                        }
                                     }
                                 },
                                 'Settings': []
