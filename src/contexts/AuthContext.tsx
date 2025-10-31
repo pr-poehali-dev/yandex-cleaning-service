@@ -30,7 +30,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsedUser = JSON.parse(storedUser);
+      if (typeof parsedUser.id === 'string' && parsedUser.id.startsWith('user_')) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+      } else {
+        setUser(parsedUser);
+      }
     }
     setIsLoading(false);
   }, []);
