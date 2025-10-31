@@ -304,6 +304,47 @@ export default function ResultsStep({
     }
   };
 
+  const addQuickMinusWord = async (word: string) => {
+    const searchTerm = word.toLowerCase().trim();
+    if (!searchTerm) return;
+
+    const affectedPhrases: Phrase[] = [];
+    const newClusters = clusters.map(cluster => {
+      const matching = cluster.phrases.filter(p => p.phrase.toLowerCase().includes(searchTerm));
+      affectedPhrases.push(...matching);
+      return cluster;
+    });
+
+    if (affectedPhrases.length > 0) {
+      const newMinusWord: Phrase = {
+        phrase: searchTerm,
+        count: 0,
+        removedPhrases: affectedPhrases.map(p => ({
+          ...p,
+          isMinusWord: false,
+          minusTerm: undefined
+        }))
+      };
+      
+      const newMinusWords = [...minusWords, newMinusWord].sort((a, b) => b.count - a.count);
+      
+      handleMinusSearchChange(searchTerm);
+      setMinusWords(newMinusWords);
+
+      if (onSaveChanges) {
+        await onSaveChanges(
+          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+          newMinusWords
+        );
+      }
+
+      toast({
+        title: '🚫 Добавлено в минус-слова',
+        description: `${affectedPhrases.length} фраз помечено`
+      });
+    }
+  };
+
   const renameCluster = async (clusterIndex: number, newName: string) => {
     const newClusters = [...clusters];
     newClusters[clusterIndex].name = newName;
@@ -806,8 +847,7 @@ export default function ResultsStep({
                                   key={wIdx}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleMinusSearchChange(word);
-                                    confirmMinusSearch();
+                                    addQuickMinusWord(word);
                                   }}
                                   className="hover:bg-red-100 hover:text-red-700 rounded px-0.5 cursor-pointer transition-colors"
                                 >
