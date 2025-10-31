@@ -21,10 +21,17 @@ export default function Auth() {
   const navigate = useNavigate();
 
   const formatPhone = (value: string) => {
-    const digits = value.replace(/\D/g, '');
+    let digits = value.replace(/\D/g, '');
     
     if (digits.length === 0) return '';
-    if (digits.length <= 1) return '';
+    
+    // Автоматически добавляем 7 если начинают вводить с 8 или 9
+    if (digits[0] === '8') {
+      digits = '7' + digits.slice(1);
+    }
+    if (digits[0] !== '7') {
+      digits = '7' + digits;
+    }
     
     let result = '+7';
     if (digits.length > 1) {
