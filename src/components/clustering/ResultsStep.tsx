@@ -88,7 +88,52 @@ export default function ResultsStep({
 
   const matchesSearch = (phrase: string, searchTerm: string): boolean => {
     if (!searchTerm.trim()) return false;
-    return phrase.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchWithYandexOperators(phrase, searchTerm);
+  };
+
+  const matchWithYandexOperators = (phrase: string, query: string): boolean => {
+    const phraseLower = phrase.toLowerCase();
+    const queryLower = query.toLowerCase().trim();
+
+    // Оператор "фраза" - точное совпадение порядка слов
+    if (queryLower.startsWith('"') && queryLower.endsWith('"')) {
+      const exactPhrase = queryLower.slice(1, -1);
+      return phraseLower.includes(exactPhrase);
+    }
+
+    // Оператор [фраза] - фиксированный порядок слов без вставок
+    if (queryLower.startsWith('[') && queryLower.endsWith(']')) {
+      const fixedOrder = queryLower.slice(1, -1);
+      const regex = new RegExp(`\\b${fixedOrder.replace(/\s+/g, '\\s+')}\\b`);
+      return regex.test(phraseLower);
+    }
+
+    // Оператор ! - точная словоформа
+    const hasExactForm = queryLower.match(/!(\w+)/);
+    if (hasExactForm) {
+      const exactWord = hasExactForm[1];
+      const regex = new RegExp(`\\b${exactWord}\\b`);
+      if (!regex.test(phraseLower)) return false;
+      
+      // Проверяем остальные слова без оператора
+      const restQuery = queryLower.replace(/!(\w+)/g, '$1');
+      return matchWithYandexOperators(phrase, restQuery);
+    }
+
+    // Оператор + - стоп-слово должно присутствовать
+    const hasStopWord = queryLower.match(/\+(\w+)/);
+    if (hasStopWord) {
+      const stopWord = hasStopWord[1];
+      if (!phraseLower.includes(stopWord)) return false;
+      
+      // Проверяем остальные слова без оператора
+      const restQuery = queryLower.replace(/\+(\w+)/g, '$1');
+      return matchWithYandexOperators(phrase, restQuery);
+    }
+
+    // Обычный поиск - все слова должны присутствовать
+    const words = queryLower.split(/\s+/).filter(w => w.length > 0);
+    return words.every(word => phraseLower.includes(word));
   };
 
   const handleSearchChange = (clusterIndex: number, value: string) => {
@@ -655,12 +700,19 @@ export default function ResultsStep({
                 </div>
 
                 <div className="flex gap-1.5 mb-2">
-                  <Input
-                    placeholder="Поиск..."
-                    value={cluster.searchText}
-                    onChange={(e) => handleSearchChange(idx, e.target.value)}
-                    className="h-8 text-sm bg-white border-gray-300 flex-1"
-                  />
+                  <div className="flex-1 relative group">
+                    <Input
+                      placeholder='Поиск: "фраза" [точно] !форма +предлог'
+                      value={cluster.searchText}
+                      onChange={(e) => handleSearchChange(idx, e.target.value)}
+                      className="h-8 text-sm bg-white border-gray-300 w-full"
+                      title='Операторы Яндекс.Директ:
+"купить квартиру" - порядок слов
+[купить квартиру] - строго подряд
+!купить - точная форма
++в - обязательный предлог'
+                    />
+                  </div>
                   {cluster.searchText && (
                     <Button
                       size="sm"
