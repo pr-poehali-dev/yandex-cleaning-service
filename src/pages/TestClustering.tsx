@@ -190,6 +190,12 @@ export default function TestClustering() {
 
 
   const handleWordstatSubmit = async (query: string, cities: City[], mode: string) => {
+    if (!sessionToken) {
+      toast.error('Ошибка: пользователь не авторизован');
+      setIsWordstatLoading(false);
+      return;
+    }
+    
     if (!query || !query.trim()) {
       toast.error('Введите поисковый запрос');
       setIsWordstatLoading(false);
@@ -206,7 +212,8 @@ export default function TestClustering() {
       query,
       cities: cities.length,
       mode,
-      manualKeywords: manualKeywords?.substring(0, 100)
+      manualKeywords: manualKeywords?.substring(0, 100),
+      hasSessionToken: !!sessionToken
     });
     
     try {
@@ -226,7 +233,8 @@ export default function TestClustering() {
       const response = await fetch(WORDSTAT_API_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionToken || ''
         },
         body: JSON.stringify(requestBody)
       });
