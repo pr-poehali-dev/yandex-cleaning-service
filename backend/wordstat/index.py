@@ -311,7 +311,25 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context',
             result = json.loads(content)
             clusters = result.get('clusters', [])
             minus_words = result.get('minus_words', {})
-            print(f'[OPENAI] Created {len(clusters)} clusters via GPT-4o-mini')
+            
+            # ВАЛИДАЦИЯ: проверяем что OpenAI не изменил фразы
+            original_phrases_set = {p['phrase'].strip().lower() for p in phrases}
+            clustered_phrases_set = set()
+            
+            for cluster in clusters:
+                for phrase_obj in cluster.get('phrases', []):
+                    clustered_phrases_set.add(phrase_obj['phrase'].strip().lower())
+            
+            # Проверяем что нет лишних фраз (которых не было в оригинале)
+            added_phrases = clustered_phrases_set - original_phrases_set
+            if added_phrases:
+                print(f'[OPENAI] ERROR: AI добавил {len(added_phrases)} фраз от себя! Откат к TF-IDF')
+                print(f'[OPENAI] Примеры добавленных: {list(added_phrases)[:3]}')
+                clusters = smart_clusterize(phrases, mode)
+                minus_words = detect_minus_words(phrases) if mode == 'context' else {}
+                return clusters, minus_words
+            
+            print(f'[OPENAI] ✅ Валидация пройдена: {len(clusters)} кластеров, фразы не изменены')
             if minus_words:
                 total_minus = sum(len(v) for v in minus_words.values() if isinstance(v, list))
                 print(f'[OPENAI] Detected {total_minus} minus-words')
