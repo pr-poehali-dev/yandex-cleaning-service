@@ -26,7 +26,7 @@ const DEFAULT_FILTERS: Filter[] = [
   { id: '3', pattern: 'vnp' }
 ];
 
-const BACKEND_URL = 'https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23';
+const YANDEX_DIRECT_URL = 'https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23';
 
 export default function RSYACleaner() {
   const [filters, setFilters] = useState<Filter[]>(DEFAULT_FILTERS);
@@ -59,7 +59,7 @@ export default function RSYACleaner() {
   const exchangeCodeForToken = async (code: string) => {
     try {
       setLoading(true);
-      const response = await fetch(BACKEND_URL, {
+      const response = await fetch(YANDEX_DIRECT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'exchange_code', code })
@@ -85,7 +85,7 @@ export default function RSYACleaner() {
 
   const loadCampaigns = async (token: string) => {
     try {
-      const response = await fetch(BACKEND_URL, {
+      const response = await fetch(YANDEX_DIRECT_URL, {
         method: 'GET',
         headers: { 'X-Auth-Token': token }
       });
@@ -102,7 +102,7 @@ export default function RSYACleaner() {
 
   const handleConnect = async () => {
     try {
-      const response = await fetch(BACKEND_URL + '?action=config');
+      const response = await fetch(YANDEX_DIRECT_URL + '?action=config');
       const { clientId } = await response.json();
       const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}`;
       window.open(authUrl, '_blank');
@@ -182,7 +182,7 @@ export default function RSYACleaner() {
     toast({ title: '🚀 Запуск чистки...', description: `Применяем ${filters.length} фильтров к ${selectedCampaigns.length} кампаниям` });
 
     try {
-      const response = await fetch(BACKEND_URL, {
+      const response = await fetch(YANDEX_DIRECT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Auth-Token': token },
         body: JSON.stringify({ campaignIds: selectedCampaigns, filters: filters.map(f => f.pattern) })
