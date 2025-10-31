@@ -43,6 +43,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'GET':
         headers = event.get('headers', {})
         token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+        client_login = headers.get('X-Client-Login') or headers.get('x-client-login')
         
         if not token:
             return {
@@ -56,6 +57,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         try:
             print(f'[DEBUG] Requesting Yandex.Direct API with token: {token[:10]}...')
+            print(f'[DEBUG] Client-Login: {client_login}')
             
             # Проверяем режим sandbox
             is_sandbox = query_params.get('sandbox') == 'true'
@@ -63,12 +65,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[DEBUG] Using API URL: {api_url} (sandbox={is_sandbox})')
             
+            request_headers = {
+                'Authorization': f'Bearer {token}',
+                'Accept-Language': 'ru'
+            }
+            
+            # Добавляем Client-Login если указан
+            if client_login:
+                request_headers['Client-Login'] = client_login
+            
             response = requests.post(
                 api_url,
-                headers={
-                    'Authorization': f'Bearer {token}',
-                    'Accept-Language': 'ru'
-                },
+                headers=request_headers,
                 json={
                     'method': 'get',
                     'params': {
@@ -214,6 +222,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         # POST /clean - запустить чистку площадок
         headers = event.get('headers', {})
         token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+        client_login = headers.get('X-Client-Login') or headers.get('x-client-login')
         
         if not token:
             return {

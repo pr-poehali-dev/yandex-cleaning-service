@@ -7,8 +7,10 @@ interface RSYAConnectionCardProps {
   isConnected: boolean;
   showCodeInput: boolean;
   authCode: string;
+  clientLogin: string;
   useSandbox?: boolean;
   setAuthCode: (value: string) => void;
+  setClientLogin: (value: string) => void;
   setUseSandbox?: (value: boolean) => void;
   onConnect: () => void;
   onDisconnect: () => void;
@@ -20,8 +22,10 @@ export default function RSYAConnectionCard({
   isConnected,
   showCodeInput,
   authCode,
+  clientLogin,
   useSandbox = false,
   setAuthCode,
+  setClientLogin,
   setUseSandbox,
   onConnect,
   onDisconnect,
@@ -90,20 +94,23 @@ export default function RSYAConnectionCard({
         ) : (
           <div className="space-y-3">
             <div className="space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={authCode}
-                  onChange={(e) => setAuthCode(e.target.value)}
-                  placeholder="Код OAuth или токен доступа"
-                  className="font-mono"
-                />
-                <Button onClick={onSubmitCode} disabled={!authCode.trim()}>
-                  <Icon name="Check" className="h-4 w-4 mr-2" />
-                  Применить
-                </Button>
-              </div>
+              <Input
+                value={authCode}
+                onChange={(e) => setAuthCode(e.target.value)}
+                placeholder="Код OAuth или токен доступа"
+                className="font-mono"
+              />
+              <Input
+                value={clientLogin}
+                onChange={(e) => setClientLogin(e.target.value)}
+                placeholder="Логин клиента (необязательно)"
+              />
+              <Button onClick={onSubmitCode} disabled={!authCode.trim()} className="w-full">
+                <Icon name="Check" className="h-4 w-4 mr-2" />
+                Применить
+              </Button>
               <p className="text-xs text-slate-600">
-                Вставьте код из OAuth или готовый токен API Директа
+                Если используете агентский токен — укажите логин клиента
               </p>
             </div>
             <Button onClick={onToggleCodeInput} variant="ghost" size="sm">

@@ -38,6 +38,7 @@ export default function RSYACleaner() {
   const [results, setResults] = useState<{ disabled: number; total: number } | null>(null);
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [authCode, setAuthCode] = useState('');
+  const [clientLogin, setClientLogin] = useState('');
   const [useSandbox, setUseSandbox] = useState(false);
   const { toast } = useToast();
 
@@ -90,9 +91,15 @@ export default function RSYACleaner() {
         ? `${YANDEX_DIRECT_URL}?sandbox=true` 
         : YANDEX_DIRECT_URL;
       
+      const headers: Record<string, string> = { 'X-Auth-Token': token };
+      const savedLogin = localStorage.getItem('yandex_client_login');
+      if (savedLogin) {
+        headers['X-Client-Login'] = savedLogin;
+      }
+      
       const response = await fetch(url, {
         method: 'GET',
-        headers: { 'X-Auth-Token': token }
+        headers
       });
 
       if (!response.ok) throw new Error('Ошибка загрузки кампаний');
@@ -143,6 +150,13 @@ export default function RSYACleaner() {
     try {
       const token = authCode.trim();
       
+      // Сохраняем логин клиента если указан
+      if (clientLogin.trim()) {
+        localStorage.setItem('yandex_client_login', clientLogin.trim());
+      } else {
+        localStorage.removeItem('yandex_client_login');
+      }
+      
       // Если выглядит как готовый токен (32+ символов без дефисов) - используем напрямую
       if (token.length >= 32 && !token.includes('-')) {
         localStorage.setItem('yandex_direct_token', token);
@@ -164,10 +178,12 @@ export default function RSYACleaner() {
 
   const handleDisconnect = () => {
     localStorage.removeItem('yandex_direct_token');
+    localStorage.removeItem('yandex_client_login');
     setIsConnected(false);
     setCampaigns([]);
     setSelectedCampaigns([]);
     setResults(null);
+    setClientLogin('');
     toast({ title: 'Яндекс.Директ отключён' });
   };
 
@@ -248,8 +264,10 @@ export default function RSYACleaner() {
           isConnected={isConnected}
           showCodeInput={showCodeInput}
           authCode={authCode}
+          clientLogin={clientLogin}
           useSandbox={useSandbox}
           setAuthCode={setAuthCode}
+          setClientLogin={setClientLogin}
           setUseSandbox={setUseSandbox}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
