@@ -379,12 +379,12 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context',
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'gpt-4o',
+                'model': 'gpt-4o-mini',
                 'messages': [
-                    {'role': 'system', 'content': 'Ты эксперт по кластеризации запросов. Анализируешь смысл и намерения пользователя. Отвечаешь только валидным JSON.'},
+                    {'role': 'system', 'content': 'Ты эксперт по кластеризации запросов. Строго следуй инструкциям. Копируй фразы ТОЧНО как в списке. Отвечаешь только валидным JSON.'},
                     {'role': 'user', 'content': prompt}
                 ],
-                'temperature': 0.3,
+                'temperature': 0.0,
                 'response_format': {'type': 'json_object'}
             },
             proxies=proxies if proxies else None,
