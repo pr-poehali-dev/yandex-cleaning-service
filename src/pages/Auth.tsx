@@ -10,8 +10,8 @@ export default function Auth() {
   return (
     <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
       <AppSidebar />
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-5xl mx-auto">
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-5xl mx-auto p-6">
         {/* Шапка */}
         <div className="text-center mb-12 pt-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl mb-4 shadow-lg">
