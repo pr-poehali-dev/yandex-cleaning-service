@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -7,6 +7,7 @@ import AppSidebar from '@/components/layout/AppSidebar';
 import RSYAConnectionCard from '@/components/rsya/RSYAConnectionCard';
 import RSYAFiltersManager from '@/components/rsya/RSYAFiltersManager';
 import RSYACampaignSelector from '@/components/rsya/RSYACampaignSelector';
+import RSYAPlatformsTable from '@/components/rsya/RSYAPlatformsTable';
 
 interface Filter {
   id: string;
@@ -68,6 +69,7 @@ export default function RSYACleaner() {
   const [isConnected, setIsConnected] = useState(false);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{ disabled: number; total: number } | null>(null);
   const [showCodeInput, setShowCodeInput] = useState(false);
@@ -75,6 +77,7 @@ export default function RSYACleaner() {
   const [clientLogin, setClientLogin] = useState('');
   const [useSandbox, setUseSandbox] = useState(true);
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'campaigns' | 'platforms'>('campaigns');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -263,6 +266,16 @@ export default function RSYACleaner() {
     toast({ title: 'Яндекс.Директ отключён' });
   };
 
+  const allPlatforms = useMemo(() => {
+    return campaigns.flatMap(c => 
+      (c.platforms || []).map(p => ({
+        ...p,
+        campaign_id: c.id,
+        campaign_name: c.name
+      }))
+    );
+  }, [campaigns]);
+
   const toggleCampaign = (campaignId: string) => {
     setSelectedCampaigns(prev => 
       prev.includes(campaignId) ? prev.filter(id => id !== campaignId) : [...prev, campaignId]
@@ -271,6 +284,15 @@ export default function RSYACleaner() {
 
   const selectAllCampaigns = () => setSelectedCampaigns(campaigns.map(c => c.id));
   const deselectAllCampaigns = () => setSelectedCampaigns([]);
+
+  const togglePlatform = (platformId: string) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(platformId) ? prev.filter(id => id !== platformId) : [...prev, platformId]
+    );
+  };
+
+  const selectAllPlatforms = () => setSelectedPlatforms(allPlatforms.map(p => p.adgroup_id));
+  const deselectAllPlatforms = () => setSelectedPlatforms([]);
 
   const addFilter = () => {
     if (!newFilter.trim()) {
@@ -397,6 +419,37 @@ export default function RSYACleaner() {
             />
 
             {campaigns.length > 0 && (
+              <Card className="bg-white shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-center gap-4 mb-6">
+                    <button
+                      onClick={() => setViewMode('campaigns')}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                        viewMode === 'campaigns'
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Icon name="Target" className="h-5 w-5" />
+                      По кампаниям
+                    </button>
+                    <button
+                      onClick={() => setViewMode('platforms')}
+                      className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                        viewMode === 'platforms'
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Icon name="Table" className="h-5 w-5" />
+                      Все площадки ({allPlatforms.length})
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {campaigns.length > 0 && viewMode === 'campaigns' && (
               <RSYACampaignSelector
                 campaigns={campaigns}
                 selectedCampaigns={selectedCampaigns}
@@ -408,12 +461,28 @@ export default function RSYACleaner() {
               />
             )}
 
+            {campaigns.length > 0 && viewMode === 'platforms' && (
+              <RSYAPlatformsTable
+                platforms={allPlatforms}
+                selectedPlatforms={selectedPlatforms}
+                onTogglePlatform={togglePlatform}
+                onSelectAll={selectAllPlatforms}
+                onDeselectAll={deselectAllPlatforms}
+                onMassDisable={() => {
+                  toast({ 
+                    title: '🚀 Массовое отключение', 
+                    description: `Будет отключено ${selectedPlatforms.length} площадок` 
+                  });
+                }}
+              />
+            )}
+
             {campaigns.length > 0 && (
               <Card>
                 <CardContent className="pt-6">
                   <Button
                     onClick={handleClean}
-                    disabled={loading || selectedCampaigns.length === 0 || filters.length === 0}
+                    disabled={loading || (viewMode === 'campaigns' ? selectedCampaigns.length === 0 : selectedPlatforms.length === 0) || filters.length === 0}
                     size="lg"
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
                   >
@@ -425,7 +494,9 @@ export default function RSYACleaner() {
                     ) : (
                       <>
                         <Icon name="Sparkles" className="mr-2 h-5 w-5" />
-                        Запустить чистку
+                        {viewMode === 'campaigns' 
+                          ? `Запустить чистку (${selectedCampaigns.length} кампаний)` 
+                          : `Отключить площадки (${selectedPlatforms.length})`}
                       </>
                     )}
                   </Button>
