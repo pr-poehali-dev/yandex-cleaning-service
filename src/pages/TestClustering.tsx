@@ -225,7 +225,6 @@ export default function TestClustering() {
       }
       
       const clusters = searchQuery.Clusters;
-      const minusWords = searchQuery.MinusWords || {};
       
       const allPhrases = clusters.flatMap((cluster: any) => cluster.phrases || []);
       
@@ -239,20 +238,7 @@ export default function TestClustering() {
         }
       ];
       
-      const transformedMinusWords = Object.keys(minusWords).flatMap(category => {
-        const catData = minusWords[category];
-        if (Array.isArray(catData)) {
-          return catData;
-        }
-        if (catData.phrases) {
-          return catData.phrases.map((p: any) => p.phrase);
-        }
-        return [];
-      });
-      
-      const finalMinusWords = transformedMinusWords.map(phrase => 
-        typeof phrase === 'string' ? { phrase, count: 0 } : phrase
-      );
+      const finalMinusWords: Phrase[] = [];
       
       setClusters(transformedClusters);
       setMinusWords(finalMinusWords);
