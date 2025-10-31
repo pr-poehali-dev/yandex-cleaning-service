@@ -131,7 +131,16 @@ export default function ClusteringProjects() {
 
       if (res.ok) {
         const newProject = await res.json();
-        setProjects([newProject, ...projects]);
+        const updatedProjects = [newProject, ...projects];
+        setProjects(updatedProjects);
+        
+        // Обновляем кэш
+        if (user?.id) {
+          const cacheKey = `clustering_projects_${user.id}`;
+          localStorage.setItem(cacheKey, JSON.stringify(updatedProjects));
+          localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+        }
+        
         setNewProjectName('');
         setIsDialogOpen(false);
         navigate(`/clustering/${newProject.id}`);
@@ -170,6 +179,14 @@ export default function ClusteringProjects() {
         const project = projects.find(p => p.id === projectToDelete);
         const updatedProjects = projects.filter(p => p.id !== projectToDelete);
         setProjects(updatedProjects);
+        
+        // Обновляем кэш
+        if (user?.id) {
+          const cacheKey = `clustering_projects_${user.id}`;
+          localStorage.setItem(cacheKey, JSON.stringify(updatedProjects));
+          localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+        }
+        
         setDeleteDialogOpen(false);
         setProjectToDelete(null);
         toast.success(`Проект "${project?.name}" удалён из базы данных`);
