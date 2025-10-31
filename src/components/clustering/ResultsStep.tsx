@@ -485,6 +485,14 @@ export default function ResultsStep({
     });
   };
 
+  const matchesMinusPhrase = (phrase: string, minusPhrase: string): boolean => {
+    const phraseLower = phrase.toLowerCase();
+    const minusPhraseWords = minusPhrase.toLowerCase().trim().split(/\s+/).filter(w => w.length > 0);
+    
+    // ВСЕ слова из минус-фразы должны быть в фразе
+    return minusPhraseWords.every(minusWord => matchesWordForm(phraseLower, minusWord));
+  };
+
   const addQuickMinusWord = async (word: string) => {
     const searchTerm = word.toLowerCase().trim();
     if (!searchTerm) return;
@@ -511,7 +519,7 @@ export default function ResultsStep({
         }
         
         // Если фраза совпадает с новым минус-словом — помечаем
-        if (matchesWordForm(p.phrase, searchTerm)) {
+        if (matchesMinusPhrase(p.phrase, searchTerm)) {
           affectedPhrases.push(p);
           return { ...p, isMinusWord: true, minusTerm: searchTerm };
         }
