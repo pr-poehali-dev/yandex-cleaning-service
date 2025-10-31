@@ -6,17 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
-import { useAuth } from '@/contexts/AuthContext';
 
 type AuthStep = 'phone' | 'code';
+
+const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 
 export default function Auth() {
   const [step, setStep] = useState<AuthStep>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sentCode, setSentCode] = useState('');
   const { toast } = useToast();
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const formatPhone = (value: string) => {
@@ -47,29 +48,82 @@ export default function Auth() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await fetch(`${API_URL}?endpoint=auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_code',
+          phone: digits
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send code');
+      }
+
+      const data = await response.json();
+      setSentCode(data.code);
       setStep('code');
       toast({ 
         title: '📱 Код отправлен', 
-        description: 'Проверьте SMS на номере ' + phone 
+        description: `Проверьте SMS на номере ${phone}. Код: ${data.code}` 
       });
-    }, 1000);
+    } catch (error) {
+      toast({ 
+        title: 'Ошибка отправки кода', 
+        description: 'Попробуйте снова', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCodeSubmit = async () => {
-    if (code.length !== 4) {
-      toast({ title: 'Введите 4-значный код', variant: 'destructive' });
+    if (code.length !== 6) {
+      toast({ title: 'Введите 6-значный код', variant: 'destructive' });
       return;
     }
 
     setLoading(true);
     try {
-      await login(phone);
+      const digits = phone.replace(/\D/g, '');
+      const response = await fetch(`${API_URL}?endpoint=auth`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify_code',
+          phone: digits,
+          code: code
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to verify code');
+      }
+
+      const data = await response.json();
+      
+      const user = {
+        id: data.userId,
+        phone: data.phone,
+        createdAt: new Date().toISOString(),
+        sessionToken: data.sessionToken
+      };
+
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('sessionToken', data.sessionToken);
+
       toast({ title: '✅ Добро пожаловать!', description: 'Вход выполнен успешно' });
-      navigate('/');
-    } catch (error) {
-      toast({ title: 'Ошибка входа', description: 'Попробуйте снова', variant: 'destructive' });
+      window.location.href = '/projects';
+    } catch (error: any) {
+      toast({ 
+        title: 'Ошибка входа', 
+        description: error.message || 'Проверьте код и попробуйте снова', 
+        variant: 'destructive' 
+      });
     } finally {
       setLoading(false);
     }
@@ -78,6 +132,10 @@ export default function Auth() {
   const handleBack = () => {
     setStep('phone');
     setCode('');
+  };
+
+  const handleResendCode = async () => {
+    await handlePhoneSubmit();
   };
 
   return (
@@ -160,14 +218,19 @@ export default function Auth() {
                   <Input
                     id="code"
                     type="text"
-                    placeholder="• • • •"
+                    placeholder="• • • • • •"
                     value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
                     className="text-center text-2xl tracking-widest font-mono"
-                    maxLength={4}
+                    maxLength={6}
                     autoFocus
                   />
+                  {sentCode && (
+                    <p className="text-sm text-center text-slate-500">
+                      Код для теста: <span className="font-mono font-bold">{sentCode}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
@@ -199,7 +262,8 @@ export default function Auth() {
                 </div>
 
                 <Button 
-                  onClick={() => toast({ title: 'Код отправлен повторно' })}
+                  onClick={handleResendCode}
+                  disabled={loading}
                   variant="ghost" 
                   className="w-full text-emerald-600 hover:text-emerald-700"
                 >
