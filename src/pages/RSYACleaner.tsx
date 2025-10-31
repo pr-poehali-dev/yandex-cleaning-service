@@ -39,7 +39,7 @@ export default function RSYACleaner() {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [authCode, setAuthCode] = useState('');
   const [clientLogin, setClientLogin] = useState('');
-  const [useSandbox, setUseSandbox] = useState(false);
+  const [useSandbox, setUseSandbox] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
