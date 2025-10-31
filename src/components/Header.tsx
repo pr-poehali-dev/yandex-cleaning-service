@@ -37,8 +37,13 @@ export default function Header() {
                 <Icon name="HelpCircle" className="h-4 w-4 mr-2" />
                 Как пользоваться
               </Button>
-              <div className="text-sm text-slate-600">
-                {user.phone}
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-slate-600">
+                  {user.phone}
+                </div>
+                <div className="px-2 py-1 bg-slate-100 rounded text-xs font-mono text-slate-500">
+                  {user.userId}
+                </div>
               </div>
               <Button
                 variant="ghost"
