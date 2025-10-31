@@ -182,7 +182,7 @@ export default function TestClustering() {
         keywords: [query.trim()],
         regions: regionIds,
         mode: mode,
-        use_openai: true,
+        use_openai: false,
         selected_intents: selectedIntents,
         region_names: cities.map(c => c.name)
       };
