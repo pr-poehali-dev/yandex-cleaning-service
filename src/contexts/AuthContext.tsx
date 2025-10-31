@@ -63,20 +63,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(parsedUser);
             setSessionToken(storedToken);
           } else {
-            console.log('❌ AuthContext: Token invalid, clearing storage');
-            localStorage.clear();
+            console.log('❌ AuthContext: Token invalid, clearing ALL storage');
+            const allKeys = Object.keys(localStorage);
+            allKeys.forEach(key => localStorage.removeItem(key));
             setUser(null);
             setSessionToken(null);
           }
         } else {
-          console.log('❌ AuthContext: Backend rejected token, clearing storage');
-          localStorage.clear();
+          console.log('❌ AuthContext: Backend rejected token, clearing ALL storage');
+          const allKeys = Object.keys(localStorage);
+          allKeys.forEach(key => localStorage.removeItem(key));
           setUser(null);
           setSessionToken(null);
         }
       } catch (error) {
         console.error('❌ AuthContext: Token verification failed:', error);
-        localStorage.clear();
+        const allKeys = Object.keys(localStorage);
+        allKeys.forEach(key => localStorage.removeItem(key));
         setUser(null);
         setSessionToken(null);
       } finally {

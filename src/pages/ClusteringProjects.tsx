@@ -49,6 +49,8 @@ export default function ClusteringProjects() {
 
   const loadProjects = async () => {
     if (!sessionToken) {
+      console.log('❌ ClusteringProjects: No session token, redirecting to auth');
+      setLoading(false);
       navigate('/auth');
       return;
     }
@@ -59,6 +61,7 @@ export default function ClusteringProjects() {
     const now = Date.now();
     
     if (cachedData && cacheTime && (now - parseInt(cacheTime)) < 60000) {
+      console.log('📦 ClusteringProjects: Using cached data');
       setProjects(JSON.parse(cachedData));
       setLoading(false);
       return;
