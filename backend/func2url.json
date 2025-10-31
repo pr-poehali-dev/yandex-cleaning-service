@@ -1,4 +1,5 @@
 {
+  "cluster-names": "https://functions.poehali.dev/816f5c03-c259-4d9d-9a4b-44d96af0e858",
   "auth": "https://functions.poehali.dev/25f40378-63b1-483f-8211-dfd2ccbe897b",
   "wordstat-collect": "https://functions.poehali.dev/89493312-f6e6-45ea-aad8-67dc35300664",
   "wordstat-regions": "https://functions.poehali.dev/a0ab9dc8-671f-45ed-a5a9-a17f5e7fd34d",

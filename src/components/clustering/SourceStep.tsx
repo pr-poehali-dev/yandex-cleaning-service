@@ -17,6 +17,7 @@ interface SourceStepProps {
   setObjectAddress: (address: string) => void;
   onNext: () => void;
   onWordstatClick?: () => void;
+  isLoading?: boolean;
 }
 
 export default function SourceStep({
@@ -29,7 +30,8 @@ export default function SourceStep({
   objectAddress,
   setObjectAddress,
   onNext,
-  onWordstatClick
+  onWordstatClick,
+  isLoading
 }: SourceStepProps) {
   const handleNext = () => {
     onNext();
@@ -62,11 +64,20 @@ export default function SourceStep({
 
         <Button 
           onClick={handleNext}
-          disabled={isNextDisabled}
+          disabled={isNextDisabled || isLoading}
           className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
         >
-          Далее
-          <Icon name="ArrowRight" className="ml-2 h-4 w-4" />
+          {isLoading ? (
+            <>
+              <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
+              Генерация названий кластеров...
+            </>
+          ) : (
+            <>
+              Далее
+              <Icon name="ArrowRight" className="ml-2 h-4 w-4" />
+            </>
+          )}
         </Button>
       </CardContent>
     </Card>

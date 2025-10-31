@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "Генерация названий кластеров",
+      "method": "POST",
+      "body": {
+        "keywords": [
+          "купить телефон москва",
+          "смартфон недорого",
+          "айфон 15 цена",
+          "samsung galaxy s24",
+          "телефон с доставкой"
+        ]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "clusterNames": "array",
+        "totalKeywords": 5
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

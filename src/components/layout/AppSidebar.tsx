@@ -33,14 +33,6 @@ export default function AppSidebar() {
       <nav className="p-4 space-y-2">
         <button
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-          onClick={() => navigate('/projects')}
-        >
-          <Icon name="FolderOpen" size={20} />
-          <span>Мои проекты</span>
-        </button>
-
-        <button
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
           onClick={() => navigate('/clustering')}
         >
           <Icon name="Search" size={20} />
