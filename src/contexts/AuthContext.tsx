@@ -42,11 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString()
     };
     localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem('userId', newUser.id);
     setUser(newUser);
   };
 
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('userId');
     setUser(null);
   };
 
