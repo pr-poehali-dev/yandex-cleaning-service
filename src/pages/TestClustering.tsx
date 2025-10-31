@@ -202,6 +202,13 @@ export default function TestClustering() {
       return;
     }
     
+    console.log('🎬 handleWordstatSubmit STARTED', {
+      query,
+      cities: cities.length,
+      mode,
+      manualKeywords: manualKeywords?.substring(0, 100)
+    });
+    
     try {
       const regionIds = cities.map(c => c.id);
       
@@ -229,55 +236,80 @@ export default function TestClustering() {
       }
 
       const data = await response.json();
+      console.log('📥 WORDSTAT RESPONSE:', data);
       setLoadingProgress(100);
       
       const searchQuery = data.data?.SearchQuery?.[0];
+      console.log('🔍 searchQuery:', searchQuery);
+      
       if (!searchQuery || !searchQuery.Clusters) {
+        console.error('❌ Invalid response format:', { searchQuery, hasClusters: !!searchQuery?.Clusters });
         throw new Error('Invalid response format');
       }
       
       const clusters = searchQuery.Clusters;
+      console.log('📦 Raw clusters from Wordstat:', clusters);
       
       const allPhrases = clusters.flatMap((cluster: any) => cluster.phrases || []);
       
-      // Создаём кластер с запросами пользователя из шага 1
+      // Создаём кластер с запросами пользователя из шага 1 (если они есть)
       const userQueryPhrases: Phrase[] = manualKeywords
-        .split('\n')
-        .map(k => k.trim())
-        .filter(k => k.length > 0)
-        .map(k => ({ phrase: k, count: 0 }));
+        ? manualKeywords
+            .split('\n')
+            .map(k => k.trim())
+            .filter(k => k.length > 0)
+            .map(k => ({ phrase: k, count: 0 }))
+        : [];
       
-      const transformedClusters = [
-        {
+      const transformedClusters: Cluster[] = [];
+      
+      console.log('👤 User query phrases:', userQueryPhrases);
+      
+      // Добавляем кластер с запросами пользователя ТОЛЬКО если есть фразы
+      if (userQueryPhrases.length > 0) {
+        transformedClusters.push({
           name: 'Запросы пользователя',
           intent: 'user',
           color: 'blue',
           icon: 'User',
           phrases: userQueryPhrases
-        },
-        {
-          name: 'Все ключи',
-          intent: 'general',
-          color: 'emerald',
-          icon: 'FolderOpen',
-          phrases: allPhrases
-        }
-      ];
+        });
+        console.log('✅ Added user queries cluster');
+      }
+      
+      // Добавляем кластер со всеми ключами
+      transformedClusters.push({
+        name: 'Все ключи',
+        intent: 'general',
+        color: 'emerald',
+        icon: 'FolderOpen',
+        phrases: allPhrases
+      });
+      console.log('✅ Added all keys cluster with', allPhrases.length, 'phrases');
       
       const finalMinusWords: Phrase[] = [];
       
+      console.log('💾 Setting clusters and minus words...');
       setClusters(transformedClusters);
       setMinusWords(finalMinusWords);
+      console.log('✅ State updated!');
       
+      console.log('💾 Saving to API...');
       await saveResultsToAPI(transformedClusters, finalMinusWords);
+      console.log('✅ Saved to API!');
       
       toast.success('Кластеризация завершена!');
+      console.log('🎯 Moving to results step...');
       setStep('results');
-    } catch (error) {
-      console.error('Error fetching from Wordstat:', error);
-      toast.error('Не удалось получить данные из Wordstat');
+      console.log('✅ Step changed to results!');
+    } catch (error: any) {
+      console.error('❌ Error in handleWordstatSubmit:', error);
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error stack:', error?.stack);
+      toast.error(`Не удалось получить данные из Wordstat: ${error?.message || 'неизвестная ошибка'}`);
       setStep('cities');
     } finally {
+      console.log('🏁 handleWordstatSubmit FINISHED');
       setIsWordstatLoading(false);
     }
   };
