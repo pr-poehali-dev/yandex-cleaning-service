@@ -431,23 +431,38 @@ export default function ResultsStep({
     
     return phraseWords.some(word => {
       // 1. Точное совпадение слова
-      if (word === targetLower) return true;
+      if (word === targetLower) {
+        console.log(`✅ Правило 1: "${word}" === "${targetLower}"`);
+        return true;
+      }
       
       // 2. Префиксное совпадение (для коротких вводов типа "куп")
       // НО: слово из фразы должно быть длиннее или равно вводу
-      if (word.startsWith(targetLower) && targetLower.length >= 2 && word.length >= targetLower.length) return true;
+      if (word.startsWith(targetLower) && targetLower.length >= 2 && word.length >= targetLower.length) {
+        console.log(`✅ Правило 2: "${word}" начинается с "${targetLower}" (длины: ${word.length} >= ${targetLower.length})`);
+        return true;
+      }
       
       // 3. Совпадение корней (для словоформ: купить → куплю, купил)
       const wordRoot = getWordRoot(word);
-      if (wordRoot === targetRoot && wordRoot.length >= 3) return true;
+      if (wordRoot === targetRoot && wordRoot.length >= 3) {
+        console.log(`✅ Правило 3: корни совпадают "${wordRoot}" === "${targetRoot}"`);
+        return true;
+      }
       
       // 4. Корень целевого слова есть в начале слова из фразы
       // НО: только если корень не сильно длиннее самого слова (защита от "купитьывавава")
-      if (word.startsWith(targetRoot) && targetRoot.length >= 3 && targetRoot.length <= word.length + 2) return true;
+      if (word.startsWith(targetRoot) && targetRoot.length >= 3 && targetRoot.length <= word.length + 2) {
+        console.log(`✅ Правило 4: "${word}" начинается с корня "${targetRoot}" (длины: ${targetRoot.length} <= ${word.length + 2})`);
+        return true;
+      }
       
       // 5. Корень слова из фразы есть в начале целевого слова
       // НО: только если целевое слово не сильно длиннее (защита от "купитьывавава")
-      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 3 && wordRoot.length <= targetRoot.length + 2) return true;
+      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 3 && wordRoot.length <= targetRoot.length + 2) {
+        console.log(`✅ Правило 5: корень "${targetRoot}" начинается с "${wordRoot}" (длины: ${wordRoot.length} <= ${targetRoot.length + 2})`);
+        return true;
+      }
       
       return false;
     });
