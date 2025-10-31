@@ -93,8 +93,23 @@ export default function RSYACleaner() {
       if (!response.ok) throw new Error('Ошибка загрузки кампаний');
 
       const data = await response.json();
+      
+      if (data.error) {
+        const errorMsg = data.error_detail 
+          ? `${data.error}: ${data.error_detail}` 
+          : data.error;
+        toast({ 
+          title: '❌ Ошибка API Яндекс.Директ', 
+          description: errorMsg,
+          variant: 'destructive',
+          duration: 10000
+        });
+        setCampaigns([]);
+        return;
+      }
+      
       setCampaigns(data.campaigns || []);
-      toast({ title: '✅ Кампании загружены', description: `Найдено кампаний: ${data.campaigns?.length || 0}` });
+      toast({ title: '✅ Кампании загружены', description: `Найдено РСЯ кампаний: ${data.campaigns?.length || 0}` });
     } catch (error) {
       toast({ title: 'Ошибка загрузки кампаний', description: 'Не удалось загрузить список кампаний', variant: 'destructive' });
     }

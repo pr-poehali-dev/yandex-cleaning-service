@@ -76,8 +76,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             print(f'[DEBUG] API Response status: {response.status_code}')
             print(f'[DEBUG] API Response body: {response.text[:500]}')
             
-            if response.status_code != 200:
-                print(f'[ERROR] Yandex.Direct API error: {response.text}')
+            data = response.json()
+            
+            # Проверка на ошибку API (Яндекс возвращает 200 даже при ошибках)
+            if 'error' in data:
+                error_info = data['error']
+                error_msg = error_info.get('error_string', 'Неизвестная ошибка')
+                error_detail = error_info.get('error_detail', '')
+                error_code = error_info.get('error_code', 0)
+                
+                print(f'[ERROR] Yandex.Direct API error: {error_msg} (код {error_code})')
+                print(f'[ERROR] Details: {error_detail}')
+                
                 return {
                     'statusCode': 200,
                     'headers': {
@@ -86,12 +96,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     },
                     'body': json.dumps({
                         'campaigns': [],
-                        'error': f'Ошибка API: {response.status_code}',
-                        'message': 'Проверьте токен авторизации в настройках Яндекс.Директ'
+                        'error': error_msg,
+                        'error_detail': error_detail,
+                        'error_code': error_code
                     })
                 }
             
-            data = response.json()
             campaigns_raw = data.get('result', {}).get('Campaigns', [])
             
             print(f'[DEBUG] Found {len(campaigns_raw)} campaigns')
