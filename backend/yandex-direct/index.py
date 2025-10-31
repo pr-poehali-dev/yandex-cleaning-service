@@ -251,23 +251,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 from datetime import datetime, timedelta
                 tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
                 
+                import random
+                
                 campaign_data = {
                     'method': 'add',
                     'params': {
                         'Campaigns': [{
-                            'Name': f'Тестовая РСЯ кампания {datetime.now().strftime("%H:%M")}',
+                            'Name': f'РСЯ тест {datetime.now().strftime("%d.%m %H:%M")}',
                             'StartDate': tomorrow,
+                            'ClientInfo': f'Тестовая кампания {random.randint(1000, 9999)}',
                             'TextCampaign': {
+                                'CounterIds': [87164937],
+                                'Settings': [
+                                    {'Option': 'ADD_METRICA_TAG', 'Value': 'YES'},
+                                    {'Option': 'ADD_OPENSTAT_TAG', 'Value': 'YES'},
+                                    {'Option': 'ADD_TO_FAVORITES', 'Value': 'NO'},
+                                    {'Option': 'ENABLE_AREA_OF_INTEREST_TARGETING', 'Value': 'YES'},
+                                    {'Option': 'ENABLE_CURRENT_AREA_TARGETING', 'Value': 'YES'},
+                                    {'Option': 'ENABLE_EXTENDED_AD_TITLE', 'Value': 'YES'},
+                                    {'Option': 'REQUIRE_SERVICING', 'Value': 'NO'}
+                                ],
                                 'BiddingStrategy': {
                                     'Search': {
-                                        'BiddingStrategyType': 'LOWEST_COST'
+                                        'BiddingStrategyType': 'SERVING_OFF'
                                     },
                                     'Network': {
-                                        'BiddingStrategyType': 'NETWORK_DEFAULT',
-                                        'LimitPercent': 100
+                                        'BiddingStrategyType': 'WB_MAXIMUM_CLICKS',
+                                        'WbMaximumClicks': {
+                                            'BidCeiling': 100000000,
+                                            'WeeklySpendLimit': 5000000000
+                                        }
                                     }
-                                },
-                                'Settings': []
+                                }
                             }
                         }]
                     }
