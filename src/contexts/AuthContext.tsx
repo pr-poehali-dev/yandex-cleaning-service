@@ -25,7 +25,26 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        if (typeof parsedUser.id === 'number') {
+          setUser(parsedUser);
+        } else {
+          localStorage.removeItem('user');
+          localStorage.removeItem('userId');
+        }
+      } catch {
+        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+      }
+    }
+    setIsLoading(false);
+  }, []);
 
   const login = async (phone: string) => {
     const response = await fetch('https://functions.poehali.dev/25f40378-63b1-483f-8211-dfd2ccbe897b', {
@@ -45,10 +64,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: userData.createdAt
     };
     
+    localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem('userId', String(newUser.id));
     setUser(newUser);
   };
 
   const logout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('userId');
     setUser(null);
   };
 
