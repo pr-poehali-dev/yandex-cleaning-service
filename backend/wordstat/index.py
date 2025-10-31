@@ -323,13 +323,22 @@ def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context',
             # Проверяем что нет лишних фраз (которых не было в оригинале)
             added_phrases = clustered_phrases_set - original_phrases_set
             if added_phrases:
-                print(f'[OPENAI] ERROR: AI добавил {len(added_phrases)} фраз от себя! Откат к TF-IDF')
+                print(f'[OPENAI] ❌ ERROR: AI добавил {len(added_phrases)} фраз от себя! Откат к TF-IDF')
                 print(f'[OPENAI] Примеры добавленных: {list(added_phrases)[:3]}')
                 clusters = smart_clusterize(phrases, mode)
                 minus_words = detect_minus_words(phrases) if mode == 'context' else {}
                 return clusters, minus_words
             
-            print(f'[OPENAI] ✅ Валидация пройдена: {len(clusters)} кластеров, фразы не изменены')
+            # Проверяем что OpenAI не удалил фразы
+            deleted_phrases = original_phrases_set - clustered_phrases_set
+            if deleted_phrases:
+                print(f'[OPENAI] ❌ ERROR: AI удалил {len(deleted_phrases)} фраз! Откат к TF-IDF')
+                print(f'[OPENAI] Примеры удалённых: {list(deleted_phrases)[:5]}')
+                clusters = smart_clusterize(phrases, mode)
+                minus_words = detect_minus_words(phrases) if mode == 'context' else {}
+                return clusters, minus_words
+            
+            print(f'[OPENAI] ✅ Валидация OK: {len(clusters)} кластеров, {len(clustered_phrases_set)}/{len(original_phrases_set)} фраз')
             if minus_words:
                 total_minus = sum(len(v) for v in minus_words.values() if isinstance(v, list))
                 print(f'[OPENAI] Detected {total_minus} minus-words')
