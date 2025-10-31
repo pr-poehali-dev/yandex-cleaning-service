@@ -23,14 +23,6 @@ export default function Auth() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Профессиональный сервис для сбора, кластеризации и очистки семантического ядра Яндекс.Директ
           </p>
-          <Button 
-            onClick={() => navigate('/login')} 
-            className="mt-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
-            size="lg"
-          >
-            Войти в систему
-            <Icon name="ArrowRight" size={20} className="ml-2" />
-          </Button>
         </div>
 
         {/* Основные возможности */}
@@ -128,24 +120,7 @@ export default function Auth() {
           </CardContent>
         </Card>
 
-        {/* Призыв к действию */}
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-emerald-500 to-green-500 text-white">
-          <CardContent className="p-8 text-center">
-            <Icon name="Rocket" size={48} className="mx-auto mb-4 opacity-90" />
-            <h2 className="text-3xl font-bold mb-3">Готовы начать работу?</h2>
-            <p className="text-lg opacity-90 mb-6 max-w-2xl mx-auto">
-              Войдите в систему и получите доступ ко всем инструментам для профессиональной работы с семантическим ядром
-            </p>
-            <Button 
-              onClick={() => navigate('/login')}
-              size="lg"
-              className="bg-white text-emerald-600 hover:bg-slate-50 shadow-lg"
-            >
-              Войти в DirectKit
-              <Icon name="ArrowRight" size={20} className="ml-2" />
-            </Button>
-          </CardContent>
-        </Card>
+
         </div>
       </div>
     </div>
