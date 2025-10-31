@@ -126,14 +126,50 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             for c in campaigns_raw:
                 campaign_type = c.get('Type', '')
                 if campaign_type == 'TEXT_CAMPAIGN':
+                    campaign_id = str(c.get('Id'))
+                    
+                    # Получаем группы объявлений для кампании
+                    adgroups_url = api_url.replace('/campaigns', '/adgroups')
+                    adgroups_response = requests.post(
+                        adgroups_url,
+                        headers=request_headers,
+                        json={
+                            'method': 'get',
+                            'params': {
+                                'SelectionCriteria': {'CampaignIds': [int(campaign_id)]},
+                                'FieldNames': ['Id', 'Name', 'Status'],
+                                'TextAdGroupFieldNames': ['BiddingStrategy']
+                            }
+                        },
+                        timeout=10
+                    )
+                    
+                    platforms = []
+                    if adgroups_response.status_code == 200:
+                        adgroups_data = adgroups_response.json()
+                        if 'result' in adgroups_data:
+                            adgroups = adgroups_data.get('result', {}).get('AdGroups', [])
+                            for ag in adgroups:
+                                text_adgroup = ag.get('TextAdGroup', {})
+                                bidding = text_adgroup.get('BiddingStrategy', {})
+                                network_bidding = bidding.get('Network', {})
+                                if network_bidding:
+                                    platforms.append({
+                                        'adgroup_id': str(ag.get('Id')),
+                                        'adgroup_name': ag.get('Name', 'Без названия'),
+                                        'status': ag.get('Status'),
+                                        'network_enabled': True
+                                    })
+                    
                     campaigns.append({
-                        'id': str(c.get('Id')),
+                        'id': campaign_id,
                         'name': c.get('Name'),
                         'type': campaign_type,
-                        'status': c.get('Status')
+                        'status': c.get('Status'),
+                        'platforms': platforms
                     })
             
-            print(f'[DEBUG] Filtered {len(campaigns)} TEXT_CAMPAIGN campaigns')
+            print(f'[DEBUG] Filtered {len(campaigns)} TEXT_CAMPAIGN campaigns with platforms')
             
             return {
                 'statusCode': 200,
@@ -237,7 +273,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             try:
-                api_url = 'https://api.direct.yandex.com/json/v5/campaigns'
+                api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns'
                 
                 request_headers = {
                     'Authorization': f'Bearer {token}',
