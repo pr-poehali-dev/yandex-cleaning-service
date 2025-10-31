@@ -28,6 +28,15 @@ export default function Header() {
 
           {user && (
             <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/how-to-use')}
+                className="text-slate-600 hover:text-slate-800"
+              >
+                <Icon name="HelpCircle" className="h-4 w-4 mr-2" />
+                Как пользоваться
+              </Button>
               <div className="text-sm text-slate-600">
                 {user.phone}
               </div>

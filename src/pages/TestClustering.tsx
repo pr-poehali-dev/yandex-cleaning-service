@@ -19,7 +19,7 @@ const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f
 const WORDSTAT_API_URL = 'https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8';
 const CLUSTER_NAMES_API_URL = 'https://functions.poehali.dev/816f5c03-c259-4d9d-9a4b-44d96af0e858';
 
-type Step = 'source' | 'cluster-names' | 'wordstat-dialog' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
+type Step = 'source' | 'wordstat-dialog' | 'cities' | 'goal' | 'intents' | 'processing' | 'cluster-names' | 'results';
 type Source = 'manual' | 'website';
 type Goal = 'context' | 'seo';
 
@@ -259,8 +259,35 @@ export default function TestClustering() {
       
       await saveResultsToAPI(transformedClusters, finalMinusWords);
       
-      setStep('results');
-      toast.success(`Собрано ${transformedClusters.length} кластеров из Wordstat`);
+      setStep('cluster-names');
+      setIsGeneratingNames(true);
+      
+      try {
+        const keywords = manualKeywords
+          .split('\n')
+          .map(k => k.trim())
+          .filter(k => k.length > 0);
+        
+        const response = await fetch(CLUSTER_NAMES_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keywords })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate cluster names');
+        }
+
+        const aiData = await response.json();
+        setClusterNames(aiData.clusterNames || []);
+        toast.success(`OpenAI сгенерировал ${aiData.clusterNames.length} названий кластеров`);
+      } catch (error) {
+        console.error('Error generating cluster names:', error);
+        toast.error('Не удалось сгенерировать названия через OpenAI');
+        setClusterNames([]);
+      } finally {
+        setIsGeneratingNames(false);
+      }
     } catch (error) {
       console.error('Error fetching from Wordstat:', error);
       toast.error('Не удалось получить данные из Wordstat');
@@ -286,37 +313,15 @@ export default function TestClustering() {
       return;
     }
 
-    try {
-      setIsGeneratingNames(true);
-      const response = await fetch(CLUSTER_NAMES_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate cluster names');
-      }
-
-      const data = await response.json();
-      setClusterNames(data.clusterNames || []);
-      setStep('cluster-names');
-      toast.success(`Сгенерировано ${data.clusterNames.length} названий кластеров`);
-    } catch (error) {
-      console.error('Error generating cluster names:', error);
-      toast.error('Не удалось сгенерировать названия. Продолжаем без OpenAI');
-      setStep('cities');
-    } finally {
-      setIsGeneratingNames(false);
-    }
+    setStep('cities');
   };
 
   const handleBack = () => {
-    if (step === 'cluster-names') setStep('source');
-    else if (step === 'cities') setStep('cluster-names');
+    if (step === 'cities') setStep('source');
     else if (step === 'goal') setStep('cities');
     else if (step === 'intents') setStep('goal');
-    else if (step === 'results') setStep('intents');
+    else if (step === 'cluster-names') setStep('processing');
+    else if (step === 'results') setStep('cluster-names');
   };
 
   const exportClusters = () => {
@@ -400,7 +405,7 @@ export default function TestClustering() {
             <ClusterNamesStep
               clusterNames={clusterNames}
               onClusterNamesChange={setClusterNames}
-              onNext={() => setStep('cities')}
+              onNext={() => setStep('results')}
               onBack={handleBack}
               isLoading={isGeneratingNames}
             />
