@@ -259,17 +259,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Campaigns': [{
                             'Name': f'РСЯ тест {datetime.now().strftime("%d.%m %H:%M")}',
                             'StartDate': tomorrow,
-                            'ClientInfo': f'Тестовая кампания {random.randint(1000, 9999)}',
                             'TextCampaign': {
-                                'Settings': [
-                                    {'Option': 'ADD_METRICA_TAG', 'Value': 'YES'},
-                                    {'Option': 'ADD_OPENSTAT_TAG', 'Value': 'YES'},
-                                    {'Option': 'ADD_TO_FAVORITES', 'Value': 'NO'},
-                                    {'Option': 'ENABLE_AREA_OF_INTEREST_TARGETING', 'Value': 'YES'},
-                                    {'Option': 'ENABLE_CURRENT_AREA_TARGETING', 'Value': 'YES'},
-                                    {'Option': 'ENABLE_EXTENDED_AD_TITLE', 'Value': 'YES'},
-                                    {'Option': 'REQUIRE_SERVICING', 'Value': 'NO'}
-                                ],
                                 'BiddingStrategy': {
                                     'Search': {
                                         'BiddingStrategyType': 'SERVING_OFF'
