@@ -6,7 +6,7 @@ export default function HomePage() {
   return (
     <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
       <AppSidebar />
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto ml-64">
         <div className="max-w-5xl mx-auto p-6">
           {/* Шапка */}
           <div className="text-center mb-12 pt-8">

@@ -117,7 +117,7 @@ export default function Auth() {
       localStorage.setItem('sessionToken', data.sessionToken);
 
       toast({ title: '✅ Добро пожаловать!', description: 'Вход выполнен успешно' });
-      window.location.href = '/projects';
+      window.location.href = '/home';
     } catch (error: any) {
       toast({ 
         title: 'Ошибка входа', 
