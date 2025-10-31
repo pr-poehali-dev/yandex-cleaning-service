@@ -434,17 +434,20 @@ export default function ResultsStep({
       if (word === targetLower) return true;
       
       // 2. Префиксное совпадение (для коротких вводов типа "куп")
-      if (word.startsWith(targetLower) && targetLower.length >= 2) return true;
+      // НО: слово из фразы должно быть длиннее или равно вводу
+      if (word.startsWith(targetLower) && targetLower.length >= 2 && word.length >= targetLower.length) return true;
       
       // 3. Совпадение корней (для словоформ: купить → куплю, купил)
       const wordRoot = getWordRoot(word);
       if (wordRoot === targetRoot && wordRoot.length >= 3) return true;
       
       // 4. Корень целевого слова есть в начале слова из фразы
-      if (word.startsWith(targetRoot) && targetRoot.length >= 3) return true;
+      // НО: только если корень не сильно длиннее самого слова (защита от "купитьывавава")
+      if (word.startsWith(targetRoot) && targetRoot.length >= 3 && targetRoot.length <= word.length + 2) return true;
       
       // 5. Корень слова из фразы есть в начале целевого слова
-      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 3) return true;
+      // НО: только если целевое слово не сильно длиннее (защита от "купитьывавава")
+      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 3 && wordRoot.length <= targetRoot.length + 2) return true;
       
       return false;
     });
