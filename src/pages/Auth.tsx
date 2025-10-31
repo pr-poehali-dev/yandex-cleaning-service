@@ -24,7 +24,7 @@ export default function Auth() {
     const digits = value.replace(/\D/g, '');
     
     if (digits.length === 0) return '';
-    if (digits.length === 1 && digits === '7') return '';
+    if (digits.length <= 1) return '';
     
     let result = '+7';
     if (digits.length > 1) {
