@@ -7,7 +7,9 @@ interface RSYAConnectionCardProps {
   isConnected: boolean;
   showCodeInput: boolean;
   authCode: string;
+  useSandbox?: boolean;
   setAuthCode: (value: string) => void;
+  setUseSandbox?: (value: boolean) => void;
   onConnect: () => void;
   onDisconnect: () => void;
   onToggleCodeInput: () => void;
@@ -18,7 +20,9 @@ export default function RSYAConnectionCard({
   isConnected,
   showCodeInput,
   authCode,
+  useSandbox = false,
   setAuthCode,
+  setUseSandbox,
   onConnect,
   onDisconnect,
   onToggleCodeInput,
@@ -59,15 +63,30 @@ export default function RSYAConnectionCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {!showCodeInput ? (
-          <div className="flex gap-2">
-            <Button onClick={onConnect} className="bg-emerald-500 hover:bg-emerald-600 text-white">
-              <Icon name="Key" className="h-4 w-4 mr-2" />
-              Авторизоваться через OAuth
-            </Button>
-            <Button onClick={onToggleCodeInput} variant="outline">
-              У меня есть код
-            </Button>
-          </div>
+          <>
+            <div className="flex gap-2">
+              <Button onClick={onConnect} className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                <Icon name="Key" className="h-4 w-4 mr-2" />
+                Авторизоваться через OAuth
+              </Button>
+              <Button onClick={onToggleCodeInput} variant="outline">
+                У меня есть код
+              </Button>
+            </div>
+            {setUseSandbox && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useSandbox}
+                  onChange={(e) => setUseSandbox(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300"
+                />
+                <span className="text-slate-700">
+                  Использовать песочницу (sandbox) для тестирования
+                </span>
+              </label>
+            )}
+          </>
         ) : (
           <div className="space-y-3">
             <div className="space-y-2">

@@ -38,6 +38,7 @@ export default function RSYACleaner() {
   const [results, setResults] = useState<{ disabled: number; total: number } | null>(null);
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [authCode, setAuthCode] = useState('');
+  const [useSandbox, setUseSandbox] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,7 +86,11 @@ export default function RSYACleaner() {
 
   const loadCampaigns = async (token: string) => {
     try {
-      const response = await fetch(YANDEX_DIRECT_URL, {
+      const url = useSandbox 
+        ? `${YANDEX_DIRECT_URL}?sandbox=true` 
+        : YANDEX_DIRECT_URL;
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: { 'X-Auth-Token': token }
       });
@@ -243,7 +248,9 @@ export default function RSYACleaner() {
           isConnected={isConnected}
           showCodeInput={showCodeInput}
           authCode={authCode}
+          useSandbox={useSandbox}
           setAuthCode={setAuthCode}
+          setUseSandbox={setUseSandbox}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
           onToggleCodeInput={() => setShowCodeInput(!showCodeInput)}

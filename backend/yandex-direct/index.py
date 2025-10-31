@@ -57,8 +57,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         try:
             print(f'[DEBUG] Requesting Yandex.Direct API with token: {token[:10]}...')
             
+            # Проверяем режим sandbox
+            is_sandbox = query_params.get('sandbox') == 'true'
+            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns' if is_sandbox else 'https://api.direct.yandex.com/json/v5/campaigns'
+            
+            print(f'[DEBUG] Using API URL: {api_url} (sandbox={is_sandbox})')
+            
             response = requests.post(
-                'https://api.direct.yandex.com/json/v5/campaigns',
+                api_url,
                 headers={
                     'Authorization': f'Bearer {token}',
                     'Accept-Language': 'ru'
