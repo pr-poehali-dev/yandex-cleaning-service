@@ -2,13 +2,16 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import AppSidebar from '@/components/layout/AppSidebar';
 
 export default function Auth() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="flex h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
+      <AppSidebar />
+      <div className="flex-1 overflow-auto p-6">
+        <div className="max-w-5xl mx-auto">
         {/* Шапка */}
         <div className="text-center mb-12 pt-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-green-500 rounded-2xl mb-4 shadow-lg">
@@ -143,6 +146,7 @@ export default function Auth() {
             </Button>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
