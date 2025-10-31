@@ -70,17 +70,22 @@ export default function RSYAConnectionCard({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input
-                value={authCode}
-                onChange={(e) => setAuthCode(e.target.value)}
-                placeholder="Вставьте код авторизации"
-                className="font-mono"
-              />
-              <Button onClick={onSubmitCode} disabled={!authCode.trim()}>
-                <Icon name="Check" className="h-4 w-4 mr-2" />
-                Применить
-              </Button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={authCode}
+                  onChange={(e) => setAuthCode(e.target.value)}
+                  placeholder="Код OAuth или токен доступа"
+                  className="font-mono"
+                />
+                <Button onClick={onSubmitCode} disabled={!authCode.trim()}>
+                  <Icon name="Check" className="h-4 w-4 mr-2" />
+                  Применить
+                </Button>
+              </div>
+              <p className="text-xs text-slate-600">
+                Вставьте код из OAuth или готовый токен API Директа
+              </p>
             </div>
             <Button onClick={onToggleCodeInput} variant="ghost" size="sm">
               <Icon name="ArrowLeft" className="h-4 w-4 mr-2" />

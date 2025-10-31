@@ -130,14 +130,28 @@ export default function RSYACleaner() {
 
   const handleCodeSubmit = async () => {
     if (!authCode.trim()) {
-      toast({ title: 'Введите код', description: 'Вставьте код из окна авторизации Яндекс', variant: 'destructive' });
+      toast({ title: 'Введите код или токен', description: 'Вставьте код OAuth или готовый токен доступа', variant: 'destructive' });
       return;
     }
+    
     setLoading(true);
     try {
-      await exchangeCodeForToken(authCode.trim());
-      setShowCodeInput(false);
-      setAuthCode('');
+      const token = authCode.trim();
+      
+      // Если выглядит как готовый токен (32+ символов без дефисов) - используем напрямую
+      if (token.length >= 32 && !token.includes('-')) {
+        localStorage.setItem('yandex_direct_token', token);
+        setIsConnected(true);
+        setShowCodeInput(false);
+        setAuthCode('');
+        toast({ title: '✅ Токен сохранён', description: 'Загружаем кампании...' });
+        await loadCampaigns(token);
+      } else {
+        // Иначе обмениваем OAuth код на токен
+        await exchangeCodeForToken(token);
+        setShowCodeInput(false);
+        setAuthCode('');
+      }
     } finally {
       setLoading(false);
     }
