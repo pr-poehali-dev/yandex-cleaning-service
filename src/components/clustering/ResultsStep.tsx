@@ -69,6 +69,7 @@ export default function ResultsStep({
   const [draggedPhrase, setDraggedPhrase] = useState<{clusterIdx: number, phraseIdx: number} | null>(null);
   const [excludeRedPhrases, setExcludeRedPhrases] = useState(true);
   const [includeFrequency, setIncludeFrequency] = useState(false);
+  const [quickMinusMode, setQuickMinusMode] = useState(true);
   const { toast } = useToast();
 
   const clustersDataKey = propsClusters.map(c => c.name).join(',');
@@ -595,6 +596,16 @@ export default function ResultsStep({
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    checked={quickMinusMode}
+                    onChange={(e) => setQuickMinusMode(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                  />
+                  <span className="text-gray-700">Режим быстрых минус-слов</span>
+                </label>
+                <div className="h-4 w-px bg-gray-300" />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
                     checked={excludeRedPhrases}
                     onChange={(e) => setExcludeRedPhrases(e.target.checked)}
                     className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
@@ -789,7 +800,23 @@ export default function ResultsStep({
                         )}
                         <div className="flex-1 min-w-0">
                           <div className={`text-sm leading-snug mb-1 ${phrase.isMinusWord ? 'text-red-700 line-through' : 'text-gray-800'}`}>
-                            {phrase.phrase}
+                            {quickMinusMode && !phrase.isMinusWord ? (
+                              phrase.phrase.split(' ').map((word, wIdx) => (
+                                <span
+                                  key={wIdx}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMinusSearchChange(word);
+                                    confirmMinusSearch();
+                                  }}
+                                  className="hover:bg-red-100 hover:text-red-700 rounded px-0.5 cursor-pointer transition-colors"
+                                >
+                                  {word}{wIdx < phrase.phrase.split(' ').length - 1 ? ' ' : ''}
+                                </span>
+                              ))
+                            ) : (
+                              phrase.phrase
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <div className={`text-xs font-mono ${phrase.isMinusWord ? 'text-red-600' : 'text-gray-500'}`}>
