@@ -34,7 +34,7 @@ export default function Subscription() {
     try {
       const response = await fetch(func2url.subscription, {
         headers: {
-          'X-User-Id': user.id
+          'X-User-Id': user.id.toString()
         }
       });
 
@@ -58,15 +58,15 @@ export default function Subscription() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': user.id
+          'X-User-Id': user.id.toString()
         },
         body: JSON.stringify({ action: 'activate' })
       });
 
       if (response.ok) {
         toast({
-          title: '🎉 Подписка активирована!',
-          description: 'Теперь вы можете пользоваться сервисом целый месяц'
+          title: 'Подписка активирована',
+          description: 'Месячная подписка успешно оформлена'
         });
         await loadSubscription();
       } else {
@@ -87,9 +87,9 @@ export default function Subscription() {
     return (
       <>
         <AppSidebar />
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center ml-64">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center ml-64">
           <div className="text-center">
-            <Icon name="Loader2" className="animate-spin h-12 w-12 text-purple-600 mx-auto mb-4" />
+            <Icon name="Loader2" className="animate-spin h-12 w-12 text-emerald-600 mx-auto mb-4" />
             <p className="text-gray-600">Загрузка...</p>
           </div>
         </div>
@@ -115,68 +115,71 @@ export default function Subscription() {
   return (
     <>
       <AppSidebar />
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 ml-64">
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-5xl mx-auto space-y-8">
-            {/* Заголовок */}
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl mb-4 shadow-lg">
-                <Icon name="CreditCard" size={32} className="text-white" />
+      <div className="min-h-screen bg-slate-50 ml-64">
+        <div className="container mx-auto px-6 py-8">
+          <div className="max-w-6xl mx-auto space-y-8">
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Подписка</h1>
+                <p className="text-gray-600">Управление тарифом и доступом к сервису</p>
               </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Управление подпиской</h1>
-              <p className="text-lg text-gray-600">Безлимитный сбор фраз и AI-кластеризация</p>
+              {user?.userId && (
+                <div className="px-4 py-2 bg-white border border-slate-200 rounded-lg">
+                  <div className="text-xs text-gray-500 mb-1">ID профиля</div>
+                  <div className="font-mono text-sm text-gray-700">{user.userId}</div>
+                </div>
+              )}
             </div>
 
-            {/* Текущий статус */}
-            <Card className="p-8 border-2">
+            <Card className="p-6 bg-white border border-slate-200 shadow-sm">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Текущий статус</h2>
-                  <p className="text-gray-600">Информация о вашей подписке</p>
+                  <h2 className="text-xl font-semibold mb-1">Текущий статус</h2>
+                  <p className="text-sm text-gray-500">Информация о вашей подписке</p>
                 </div>
-                {subscription?.hasAccess && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold">
-                    <Icon name="CheckCircle2" size={20} />
+                {subscription?.hasAccess ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg font-medium text-sm">
+                    <Icon name="CheckCircle2" size={16} />
                     Активна
                   </div>
-                )}
-                {!subscription?.hasAccess && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-full font-semibold">
-                    <Icon name="XCircle" size={20} />
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 text-red-800 rounded-lg font-medium text-sm">
+                    <Icon name="XCircle" size={16} />
                     Неактивна
                   </div>
                 )}
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Icon name="Package" size={20} className="text-purple-600" />
+                    <Icon name="Package" size={18} className="text-emerald-600" />
                     <span className="text-sm font-medium text-gray-600">Тариф</span>
                   </div>
-                  <p className="text-2xl font-bold">
-                    {subscription?.planType === 'trial' ? '🎁 Триал' : '💎 Месячная'}
+                  <p className="text-xl font-semibold text-gray-900">
+                    {subscription?.planType === 'trial' ? 'Триал' : 'Месячная'}
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Icon name="Calendar" size={20} className="text-purple-600" />
+                    <Icon name="Calendar" size={18} className="text-emerald-600" />
                     <span className="text-sm font-medium text-gray-600">Действует до</span>
                   </div>
-                  <p className="text-xl font-bold">
+                  <p className="text-base font-semibold text-gray-900">
                     {subscription?.hasAccess ? formatDate(subscription.expiresAt) : '—'}
                   </p>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                   <div className="flex items-center gap-2 mb-2">
-                    <Icon name="Clock" size={20} className="text-purple-600" />
+                    <Icon name="Clock" size={18} className="text-emerald-600" />
                     <span className="text-sm font-medium text-gray-600">Осталось дней</span>
                   </div>
-                  <p className="text-2xl font-bold">
+                  <p className="text-xl font-semibold">
                     {subscription?.hasAccess ? (
-                      <span className={daysLeft < 3 ? 'text-red-600' : 'text-green-600'}>
+                      <span className={daysLeft < 3 ? 'text-red-600' : 'text-emerald-600'}>
                         {daysLeft}
                       </span>
                     ) : '0'}
@@ -184,15 +187,14 @@ export default function Subscription() {
                 </div>
               </div>
 
-              {/* Предупреждения */}
               {subscription?.hasAccess && daysLeft < 7 && subscription.planType === 'trial' && (
-                <div className="mt-6 p-4 bg-orange-50 border-l-4 border-orange-500 rounded">
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <Icon name="AlertTriangle" size={20} className="text-orange-600 mt-0.5" />
+                    <Icon name="AlertTriangle" size={20} className="text-orange-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-semibold text-orange-900">Триал скоро закончится</p>
+                      <p className="font-medium text-orange-900">Триал скоро закончится</p>
                       <p className="text-orange-800 text-sm mt-1">
-                        Осталось {daysLeft} {daysLeft === 1 ? 'день' : 'дня'}. Оформите подписку, чтобы продолжить пользоваться сервисом.
+                        Осталось {daysLeft} {daysLeft === 1 ? 'день' : 'дня'}. Оформите подписку, чтобы продолжить.
                       </p>
                     </div>
                   </div>
@@ -200,11 +202,11 @@ export default function Subscription() {
               )}
 
               {!subscription?.hasAccess && (
-                <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-start gap-3">
-                    <Icon name="XCircle" size={20} className="text-red-600 mt-0.5" />
+                    <Icon name="XCircle" size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-semibold text-red-900">Подписка неактивна</p>
+                      <p className="font-medium text-red-900">Подписка неактивна</p>
                       <p className="text-red-800 text-sm mt-1">
                         Для продолжения работы необходимо оформить подписку
                       </p>
@@ -214,120 +216,128 @@ export default function Subscription() {
               )}
             </Card>
 
-            {/* Тарифы */}
             <div>
-              <h2 className="text-2xl font-bold mb-6 text-center">Доступные тарифы</h2>
+              <h2 className="text-2xl font-semibold mb-6">Доступные тарифы</h2>
               
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Триал */}
-                <Card className="p-6 border-2">
-                  <div className="mb-6">
-                    <Icon name="Gift" className="h-12 w-12 text-blue-600 mb-4" />
-                    <h3 className="text-xl font-bold mb-2">Пробный период</h3>
-                    <div className="text-3xl font-bold text-gray-900 mb-2">Бесплатно</div>
-                    <p className="text-gray-600">1 день полного доступа</p>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className={`p-6 border-2 ${
+                  subscription?.planType === 'trial' 
+                    ? 'border-emerald-500 bg-emerald-50' 
+                    : 'border-slate-200 bg-white'
+                }`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-xl font-semibold mb-1">Триал</h3>
+                      <p className="text-sm text-gray-600">Пробный период</p>
+                    </div>
+                    {subscription?.planType === 'trial' && (
+                      <div className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-medium">
+                        Активен
+                      </div>
+                    )}
                   </div>
-                  
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-center gap-2">
-                      <Icon name="Check" className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>Сбор до 500 фраз за запрос</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="Check" className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>AI-кластеризация GPT-4</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="Check" className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>Экспорт в Excel</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="Check" className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <span>Все регионы России</span>
-                    </li>
-                  </ul>
 
-                  {subscription?.planType === 'trial' && subscription?.hasAccess ? (
-                    <Button disabled className="w-full" size="lg">
-                      <Icon name="Check" className="mr-2 h-5 w-5" />
-                      Активирован
-                    </Button>
-                  ) : (
-                    <Button disabled className="w-full" size="lg" variant="outline">
-                      Триал использован
-                    </Button>
-                  )}
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-4xl font-bold text-gray-900">0₽</span>
+                      <span className="text-gray-500">/ 1 день</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">Доступ ко всем функциям</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">Безлимитный сбор фраз</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">AI-кластеризация</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">Экспорт данных</span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    disabled
+                    className="w-full bg-slate-200 text-slate-500 cursor-not-allowed"
+                  >
+                    Автоматически при регистрации
+                  </Button>
                 </Card>
 
-                {/* Месячная подписка */}
-                <Card className="p-6 border-4 border-purple-600 relative shadow-xl">
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-1.5 rounded-full text-sm font-bold shadow-lg">
-                    ⭐ Популярный
-                  </div>
-                  
-                  <div className="mb-6 mt-2">
-                    <Icon name="Sparkles" className="h-12 w-12 text-purple-600 mb-4" />
-                    <h3 className="text-xl font-bold mb-2">Месячная подписка</h3>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-4xl font-bold text-gray-900">500₽</span>
-                      <span className="text-gray-600">/месяц</span>
-                    </div>
-                    <p className="text-gray-600">30 дней безлимита</p>
-                  </div>
-
-                  <ul className="space-y-3 mb-6">
-                    <li className="flex items-center gap-2">
-                      <Icon name="Zap" className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                      <span className="font-semibold">Безлимитный сбор фраз</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="Infinity" className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                      <span className="font-semibold">Неограниченные проекты</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="Brain" className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                      <span>AI-кластеризация GPT-4</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="Download" className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                      <span>Экспорт в Excel и CSV</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="MapPin" className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                      <span>Все регионы России</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Icon name="HeadphonesIcon" className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                      <span>Приоритетная поддержка</span>
-                    </li>
-                  </ul>
-
-                  {subscription?.planType === 'monthly' && subscription?.hasAccess ? (
+                <Card className={`p-6 border-2 ${
+                  subscription?.planType === 'monthly' 
+                    ? 'border-emerald-500 bg-emerald-50' 
+                    : 'border-slate-200 bg-white'
+                }`}>
+                  <div className="flex items-start justify-between mb-4">
                     <div>
-                      <Button disabled className="w-full mb-4" size="lg">
-                        <Icon name="Check" className="mr-2 h-5 w-5" />
-                        Подписка активна
-                      </Button>
-                      <p className="text-center text-sm text-gray-600">
-                        Действует до {formatDate(subscription.expiresAt)}
-                      </p>
+                      <h3 className="text-xl font-semibold mb-1">Месячная подписка</h3>
+                      <p className="text-sm text-gray-600">Полный доступ на 30 дней</p>
                     </div>
+                    {subscription?.planType === 'monthly' && (
+                      <div className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-medium">
+                        Активен
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-6">
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="text-4xl font-bold text-gray-900">500₽</span>
+                      <span className="text-gray-500">/ месяц</span>
+                    </div>
+                    <p className="text-sm text-emerald-600 font-medium">Выгода 50% от аналогов</p>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">Все функции триала</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">Приоритетная поддержка</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">Ранний доступ к новым функциям</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Icon name="Check" size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">Увеличенные лимиты</span>
+                    </div>
+                  </div>
+
+                  {subscription?.planType === 'monthly' ? (
+                    <Button 
+                      disabled
+                      className="w-full bg-emerald-600 text-white"
+                    >
+                      <Icon name="CheckCircle2" size={18} className="mr-2" />
+                      Уже активна
+                    </Button>
                   ) : (
                     <Button 
-                      onClick={handleActivate} 
+                      onClick={handleActivate}
                       disabled={activating}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" 
-                      size="lg"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       {activating ? (
                         <>
-                          <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
-                          Обработка...
+                          <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                          Активация...
                         </>
                       ) : (
                         <>
-                          <Icon name="CreditCard" className="mr-2 h-5 w-5" />
-                          Оплатить 500₽
+                          <Icon name="Zap" size={18} className="mr-2" />
+                          Активировать (для теста)
                         </>
                       )}
                     </Button>
@@ -336,58 +346,98 @@ export default function Subscription() {
               </div>
             </div>
 
-            {/* Что входит в подписку */}
-            <Card className="p-8">
-              <h3 className="text-xl font-bold mb-6">Что входит в подписку?</h3>
+            <Card className="p-6 bg-white border border-slate-200">
+              <h3 className="text-lg font-semibold mb-4">Что входит в подписку</h3>
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Icon name="Search" size={24} className="text-purple-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Сбор семантики</h4>
-                    <p className="text-gray-600 text-sm">Автоматический парсинг до 500 фраз за один запрос из Яндекс.Wordstat</p>
-                  </div>
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Icon name="Sparkles" size={18} className="text-emerald-600" />
+                    Сбор ключевых фраз
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Интеграция с Яндекс.Wordstat</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Автоматический парсинг по регионам</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Безлимитное количество запросов</span>
+                    </li>
+                  </ul>
                 </div>
 
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Icon name="Grid3x3" size={24} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Умная кластеризация</h4>
-                    <p className="text-gray-600 text-sm">AI группирует фразы по интентам и автоматически находит минус-слова</p>
-                  </div>
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Icon name="Brain" size={18} className="text-emerald-600" />
+                    AI-кластеризация
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Умная группировка по смыслу</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Автоматические названия кластеров</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Экспорт в удобные форматы</span>
+                    </li>
+                  </ul>
                 </div>
 
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Icon name="FileSpreadsheet" size={24} className="text-green-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Экспорт данных</h4>
-                    <p className="text-gray-600 text-sm">Выгрузка готовых кластеров в Excel для загрузки в Яндекс.Директ</p>
-                  </div>
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Icon name="TrendingUp" size={18} className="text-emerald-600" />
+                    Аналитика
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Статистика по запросам</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Анализ частотности</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Визуализация данных</span>
+                    </li>
+                  </ul>
                 </div>
 
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Icon name="MapPin" size={24} className="text-orange-600" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-1">Региональность</h4>
-                    <p className="text-gray-600 text-sm">Сбор частотности по любым регионам России от Москвы до Владивостока</p>
-                  </div>
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Icon name="Headphones" size={18} className="text-emerald-600" />
+                    Поддержка
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-600">
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Быстрая техподдержка</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Обучающие материалы</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-emerald-600 mt-0.5">•</span>
+                      <span>Регулярные обновления</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </Card>
 
-            {/* Кнопка назад */}
-            <div className="text-center">
-              <Button variant="ghost" onClick={() => navigate('/home')} size="lg">
-                <Icon name="ArrowLeft" className="mr-2 h-5 w-5" />
-                Вернуться на главную
-              </Button>
+            <div className="text-center text-sm text-gray-500">
+              <p>При возникновении вопросов обращайтесь в службу поддержки</p>
+              <p className="mt-1">Email: support@directkit.ru • Telegram: @directkit_support</p>
             </div>
           </div>
         </div>

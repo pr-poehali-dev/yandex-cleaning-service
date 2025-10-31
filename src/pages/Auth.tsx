@@ -106,9 +106,11 @@ export default function Auth() {
 
       const data = await response.json();
       
+      const userId = `user_${data.userId}_${Date.now().toString(36)}`;
       const user = {
         id: data.userId,
         phone: data.phone,
+        userId: userId,
         createdAt: new Date().toISOString(),
         sessionToken: data.sessionToken
       };
