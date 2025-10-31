@@ -371,12 +371,27 @@ export default function ResultsStep({
     if (w.length <= 3) return w;
     
     const commonEndings = [
-      'ующий', 'ающий', 'ющий', 'ящий',
-      'ующая', 'ающая', 'ющая', 'ящая',
+      // Причастия
+      'ующий', 'ающий', 'ющий', 'ящий', 'вший', 'ший',
+      'ующая', 'ающая', 'ющая', 'ящая', 'вшая', 'шая',
       'ующую', 'ающую', 'ющую', 'ящую',
-      'ающие', 'ующие', 'ющие', 'ящие',
-      'ость', 'ение', 'ание', 'ость',
-      'ать', 'ять', 'еть', 'ить', 'оть', 'уть',
+      'ающие', 'ующие', 'ющие', 'ящие', 'вшие', 'шие',
+      // Существительные
+      'ость', 'ение', 'ание', 'ость', 'ство', 'тель',
+      // Глаголы (инфинитив)
+      'ать', 'ять', 'еть', 'ить', 'оть', 'уть', 'ти',
+      // Глаголы (личные формы)
+      'ишь', 'ешь', 'ёшь', 'ишь',
+      'ит', 'ет', 'ёт',
+      'им', 'ем', 'ём',
+      'ите', 'ете', 'ёте',
+      'ят', 'ат', 'ут', 'ют',
+      'ил', 'ел', 'ёл', 'ал', 'ял',
+      'ила', 'ела', 'ёла', 'ала', 'яла',
+      'или', 'ели', 'ёли', 'али', 'яли',
+      'ило', 'ело', 'ёло', 'ало', 'яло',
+      'ишь', 'ешь',
+      // Прилагательные
       'ный', 'ная', 'ное', 'ные',
       'ной', 'ную',
       'ая', 'яя', 'ое', 'ее',
@@ -384,12 +399,15 @@ export default function ResultsStep({
       'ые', 'ие',
       'ого', 'его',
       'ому', 'ему',
+      // Множественное число существительных
       'ами', 'ями',
       'ах', 'ях',
-      'ом', 'ем', 'им',
       'ов', 'ев', 'ей',
       'ам', 'ям',
+      'ом', 'ем', 'им',
+      // Возвратные формы
       'ся', 'сь',
+      // Короткие окончания (в конце, чтобы не перебивали длинные)
       'у', 'ю', 'а', 'я', 'ы', 'и', 'е', 'о'
     ];
     
@@ -403,25 +421,26 @@ export default function ResultsStep({
   };
 
   const matchesWordForm = (phrase: string, targetWord: string): boolean => {
-    if (!useWordForms) {
-      // Ищем слова которые НАЧИНАЮТСЯ с введенного текста
-      const phraseWords = phrase.toLowerCase().split(/\s+/);
-      const target = targetWord.toLowerCase();
-      return phraseWords.some(word => word.startsWith(target));
-    }
-    
     const targetRoot = getWordRoot(targetWord);
-    const phraseWords = phrase.toLowerCase().split(' ');
+    const targetLower = targetWord.toLowerCase();
+    const phraseWords = phrase.toLowerCase().split(/\s+/);
     
     return phraseWords.some(word => {
+      // 1. Точное совпадение слова
+      if (word === targetLower) return true;
+      
+      // 2. Префиксное совпадение (для коротких вводов типа "куп")
+      if (word.startsWith(targetLower) && targetLower.length >= 2) return true;
+      
+      // 3. Совпадение корней (для словоформ: купить → куплю, купил)
       const wordRoot = getWordRoot(word);
+      if (wordRoot === targetRoot && wordRoot.length >= 3) return true;
       
-      if (wordRoot === targetRoot) return true;
-      if (word.startsWith(targetRoot) && targetRoot.length >= 4) return true;
-      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 4) return true;
+      // 4. Корень целевого слова есть в начале слова из фразы
+      if (word.startsWith(targetRoot) && targetRoot.length >= 3) return true;
       
-      const minLen = Math.min(wordRoot.length, targetRoot.length);
-      if (minLen >= 5 && wordRoot.slice(0, minLen - 1) === targetRoot.slice(0, minLen - 1)) return true;
+      // 5. Корень слова из фразы есть в начале целевого слова
+      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 3) return true;
       
       return false;
     });
