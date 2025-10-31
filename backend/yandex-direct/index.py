@@ -329,6 +329,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 campaign_id = add_results[0].get('Id')
                 
+                import time
+                time.sleep(1)
+                
                 return {
                     'statusCode': 200,
                     'headers': {
