@@ -157,8 +157,8 @@ export default function RSYACleaner() {
         localStorage.removeItem('yandex_client_login');
       }
       
-      // Если выглядит как готовый токен (32+ символов без дефисов) - используем напрямую
-      if (token.length >= 32 && !token.includes('-')) {
+      // Если длиннее 10 символов - считаем готовым токеном
+      if (token.length > 10) {
         localStorage.setItem('yandex_direct_token', token);
         setIsConnected(true);
         setShowCodeInput(false);
@@ -166,7 +166,7 @@ export default function RSYACleaner() {
         toast({ title: '✅ Токен сохранён', description: 'Загружаем кампании...' });
         await loadCampaigns(token);
       } else {
-        // Иначе обмениваем OAuth код на токен
+        // OAuth коды обычно короткие
         await exchangeCodeForToken(token);
         setShowCodeInput(false);
         setAuthCode('');
