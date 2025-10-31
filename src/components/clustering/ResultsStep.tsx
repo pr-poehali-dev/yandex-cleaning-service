@@ -97,43 +97,83 @@ export default function ResultsStep({
     const phraseLower = phrase.toLowerCase();
     const queryLower = query.toLowerCase().trim();
 
-    // Оператор "фраза" - точное совпадение порядка слов
+    // Оператор "кавычки" - фиксирует количество и набор слов (но НЕ порядок)
     if (queryLower.startsWith('"') && queryLower.endsWith('"')) {
-      const exactPhrase = queryLower.slice(1, -1);
-      return phraseLower.includes(exactPhrase);
+      const quotedText = queryLower.slice(1, -1).trim();
+      const queryWords = quotedText.split(/\s+/).filter(w => w.length > 0);
+      const phraseWords = phraseLower.split(/\s+/).filter(w => w.length > 0);
+      
+      // Проверяем что ВСЕ слова из запроса есть в фразе (в любом порядке)
+      const allWordsPresent = queryWords.every(qw => phraseWords.includes(qw));
+      // Проверяем что в фразе ТОЛЬКО эти слова (без лишних)
+      const noExtraWords = phraseWords.every(pw => queryWords.includes(pw));
+      
+      return allWordsPresent && noExtraWords;
     }
 
-    // Оператор [фраза] - фиксированный порядок слов без вставок
+    // Оператор [квадратные скобки] - фиксирует СТРОГИЙ порядок слов
     if (queryLower.startsWith('[') && queryLower.endsWith(']')) {
-      const fixedOrder = queryLower.slice(1, -1);
-      const regex = new RegExp(`\\b${fixedOrder.replace(/\s+/g, '\\s+')}\\b`);
-      return regex.test(phraseLower);
-    }
-
-    // Оператор ! - точная словоформа
-    const hasExactForm = queryLower.match(/!(\w+)/);
-    if (hasExactForm) {
-      const exactWord = hasExactForm[1];
-      const regex = new RegExp(`\\b${exactWord}\\b`);
-      if (!regex.test(phraseLower)) return false;
+      const bracketText = queryLower.slice(1, -1).trim();
+      const queryWords = bracketText.split(/\s+/).filter(w => w.length > 0);
+      const phraseWords = phraseLower.split(/\s+/).filter(w => w.length > 0);
       
-      // Проверяем остальные слова без оператора
-      const restQuery = queryLower.replace(/!(\w+)/g, '$1');
-      return matchWithYandexOperators(phrase, restQuery);
+      // Ищем последовательность слов в строгом порядке
+      for (let i = 0; i <= phraseWords.length - queryWords.length; i++) {
+        let match = true;
+        for (let j = 0; j < queryWords.length; j++) {
+          if (phraseWords[i + j] !== queryWords[j]) {
+            match = false;
+            break;
+          }
+        }
+        if (match) return true;
+      }
+      return false;
     }
 
-    // Оператор + - стоп-слово должно присутствовать
-    const hasStopWord = queryLower.match(/\+(\w+)/);
-    if (hasStopWord) {
-      const stopWord = hasStopWord[1];
-      if (!phraseLower.includes(stopWord)) return false;
+    // Оператор ! - фиксирует ТОЧНУЮ словоформу
+    const exactFormMatches = queryLower.matchAll(/!([а-яёa-z]+)/gi);
+    const exactWords = Array.from(exactFormMatches, m => m[1].toLowerCase());
+    
+    if (exactWords.length > 0) {
+      const phraseWords = phraseLower.split(/\s+/).filter(w => w.length > 0);
       
-      // Проверяем остальные слова без оператора
-      const restQuery = queryLower.replace(/\+(\w+)/g, '$1');
-      return matchWithYandexOperators(phrase, restQuery);
+      // Все слова с ! должны быть в ТОЧНОЙ форме
+      for (const exactWord of exactWords) {
+        if (!phraseWords.includes(exactWord)) {
+          return false;
+        }
+      }
+      
+      // Проверяем остальные слова (без оператора !)
+      const queryWithoutExact = queryLower.replace(/!([а-яёa-z]+)/gi, '$1');
+      const remainingWords = queryWithoutExact.split(/\s+/).filter(w => w.length > 0 && !w.startsWith('!'));
+      
+      return remainingWords.every(word => phraseLower.includes(word));
     }
 
-    // Обычный поиск - все слова должны присутствовать
+    // Оператор + - фиксирует предлоги/служебные слова
+    const stopWordMatches = queryLower.matchAll(/\+([а-яёa-z]+)/gi);
+    const stopWords = Array.from(stopWordMatches, m => m[1].toLowerCase());
+    
+    if (stopWords.length > 0) {
+      const phraseWords = phraseLower.split(/\s+/).filter(w => w.length > 0);
+      
+      // Все слова с + должны присутствовать
+      for (const stopWord of stopWords) {
+        if (!phraseWords.includes(stopWord)) {
+          return false;
+        }
+      }
+      
+      // Проверяем остальные слова
+      const queryWithoutStop = queryLower.replace(/\+([а-яёa-z]+)/gi, '$1');
+      const remainingWords = queryWithoutStop.split(/\s+/).filter(w => w.length > 0 && !w.startsWith('+'));
+      
+      return remainingWords.every(word => phraseLower.includes(word));
+    }
+
+    // Обычный поиск - все слова должны присутствовать (любые словоформы)
     const words = queryLower.split(/\s+/).filter(w => w.length > 0);
     return words.every(word => phraseLower.includes(word));
   };
@@ -159,7 +199,7 @@ export default function ResultsStep({
       if (i === clusterIndex) return;
       
       otherCluster.phrases.forEach(p => {
-        const matches = p.phrase.toLowerCase().includes(searchTerm);
+        const matches = matchWithYandexOperators(p.phrase, searchTerm);
         const alreadyInTarget = ownPhrases.some(own => own.phrase === p.phrase);
         
         if (matches && !alreadyInTarget) {
@@ -190,12 +230,12 @@ export default function ResultsStep({
 
       const cluster = newClusters[i];
       const matchingPhrases = cluster.phrases.filter(p =>
-        p.phrase.toLowerCase().includes(searchTerm)
+        matchWithYandexOperators(p.phrase, searchTerm)
       );
 
       if (matchingPhrases.length > 0) {
         cluster.phrases = cluster.phrases.filter(p =>
-          !p.phrase.toLowerCase().includes(searchTerm)
+          !matchWithYandexOperators(p.phrase, searchTerm)
         );
         
         const phrasesWithSource = matchingPhrases.map(p => ({
