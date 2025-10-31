@@ -329,7 +329,13 @@ export default function ResultsStep({
     const affectedPhrases: Phrase[] = [];
     const newClusters = clusters.map(cluster => {
       const matching = cluster.phrases.filter(p => matchesWordForm(p.phrase, searchTerm));
-      affectedPhrases.push(...matching);
+      
+      const withClusterInfo = matching.map(p => ({
+        ...p,
+        sourceCluster: cluster.name,
+        sourceColor: cluster.bgColor
+      }));
+      affectedPhrases.push(...withClusterInfo);
       
       // Удаляем совпадающие фразы из кластера
       const filteredPhrases = cluster.phrases.filter(p => !matchesWordForm(p.phrase, searchTerm));
@@ -623,17 +629,28 @@ export default function ResultsStep({
   const removeMinusWord = async (minusIndex: number) => {
     const minusWord = minusWords[minusIndex];
     const newMinusWords = minusWords.filter((_, idx) => idx !== minusIndex);
-    const minusTerm = minusWord.phrase.toLowerCase();
     
-    const newClusters = clusters.map(cluster => ({
-      ...cluster,
-      phrases: cluster.phrases.map(p => {
-        if (matchesWordForm(p.phrase, minusTerm)) {
-          return { ...p, isMinusWord: false, minusTerm: undefined };
-        }
-        return p;
-      }).sort((a, b) => b.count - a.count)
-    }));
+    const phrasesToRestore = minusWord.removedPhrases || [];
+    
+    const newClusters = clusters.map(cluster => {
+      const phrasesForThisCluster = phrasesToRestore.filter(p => 
+        p.sourceCluster === cluster.name
+      );
+      
+      const restoredPhrases = phrasesForThisCluster.map(p => ({
+        ...p,
+        isMinusWord: false,
+        minusTerm: undefined,
+        sourceCluster: undefined,
+        sourceColor: undefined,
+        isTemporary: false
+      }));
+      
+      return {
+        ...cluster,
+        phrases: [...cluster.phrases, ...restoredPhrases].sort((a, b) => b.count - a.count)
+      };
+    });
     
     setClusters(newClusters);
     setMinusWords(newMinusWords);
@@ -647,7 +664,7 @@ export default function ResultsStep({
     
     toast({
       title: '↩️ Фразы восстановлены',
-      description: 'Минус-слово удалено'
+      description: `Восстановлено ${phrasesToRestore.length} фраз`
     });
   };
 
