@@ -240,7 +240,21 @@ export default function TestClustering() {
       
       const allPhrases = clusters.flatMap((cluster: any) => cluster.phrases || []);
       
+      // Создаём кластер с запросами пользователя из шага 1
+      const userQueryPhrases: Phrase[] = manualKeywords
+        .split('\n')
+        .map(k => k.trim())
+        .filter(k => k.length > 0)
+        .map(k => ({ phrase: k, count: 0 }));
+      
       const transformedClusters = [
+        {
+          name: 'Запросы пользователя',
+          intent: 'user',
+          color: 'blue',
+          icon: 'User',
+          phrases: userQueryPhrases
+        },
         {
           name: 'Все ключи',
           intent: 'general',
