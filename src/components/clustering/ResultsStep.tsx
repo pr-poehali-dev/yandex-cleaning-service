@@ -70,6 +70,7 @@ export default function ResultsStep({
   const [excludeRedPhrases, setExcludeRedPhrases] = useState(true);
   const [includeFrequency, setIncludeFrequency] = useState(false);
   const [quickMinusMode, setQuickMinusMode] = useState(true);
+  const [useWordForms, setUseWordForms] = useState(true);
   const { toast } = useToast();
 
   const clustersDataKey = propsClusters.map(c => c.name).join(',');
@@ -248,11 +249,11 @@ export default function ResultsStep({
     
     const newClusters = clusters.map(cluster => {
       const normalPhrases = cluster.phrases
-        .filter(p => !p.phrase.toLowerCase().includes(searchTerm))
+        .filter(p => !matchesWordForm(p.phrase, searchTerm))
         .map(p => ({ ...p, isMinusWord: false, minusTerm: undefined }));
       
       const minusPhrases = cluster.phrases
-        .filter(p => p.phrase.toLowerCase().includes(searchTerm))
+        .filter(p => matchesWordForm(p.phrase, searchTerm))
         .map(p => ({ ...p, isMinusWord: true, minusTerm: searchTerm }));
       
       return {
@@ -270,7 +271,7 @@ export default function ResultsStep({
 
     const affectedPhrases: Phrase[] = [];
     const newClusters = clusters.map(cluster => {
-      const matching = cluster.phrases.filter(p => p.phrase.toLowerCase().includes(searchTerm));
+      const matching = cluster.phrases.filter(p => matchesWordForm(p.phrase, searchTerm));
       affectedPhrases.push(...matching);
       return cluster;
     });
@@ -304,13 +305,55 @@ export default function ResultsStep({
     }
   };
 
+  const getWordRoot = (word: string): string => {
+    const w = word.toLowerCase();
+    if (w.length <= 3) return w;
+    
+    const commonEndings = [
+      'ать', 'ять', 'еть', 'ить', 'оть', 'уть',
+      'ся', 'сь',
+      'ый', 'ий', 'ой',
+      'ая', 'яя', 'ое', 'ее',
+      'ые', 'ие',
+      'ом', 'ем', 'им',
+      'ами', 'ями',
+      'ах', 'ях',
+      'ов', 'ев', 'ей',
+      'ам', 'ям',
+      'ами',
+      'у', 'ю', 'а', 'я', 'ы', 'и', 'е', 'о'
+    ];
+    
+    for (const ending of commonEndings) {
+      if (w.endsWith(ending) && w.length - ending.length >= 3) {
+        return w.slice(0, -ending.length);
+      }
+    }
+    
+    return w;
+  };
+
+  const matchesWordForm = (phrase: string, targetWord: string): boolean => {
+    if (!useWordForms) {
+      return phrase.toLowerCase().includes(targetWord.toLowerCase());
+    }
+    
+    const targetRoot = getWordRoot(targetWord);
+    const phraseWords = phrase.toLowerCase().split(' ');
+    
+    return phraseWords.some(word => {
+      const wordRoot = getWordRoot(word);
+      return wordRoot === targetRoot || word.includes(targetRoot) || targetRoot.includes(word.slice(0, -1));
+    });
+  };
+
   const addQuickMinusWord = async (word: string) => {
     const searchTerm = word.toLowerCase().trim();
     if (!searchTerm) return;
 
     const affectedPhrases: Phrase[] = [];
     const newClusters = clusters.map(cluster => {
-      const matching = cluster.phrases.filter(p => p.phrase.toLowerCase().includes(searchTerm));
+      const matching = cluster.phrases.filter(p => matchesWordForm(p.phrase, searchTerm));
       affectedPhrases.push(...matching);
       return cluster;
     });
@@ -449,7 +492,7 @@ export default function ResultsStep({
     const newClusters = clusters.map(cluster => ({
       ...cluster,
       phrases: cluster.phrases.map(p => {
-        if (p.phrase.toLowerCase().includes(minusTerm)) {
+        if (matchesWordForm(p.phrase, minusTerm)) {
           return { ...p, isMinusWord: false, minusTerm: undefined };
         }
         return p;
@@ -642,6 +685,16 @@ export default function ResultsStep({
                     className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
                   />
                   <span className="text-gray-700">Режим быстрых минус-слов</span>
+                </label>
+                <div className="h-4 w-px bg-gray-300" />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useWordForms}
+                    onChange={(e) => setUseWordForms(e.target.checked)}
+                    className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                  />
+                  <span className="text-gray-700">Учитывать словоформы</span>
                 </label>
                 <div className="h-4 w-px bg-gray-300" />
                 <label className="flex items-center gap-2 cursor-pointer">
