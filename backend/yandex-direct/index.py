@@ -125,7 +125,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             campaigns = []
             for c in campaigns_raw:
                 campaign_type = c.get('Type', '')
-                if campaign_type == 'TEXT_AD_NETWORK':
+                if campaign_type == 'TEXT_CAMPAIGN':
                     campaigns.append({
                         'id': str(c.get('Id')),
                         'name': c.get('Name'),
@@ -133,7 +133,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'status': c.get('Status')
                     })
             
-            print(f'[DEBUG] Filtered {len(campaigns)} TEXT_AD_NETWORK campaigns')
+            print(f'[DEBUG] Filtered {len(campaigns)} TEXT_CAMPAIGN campaigns')
             
             return {
                 'statusCode': 200,
