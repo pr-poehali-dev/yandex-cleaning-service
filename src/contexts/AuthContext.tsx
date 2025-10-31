@@ -35,7 +35,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedToken = localStorage.getItem('sessionToken');
       const storedUser = localStorage.getItem('user');
       
+      console.log('🔐 AuthContext: Checking stored token...', { hasToken: !!storedToken, hasUser: !!storedUser });
+      
       if (!storedToken || !storedUser) {
+        console.log('❌ AuthContext: No token or user in localStorage');
         setIsLoading(false);
         return;
       }
@@ -43,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const parsedUser = JSON.parse(storedUser);
         
+        console.log('🌐 AuthContext: Verifying token with backend...');
         const response = await fetch('https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f?endpoint=verify', {
           method: 'GET',
           headers: {
@@ -50,20 +54,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         });
 
+        console.log('📡 AuthContext: Backend response:', response.status);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ AuthContext: Token validation result:', data);
           if (data.valid) {
             setUser(parsedUser);
             setSessionToken(storedToken);
           } else {
+            console.log('❌ AuthContext: Token invalid, clearing storage');
             localStorage.clear();
+            setUser(null);
+            setSessionToken(null);
           }
         } else {
+          console.log('❌ AuthContext: Backend rejected token, clearing storage');
           localStorage.clear();
+          setUser(null);
+          setSessionToken(null);
         }
       } catch (error) {
-        console.error('Token verification failed:', error);
+        console.error('❌ AuthContext: Token verification failed:', error);
         localStorage.clear();
+        setUser(null);
+        setSessionToken(null);
       } finally {
         setIsLoading(false);
       }
@@ -98,9 +113,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    console.log('🚪 AuthContext: Logging out...');
     localStorage.clear();
     setUser(null);
     setSessionToken(null);
+    window.location.href = '/auth';
   };
 
   return (
