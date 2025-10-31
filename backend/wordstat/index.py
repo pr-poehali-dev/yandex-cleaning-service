@@ -821,12 +821,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             dsn = os.environ.get('DATABASE_URL')
             conn = psycopg2.connect(dsn, cursor_factory=RealDictCursor)
             cur = conn.cursor()
-            cur.execute("SELECT user_id FROM sessions WHERE session_token = %s", (session_token,))
-            session = cur.fetchone()
+            cur.execute("SELECT id FROM users WHERE session_token = %s", (session_token,))
+            user = cur.fetchone()
             cur.close()
             conn.close()
-            if session:
-                user_id = str(session['user_id'])
+            if user:
+                user_id = str(user['id'])
+                print(f'✅ Got user_id from session_token: {user_id}')
         except Exception as e:
             print(f'❌ Error getting user_id from session: {e}')
     
