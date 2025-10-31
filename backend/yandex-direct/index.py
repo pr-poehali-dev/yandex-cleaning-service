@@ -147,8 +147,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     platforms = []
                     if adgroups_response.status_code == 200:
                         adgroups_data = adgroups_response.json()
+                        print(f'[DEBUG] AdGroups response for campaign {campaign_id}: {str(adgroups_data)[:300]}')
+                        
                         if 'result' in adgroups_data:
                             adgroups = adgroups_data.get('result', {}).get('AdGroups', [])
+                            print(f'[DEBUG] Found {len(adgroups)} adgroups for campaign {campaign_id}')
+                            
                             for ag in adgroups:
                                 text_adgroup = ag.get('TextAdGroup', {})
                                 bidding = text_adgroup.get('BiddingStrategy', {})
@@ -160,6 +164,33 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                         'status': ag.get('Status'),
                                         'network_enabled': True
                                     })
+                        else:
+                            print(f'[DEBUG] No result in adgroups response for campaign {campaign_id}')
+                    else:
+                        print(f'[DEBUG] AdGroups request failed with status {adgroups_response.status_code}')
+                    
+                    # Если площадок нет, добавляем тестовые для демонстрации
+                    if len(platforms) == 0 and is_sandbox:
+                        platforms = [
+                            {
+                                'adgroup_id': f'{campaign_id}_1',
+                                'adgroup_name': 'mail.ru',
+                                'status': 'ACTIVE',
+                                'network_enabled': True
+                            },
+                            {
+                                'adgroup_id': f'{campaign_id}_2', 
+                                'adgroup_name': 'dzen.ru',
+                                'status': 'ACTIVE',
+                                'network_enabled': True
+                            },
+                            {
+                                'adgroup_id': f'{campaign_id}_3',
+                                'adgroup_name': 'yandex.ru',
+                                'status': 'ACTIVE',
+                                'network_enabled': True
+                            }
+                        ]
                     
                     campaigns.append({
                         'id': campaign_id,
