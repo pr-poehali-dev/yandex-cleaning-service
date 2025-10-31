@@ -81,8 +81,8 @@ export default function Auth() {
   };
 
   const handleCodeSubmit = async () => {
-    if (code.length !== 6) {
-      toast({ title: 'Введите 6-значный код', variant: 'destructive' });
+    if (code.length !== 4) {
+      toast({ title: 'Введите 4-значный код', variant: 'destructive' });
       return;
     }
 
@@ -218,12 +218,12 @@ export default function Auth() {
                   <Input
                     id="code"
                     type="text"
-                    placeholder="• • • • • •"
+                    placeholder="• • • •"
                     value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
                     onKeyDown={(e) => e.key === 'Enter' && handleCodeSubmit()}
                     className="text-center text-2xl tracking-widest font-mono"
-                    maxLength={6}
+                    maxLength={4}
                     autoFocus
                   />
                   {sentCode && (

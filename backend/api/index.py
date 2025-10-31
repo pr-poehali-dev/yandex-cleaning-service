@@ -72,7 +72,7 @@ def handle_auth(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Phone is required'})
             }
         
-        code = str(random.randint(100000, 999999))
+        code = str(random.randint(1000, 9999))
         expires_at = datetime.now() + timedelta(minutes=10)
         
         cur.execute("SELECT id FROM users WHERE phone = %s", (phone,))
