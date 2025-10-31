@@ -75,9 +75,15 @@ export default function TestClustering() {
         setIsLoading(true);
         const response = await fetch(`${API_URL}?endpoint=projects&id=${projectId}`, {
           headers: {
-            'X-User-Id': userId
+            'X-User-Id': String(userId)
           }
         });
+
+        if (response.status === 403) {
+          toast.error('Доступ запрещён: это не ваш проект');
+          navigate('/clustering');
+          return;
+        }
 
         if (!response.ok) {
           throw new Error('Failed to fetch project');
@@ -138,7 +144,7 @@ export default function TestClustering() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': userId
+          'X-User-Id': String(userId)
         },
         body: JSON.stringify({
           id: parseInt(projectId),
@@ -148,6 +154,11 @@ export default function TestClustering() {
           }
         })
       });
+
+      if (response.status === 403) {
+        toast.error('Доступ запрещён: это не ваш проект');
+        return;
+      }
 
       if (!response.ok) {
         throw new Error('Failed to save results');

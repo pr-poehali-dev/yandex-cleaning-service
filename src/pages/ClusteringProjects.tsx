@@ -72,7 +72,7 @@ export default function ClusteringProjects() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': userId
+          'X-User-Id': String(userId)
         }
       });
 
@@ -111,7 +111,7 @@ export default function ClusteringProjects() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': userId
+          'X-User-Id': String(userId)
         },
         body: JSON.stringify({
           name: newProjectName,
@@ -153,7 +153,7 @@ export default function ClusteringProjects() {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': userId
+          'X-User-Id': String(userId)
         }
       });
 
