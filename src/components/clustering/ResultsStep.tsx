@@ -425,42 +425,27 @@ export default function ResultsStep({
   };
 
   const matchesWordForm = (phrase: string, targetWord: string): boolean => {
-    const targetRoot = getWordRoot(targetWord);
     const targetLower = targetWord.toLowerCase();
     const phraseWords = phrase.toLowerCase().split(/\s+/);
     
     return phraseWords.some(word => {
       // 1. Точное совпадение слова
-      if (word === targetLower) {
-        console.log(`✅ Правило 1: "${word}" === "${targetLower}"`);
-        return true;
-      }
+      if (word === targetLower) return true;
       
       // 2. Префиксное совпадение (для коротких вводов типа "куп")
-      // НО: слово из фразы должно быть длиннее или равно вводу
-      if (word.startsWith(targetLower) && targetLower.length >= 2 && word.length >= targetLower.length) {
-        console.log(`✅ Правило 2: "${word}" начинается с "${targetLower}" (длины: ${word.length} >= ${targetLower.length})`);
+      // Слово из фразы должно начинаться с ввода И быть НЕ намного длиннее
+      if (word.startsWith(targetLower) && targetLower.length >= 2 && word.length <= targetLower.length + 3) {
         return true;
       }
       
       // 3. Совпадение корней (для словоформ: купить → куплю, купил)
+      // НО: длины слов должны быть примерно одинаковые (защита от мусора)
       const wordRoot = getWordRoot(word);
-      if (wordRoot === targetRoot && wordRoot.length >= 3) {
-        console.log(`✅ Правило 3: корни совпадают "${wordRoot}" === "${targetRoot}"`);
-        return true;
-      }
+      const targetRoot = getWordRoot(targetLower);
       
-      // 4. Корень целевого слова есть в начале слова из фразы
-      // НО: только если корень не сильно длиннее самого слова (защита от "купитьывавава")
-      if (word.startsWith(targetRoot) && targetRoot.length >= 3 && targetRoot.length <= word.length + 2) {
-        console.log(`✅ Правило 4: "${word}" начинается с корня "${targetRoot}" (длины: ${targetRoot.length} <= ${word.length + 2})`);
-        return true;
-      }
-      
-      // 5. Корень слова из фразы есть в начале целевого слова
-      // НО: только если целевое слово не сильно длиннее (защита от "купитьывавава")
-      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 3 && wordRoot.length <= targetRoot.length + 2) {
-        console.log(`✅ Правило 5: корень "${targetRoot}" начинается с "${wordRoot}" (длины: ${wordRoot.length} <= ${targetRoot.length + 2})`);
+      if (wordRoot === targetRoot && 
+          wordRoot.length >= 3 && 
+          Math.abs(word.length - targetLower.length) <= 3) {
         return true;
       }
       
