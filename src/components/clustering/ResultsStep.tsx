@@ -310,17 +310,25 @@ export default function ResultsStep({
     if (w.length <= 3) return w;
     
     const commonEndings = [
+      'ующий', 'ающий', 'ющий', 'ящий',
+      'ующая', 'ающая', 'ющая', 'ящая',
+      'ующую', 'ающую', 'ющую', 'ящую',
+      'ающие', 'ующие', 'ющие', 'ящие',
+      'ость', 'ение', 'ание', 'ость',
       'ать', 'ять', 'еть', 'ить', 'оть', 'уть',
-      'ся', 'сь',
-      'ый', 'ий', 'ой',
+      'ный', 'ная', 'ное', 'ные',
+      'ной', 'ную',
       'ая', 'яя', 'ое', 'ее',
+      'ый', 'ий', 'ой',
       'ые', 'ие',
-      'ом', 'ем', 'им',
+      'ого', 'его',
+      'ому', 'ему',
       'ами', 'ями',
       'ах', 'ях',
+      'ом', 'ем', 'им',
       'ов', 'ев', 'ей',
       'ам', 'ям',
-      'ами',
+      'ся', 'сь',
       'у', 'ю', 'а', 'я', 'ы', 'и', 'е', 'о'
     ];
     
@@ -343,7 +351,15 @@ export default function ResultsStep({
     
     return phraseWords.some(word => {
       const wordRoot = getWordRoot(word);
-      return wordRoot === targetRoot || word.includes(targetRoot) || targetRoot.includes(word.slice(0, -1));
+      
+      if (wordRoot === targetRoot) return true;
+      if (word.startsWith(targetRoot) && targetRoot.length >= 4) return true;
+      if (targetRoot.startsWith(wordRoot) && wordRoot.length >= 4) return true;
+      
+      const minLen = Math.min(wordRoot.length, targetRoot.length);
+      if (minLen >= 5 && wordRoot.slice(0, minLen - 1) === targetRoot.slice(0, minLen - 1)) return true;
+      
+      return false;
     });
   };
 
