@@ -288,23 +288,17 @@ export default function ResultsStep({
       return;
     }
     
-    // При вводе — полностью пересчитываем временные совпадения
+    // При вводе — пересчитываем совпадения для всех фраз
     const newClusters = clusters.map(cluster => {
       const updatedPhrases = cluster.phrases.map(p => {
-        // Проверяем совпадение с текущим поиском
         const matches = matchesWordForm(p.phrase, searchTerm);
         
-        if (matches) {
-          // Фраза совпадает — подсвечиваем с текущим поисковым термом
-          return { ...p, isMinusWord: true, minusTerm: searchTerm };
-        } else if (p.minusTerm !== undefined) {
-          // Фраза НЕ совпадает И имеет временную метку от поиска — снимаем метку
-          // (подтверждённые минус-слова имеют minusTerm: undefined, их не трогаем)
-          return { ...p, isMinusWord: false, minusTerm: undefined };
-        }
-        
-        // Оставляем как есть (это может быть подтверждённое минус-слово)
-        return p;
+        // Всегда обновляем состояние фразы на основе текущего совпадения
+        return {
+          ...p,
+          isMinusWord: matches,
+          minusTerm: matches ? searchTerm : undefined
+        };
       });
       
       return {
