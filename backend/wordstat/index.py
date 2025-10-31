@@ -805,14 +805,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Session-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'body': ''
         }
     
     headers_dict = event.get('headers', {})
+    session_token = headers_dict.get('x-session-token') or headers_dict.get('X-Session-Token')
     user_id = headers_dict.get('x-user-id') or headers_dict.get('X-User-Id')
+    
+    # Получаем user_id из session_token если не передан напрямую
+    if not user_id and session_token:
+        try:
+            dsn = os.environ.get('DATABASE_URL')
+            conn = psycopg2.connect(dsn, cursor_factory=RealDictCursor)
+            cur = conn.cursor()
+            cur.execute("SELECT user_id FROM sessions WHERE session_token = %s", (session_token,))
+            session = cur.fetchone()
+            cur.close()
+            conn.close()
+            if session:
+                user_id = str(session['user_id'])
+        except Exception as e:
+            print(f'❌ Error getting user_id from session: {e}')
     
     if not user_id:
         return {

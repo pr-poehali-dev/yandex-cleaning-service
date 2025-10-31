@@ -234,7 +234,8 @@ export default function TestClustering() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Session-Token': sessionToken || ''
+          'X-Session-Token': sessionToken || '',
+          'X-User-Id': user?.id || ''
         },
         body: JSON.stringify(requestBody)
       });
