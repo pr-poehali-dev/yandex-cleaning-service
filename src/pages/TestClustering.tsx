@@ -105,6 +105,18 @@ export default function TestClustering() {
             console.log('🔍 First phrase from DB:', project.results.clusters[0]?.phrases?.[0]);
             setClusters(project.results.clusters);
             setMinusWords(project.results.minusWords || []);
+            
+            if (project.results.regions && Array.isArray(project.results.regions)) {
+              const loadedCities = project.results.regions.map((name: string, idx: number) => ({
+                id: idx + 1000,
+                name,
+                region: '',
+                population: 0
+              }));
+              setSelectedCities(loadedCities);
+              console.log('📍 Loaded regions from DB:', project.results.regions);
+            }
+            
             setStep('results');
           } else {
             console.log('❌ No results - showing source step');
@@ -151,7 +163,8 @@ export default function TestClustering() {
           id: parseInt(projectId),
           results: {
             clusters: clustersData,
-            minusWords: minusWordsData
+            minusWords: minusWordsData,
+            regions: selectedCities.map(c => c.name)
           }
         })
       });
