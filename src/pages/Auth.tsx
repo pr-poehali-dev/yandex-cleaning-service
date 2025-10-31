@@ -64,12 +64,15 @@ export default function Auth() {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      login(phone);
+    try {
+      await login(phone);
       toast({ title: '✅ Добро пожаловать!', description: 'Вход выполнен успешно' });
       navigate('/');
-    }, 1000);
+    } catch (error) {
+      toast({ title: 'Ошибка входа', description: 'Попробуйте снова', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {

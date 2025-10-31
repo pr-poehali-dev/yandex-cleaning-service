@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export interface User {
-  id: string;
+  id: number;
   phone: string;
   createdAt: string;
 }
@@ -9,7 +9,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (phone: string) => void;
+  login: (phone: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -35,14 +35,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = (phone: string) => {
+  const login = async (phone: string) => {
+    const response = await fetch('https://functions.poehali.dev/25f40378-63b1-483f-8211-dfd2ccbe897b', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to login');
+    }
+    
+    const userData = await response.json();
     const newUser: User = {
-      id: `user_${Date.now()}`,
-      phone,
-      createdAt: new Date().toISOString()
+      id: userData.id,
+      phone: userData.phone,
+      createdAt: userData.createdAt
     };
+    
     localStorage.setItem('user', JSON.stringify(newUser));
-    localStorage.setItem('userId', newUser.id);
+    localStorage.setItem('userId', String(newUser.id));
     setUser(newUser);
   };
 
