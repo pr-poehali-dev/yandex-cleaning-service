@@ -263,13 +263,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                         'BiddingStrategyType': 'SERVING_OFF'
                                     },
                                     'Network': {
-                                        'BiddingStrategyType': 'NETWORK_DEFAULT',
-                                        'NetworkBiddingStrategy': {
-                                            'AverageCpc': {
-                                                'AverageCpc': 3000000,
-                                                'WeeklySpendLimit': 'OFF'
-                                            }
-                                        }
+                                        'BiddingStrategyType': 'NETWORK_DEFAULT'
                                     }
                                 },
                                 'Settings': []
