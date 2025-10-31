@@ -65,6 +65,8 @@ export default function ResultsStep({
     propsMinusWords.filter(p => p.phrase && p.phrase.trim() !== '')
   );
   const [minusSearchText, setMinusSearchText] = useState('');
+  const [editingMinusIndex, setEditingMinusIndex] = useState<number | null>(null);
+  const [editingMinusText, setEditingMinusText] = useState('');
   const [draggedCluster, setDraggedCluster] = useState<number | null>(null);
   const [draggedPhrase, setDraggedPhrase] = useState<{clusterIdx: number, phraseIdx: number} | null>(null);
   const [excludeRedPhrases, setExcludeRedPhrases] = useState(true);
@@ -178,6 +180,18 @@ export default function ResultsStep({
     return words.every(word => phraseLower.includes(word));
   };
 
+  const sortPhrases = (phrases: Phrase[]) => {
+    return phrases.sort((a, b) => {
+      const aIsMinusConfirmed = a.isMinusWord && a.minusTerm === undefined;
+      const bIsMinusConfirmed = b.isMinusWord && b.minusTerm === undefined;
+      
+      if (aIsMinusConfirmed && !bIsMinusConfirmed) return 1;
+      if (!aIsMinusConfirmed && bIsMinusConfirmed) return -1;
+      
+      return b.count - a.count;
+    });
+  };
+
   const handleSearchChange = (clusterIndex: number, value: string) => {
     const newClusters = [...clusters];
     newClusters[clusterIndex].searchText = value;
@@ -213,7 +227,7 @@ export default function ResultsStep({
       });
     });
     
-    return tempPhrases.sort((a, b) => b.count - a.count);
+    return sortPhrases(tempPhrases);
   };
 
   const handleConfirmSearch = async (targetIndex: number) => {
@@ -250,8 +264,7 @@ export default function ResultsStep({
     }
 
     if (movedPhrases.length > 0) {
-      targetCluster.phrases = [...targetCluster.phrases, ...movedPhrases]
-        .sort((a, b) => b.count - a.count);
+      targetCluster.phrases = sortPhrases([...targetCluster.phrases, ...movedPhrases]);
       targetCluster.searchText = '';
 
       setClusters(newClusters);
@@ -278,11 +291,11 @@ export default function ResultsStep({
       // При очистке поиска снимаем всю временную подсветку
       const newClusters = clusters.map(cluster => ({
         ...cluster,
-        phrases: cluster.phrases.map(p => ({
+        phrases: sortPhrases(cluster.phrases.map(p => ({
           ...p,
           isMinusWord: false,
           minusTerm: undefined
-        })).sort((a, b) => b.count - a.count)
+        })))
       }));
       setClusters(newClusters);
       return;
@@ -353,9 +366,11 @@ export default function ResultsStep({
     });
 
     if (affectedPhrases.length > 0) {
+      const totalCount = affectedPhrases.reduce((sum, p) => sum + (p.count || 0), 0);
+      
       const newMinusWord: Phrase = {
         phrase: searchTerm,
-        count: 0,
+        count: totalCount,
         removedPhrases: affectedPhrases.map(p => ({
           ...p,
           isMinusWord: false,
@@ -512,9 +527,11 @@ export default function ResultsStep({
     });
 
     if (affectedPhrases.length > 0) {
+      const totalCount = affectedPhrases.reduce((sum, p) => sum + (p.count || 0), 0);
+      
       const newMinusWord: Phrase = {
         phrase: searchTerm,
-        count: 0,
+        count: totalCount,
         removedPhrases: affectedPhrases.map(p => ({
           ...p,
           isMinusWord: false,
@@ -659,7 +676,7 @@ export default function ResultsStep({
       
       return {
         ...cluster,
-        phrases: updatedPhrases.sort((a, b) => b.count - a.count)
+        phrases: sortPhrases(updatedPhrases)
       };
     });
     
@@ -676,6 +693,93 @@ export default function ResultsStep({
     toast({
       title: '↩️ Фразы восстановлены',
       description: `Восстановлено ${phrasesToUnmark.length} фраз`
+    });
+  };
+
+  const startEditingMinusWord = (index: number) => {
+    setEditingMinusIndex(index);
+    setEditingMinusText(minusWords[index].phrase);
+  };
+
+  const saveEditingMinusWord = async () => {
+    if (editingMinusIndex === null) return;
+    
+    const newPhrase = editingMinusText.trim();
+    if (!newPhrase) {
+      toast({
+        title: '⚠️ Ошибка',
+        description: 'Минус-фраза не может быть пустой',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const newMinusWords = [...minusWords];
+    newMinusWords[editingMinusIndex] = {
+      ...newMinusWords[editingMinusIndex],
+      phrase: newPhrase
+    };
+    
+    setMinusWords(newMinusWords);
+    setEditingMinusIndex(null);
+    setEditingMinusText('');
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        clusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        newMinusWords
+      );
+    }
+
+    toast({
+      title: '✅ Сохранено',
+      description: 'Минус-фраза обновлена'
+    });
+  };
+
+  const cancelEditingMinusWord = () => {
+    setEditingMinusIndex(null);
+    setEditingMinusText('');
+  };
+
+  const removeDuplicates = async () => {
+    const normalizePhrase = (phrase: string) => {
+      return phrase.toLowerCase().split(/\s+/).sort().join(' ');
+    };
+
+    let removedCount = 0;
+    const newClusters = clusters.map(cluster => {
+      const seen = new Set<string>();
+      const uniquePhrases: Phrase[] = [];
+
+      cluster.phrases.forEach(p => {
+        const normalized = normalizePhrase(p.phrase);
+        if (!seen.has(normalized)) {
+          seen.add(normalized);
+          uniquePhrases.push(p);
+        } else {
+          removedCount++;
+        }
+      });
+
+      return {
+        ...cluster,
+        phrases: uniquePhrases
+      };
+    });
+
+    setClusters(newClusters);
+
+    if (onSaveChanges) {
+      await onSaveChanges(
+        newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+        minusWords
+      );
+    }
+
+    toast({
+      title: '🧹 Дубли удалены',
+      description: `Удалено дублей: ${removedCount}`
     });
   };
 
@@ -815,7 +919,7 @@ export default function ResultsStep({
     movedPhrase.sourceColor = movedPhrase.sourceColor || sourceCluster.bgColor;
     
     targetCluster.phrases.push(movedPhrase);
-    targetCluster.phrases.sort((a, b) => b.count - a.count);
+    targetCluster.phrases = sortPhrases(targetCluster.phrases);
     
     setClusters(newClusters);
     setDraggedPhrase(null);
@@ -881,6 +985,10 @@ export default function ResultsStep({
                   <span className="text-gray-700">С частотностью</span>
                 </label>
               </div>
+              <Button onClick={removeDuplicates} size="sm" className="gap-2 bg-orange-600 hover:bg-orange-700">
+                <Icon name="Trash2" size={16} />
+                Удалить дубли
+              </Button>
               <Button onClick={exportToExcel} size="sm" className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 <Icon name="FileSpreadsheet" size={16} />
                 Выгрузить в Excel
@@ -1186,22 +1294,57 @@ export default function ResultsStep({
                   key={pIdx}
                   className="px-3 py-2 border-b border-gray-200 hover:bg-white/40 group/minus"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <div className="text-sm text-gray-800 leading-snug mb-1">
-                        {phrase.phrase}
+                  {editingMinusIndex === pIdx ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={editingMinusText}
+                        onChange={(e) => setEditingMinusText(e.target.value)}
+                        className="flex-1 h-8 text-sm"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingMinusWord();
+                          if (e.key === 'Escape') cancelEditingMinusWord();
+                        }}
+                      />
+                      <button
+                        onClick={saveEditingMinusWord}
+                        className="text-green-700 hover:text-green-900"
+                      >
+                        <Icon name="Check" size={16} />
+                      </button>
+                      <button
+                        onClick={cancelEditingMinusWord}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <Icon name="X" size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-800 leading-snug mb-1">
+                          {phrase.phrase}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {phrase.count > 0 ? phrase.count.toLocaleString() : '—'}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500 font-mono">
-                        {phrase.count > 0 ? phrase.count.toLocaleString() : '—'}
+                      <div className="flex gap-1 opacity-0 group-hover/minus:opacity-100">
+                        <button
+                          onClick={() => startEditingMinusWord(pIdx)}
+                          className="text-blue-700 hover:text-blue-900 flex-shrink-0"
+                        >
+                          <Icon name="Pencil" size={14} />
+                        </button>
+                        <button
+                          onClick={() => removeMinusWord(pIdx)}
+                          className="text-red-700 hover:text-red-900 flex-shrink-0"
+                        >
+                          <Icon name="X" size={14} />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => removeMinusWord(pIdx)}
-                      className="opacity-0 group-hover/minus:opacity-100 text-red-700 hover:text-red-900 flex-shrink-0"
-                    >
-                      <Icon name="X" size={14} />
-                    </button>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
