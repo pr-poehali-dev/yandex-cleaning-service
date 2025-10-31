@@ -66,9 +66,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             print(f'[DEBUG] Using API URL: {api_url} (sandbox={is_sandbox})')
             
             request_headers = {
-                'Authorization': f'Bearer {token}',
                 'Accept-Language': 'ru'
             }
+            
+            # Для песочницы используем master-token, для продакшна - OAuth Bearer
+            if is_sandbox:
+                request_headers['Authorization'] = token  # Мастер-токен напрямую
+            else:
+                request_headers['Authorization'] = f'Bearer {token}'  # OAuth токен
             
             # Добавляем Client-Login если указан
             if client_login:
