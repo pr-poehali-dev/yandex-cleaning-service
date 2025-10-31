@@ -48,23 +48,31 @@ export default function ClusteringProjects() {
   }, []);
 
   const loadProjects = async () => {
-    if (!sessionToken) {
-      console.log('❌ ClusteringProjects: No session token, redirecting to auth');
+    if (!sessionToken || !user?.id) {
+      console.log('❌ ClusteringProjects: No session token or user ID, redirecting to auth');
       setLoading(false);
       navigate('/auth');
       return;
     }
 
-    const cacheKey = `clustering_projects_${user?.id}`;
+    const cacheKey = `clustering_projects_${user.id}`;
     const cachedData = localStorage.getItem(cacheKey);
     const cacheTime = localStorage.getItem(`${cacheKey}_time`);
     const now = Date.now();
     
+    // Проверяем что кэш валиден и принадлежит ТЕКУЩЕМУ пользователю
     if (cachedData && cacheTime && (now - parseInt(cacheTime)) < 60000) {
-      console.log('📦 ClusteringProjects: Using cached data');
-      setProjects(JSON.parse(cachedData));
-      setLoading(false);
-      return;
+      try {
+        const parsed = JSON.parse(cachedData);
+        console.log('📦 ClusteringProjects: Found cached data for user', user.id);
+        setProjects(parsed);
+        setLoading(false);
+        return;
+      } catch (e) {
+        console.log('❌ ClusteringProjects: Invalid cache, removing...');
+        localStorage.removeItem(cacheKey);
+        localStorage.removeItem(`${cacheKey}_time`);
+      }
     }
 
     setLoading(true);

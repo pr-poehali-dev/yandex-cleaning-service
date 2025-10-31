@@ -116,10 +116,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    console.log('🚪 AuthContext: Logging out...');
+    console.log('🚪 AuthContext: Logging out, clearing storage...');
+    
+    // Принудительно удаляем ВСЕ ключи из localStorage
+    const allKeys = Object.keys(localStorage);
+    console.log('🗑️ AuthContext: Removing keys:', allKeys);
+    allKeys.forEach(key => {
+      localStorage.removeItem(key);
+      console.log(`  ✅ Removed: ${key}`);
+    });
+    
+    // Двойная проверка - полная очистка
     localStorage.clear();
+    
     setUser(null);
     setSessionToken(null);
+    
+    console.log('✅ AuthContext: Storage cleared, redirecting to /auth');
     window.location.href = '/auth';
   };
 
