@@ -212,13 +212,17 @@ export default function TestClustering() {
       const clusters = searchQuery.Clusters;
       const minusWords = searchQuery.MinusWords || {};
       
-      const transformedClusters = clusters.map((cluster: any, idx: number) => ({
-        name: cluster.cluster_name || 'Кластер ' + (idx + 1),
-        intent: cluster.intent || 'general',
-        color: 'emerald',
-        icon: cluster.intent === 'commercial' ? 'ShoppingCart' : 'FileText',
-        phrases: cluster.phrases || []
-      }));
+      const allPhrases = clusters.flatMap((cluster: any) => cluster.phrases || []);
+      
+      const transformedClusters = [
+        {
+          name: 'Все ключи',
+          intent: 'general',
+          color: 'emerald',
+          icon: 'FolderOpen',
+          phrases: allPhrases
+        }
+      ];
       
       const transformedMinusWords = Object.keys(minusWords).flatMap(category => {
         const catData = minusWords[category];
@@ -231,10 +235,14 @@ export default function TestClustering() {
         return [];
       });
       
-      setClusters(transformedClusters);
-      setMinusWords(transformedMinusWords);
+      const finalMinusWords = transformedMinusWords.map(phrase => 
+        typeof phrase === 'string' ? { phrase, count: 0 } : phrase
+      );
       
-      await saveResultsToAPI(transformedClusters, transformedMinusWords);
+      setClusters(transformedClusters);
+      setMinusWords(finalMinusWords);
+      
+      await saveResultsToAPI(transformedClusters, finalMinusWords);
       
       setStep('results');
       toast.success(`Собрано ${transformedClusters.length} кластеров из Wordstat`);
