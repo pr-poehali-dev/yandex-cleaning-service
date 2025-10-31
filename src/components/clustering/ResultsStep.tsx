@@ -421,7 +421,9 @@ export default function ResultsStep({
 
   const matchesWordForm = (phrase: string, targetWord: string): boolean => {
     if (!useWordForms) {
-      return phrase.toLowerCase().includes(targetWord.toLowerCase());
+      // Ищем только целые слова, а не подстроки
+      const phraseWords = phrase.toLowerCase().split(/\s+/);
+      return phraseWords.includes(targetWord.toLowerCase());
     }
     
     const targetRoot = getWordRoot(targetWord);

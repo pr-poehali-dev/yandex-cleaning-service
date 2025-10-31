@@ -64,8 +64,10 @@ export default function TestClustering() {
   useEffect(() => {
     if (!projectId) return;
     const stateKey = `clustering_state_${projectId}`;
+    // Если на processing, сохраняем предыдущий шаг (intents), чтобы вернуться к нему
+    const stepToSave = step === 'processing' ? 'intents' : step;
     localStorage.setItem(stateKey, JSON.stringify({
-      step,
+      step: stepToSave,
       source,
       manualKeywords,
       websiteUrl,
@@ -86,8 +88,8 @@ export default function TestClustering() {
     if (savedState) {
       try {
         const parsed = JSON.parse(savedState);
-        // Восстанавливаем только если не на processing шаге (чтобы не зависнуть)
-        if (parsed.step && parsed.step !== 'processing') {
+        // Восстанавливаем состояние (processing автоматически заменяется на intents при сохранении)
+        if (parsed.step) {
           setStep(parsed.step);
           setSource(parsed.source || 'manual');
           setManualKeywords(parsed.manualKeywords || '');
