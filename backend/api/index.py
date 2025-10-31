@@ -1,9 +1,10 @@
 import json
 import os
 import random
+import secrets
 import psycopg2
 from datetime import datetime, timedelta
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -20,7 +21,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Session-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'isBase64Encoded': False,
@@ -136,16 +137,19 @@ def handle_auth(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Code expired'})
             }
         
+        session_token = secrets.token_hex(32)
+        token_expires = datetime.now() + timedelta(days=30)
+        
         cur.execute(
-            "UPDATE users SET is_verified = TRUE, last_login_at = %s WHERE id = %s",
-            (datetime.now(), user_id)
+            "UPDATE users SET is_verified = TRUE, last_login_at = %s, session_token = %s, token_expires_at = %s WHERE id = %s",
+            (datetime.now(), session_token, token_expires, user_id)
         )
         conn.commit()
         
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'success': True, 'userId': user_id, 'phone': phone})
+            'body': json.dumps({'success': True, 'userId': user_id, 'phone': phone, 'sessionToken': session_token})
         }
     
     return {
@@ -154,16 +158,39 @@ def handle_auth(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         'body': json.dumps({'error': 'Invalid action'})
     }
 
+def verify_session(cur, session_token: str) -> Optional[int]:
+    '''Проверяет токен сессии и возвращает user_id или None'''
+    if not session_token:
+        return None
+    
+    cur.execute(
+        "SELECT id, token_expires_at FROM users WHERE session_token = %s",
+        (session_token,)
+    )
+    result = cur.fetchone()
+    
+    if not result:
+        return None
+    
+    user_id, expires_at = result
+    
+    if expires_at and datetime.now() > expires_at:
+        return None
+    
+    return user_id
+
 def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
     method = event.get('httpMethod', 'GET')
     headers = event.get('headers', {})
-    user_id = headers.get('x-user-id') or headers.get('X-User-Id')
+    session_token = headers.get('x-session-token') or headers.get('X-Session-Token')
+    
+    user_id = verify_session(cur, session_token)
     
     if not user_id:
         return {
             'statusCode': 401,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'User ID required'})
+            'body': json.dumps({'error': 'Invalid or expired session'})
         }
     
     if method == 'GET':

@@ -55,7 +55,7 @@ export default function TestClustering() {
   const [minusWords, setMinusWords] = useState<Phrase[]>([]);
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, sessionToken } = useAuth();
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -64,8 +64,7 @@ export default function TestClustering() {
         return;
       }
 
-      const userId = user?.id;
-      if (!userId) {
+      if (!sessionToken) {
         toast.error('Ошибка: пользователь не авторизован');
         navigate('/auth');
         return;
@@ -75,7 +74,7 @@ export default function TestClustering() {
         setIsLoading(true);
         const response = await fetch(`${API_URL}?endpoint=projects&id=${projectId}`, {
           headers: {
-            'X-User-Id': String(userId)
+            'X-Session-Token': sessionToken
           }
         });
 
@@ -131,9 +130,8 @@ export default function TestClustering() {
       return;
     }
 
-    const userId = user?.id;
-    if (!userId) {
-      console.error('❌ No userId found');
+    if (!sessionToken) {
+      console.error('❌ No session token found');
       toast.error('Ошибка: пользователь не авторизован');
       return;
     }
@@ -144,7 +142,7 @@ export default function TestClustering() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': String(userId)
+          'X-Session-Token': sessionToken
         },
         body: JSON.stringify({
           id: parseInt(projectId),

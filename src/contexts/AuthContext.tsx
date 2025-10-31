@@ -4,11 +4,13 @@ export interface User {
   id: number;
   phone: string;
   createdAt: string;
+  sessionToken: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  sessionToken: string | null;
   login: (phone: string) => Promise<void>;
   logout: () => void;
 }
@@ -26,21 +28,22 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
 
   useEffect(() => {
+    const storedToken = localStorage.getItem('sessionToken');
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    if (storedToken && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        if (typeof parsedUser.id === 'number') {
+        if (typeof parsedUser.id === 'number' && parsedUser.sessionToken) {
           setUser(parsedUser);
+          setSessionToken(parsedUser.sessionToken);
         } else {
-          localStorage.removeItem('user');
-          localStorage.removeItem('userId');
+          localStorage.clear();
         }
       } catch {
-        localStorage.removeItem('user');
-        localStorage.removeItem('userId');
+        localStorage.clear();
       }
     }
     setIsLoading(false);
@@ -61,22 +64,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newUser: User = {
       id: userData.id,
       phone: userData.phone,
-      createdAt: userData.createdAt
+      createdAt: userData.createdAt,
+      sessionToken: userData.sessionToken
     };
     
     localStorage.setItem('user', JSON.stringify(newUser));
-    localStorage.setItem('userId', String(newUser.id));
+    localStorage.setItem('sessionToken', userData.sessionToken);
+    setSessionToken(userData.sessionToken);
     setUser(newUser);
   };
 
   const logout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('userId');
+    localStorage.clear();
     setUser(null);
+    setSessionToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, sessionToken, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

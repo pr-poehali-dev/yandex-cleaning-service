@@ -41,21 +41,19 @@ export default function ClusteringProjects() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<number | null>(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const userId = user?.id;
+  const { user, sessionToken } = useAuth();
 
   useEffect(() => {
     loadProjects();
   }, []);
 
   const loadProjects = async () => {
-    if (!userId) {
+    if (!sessionToken) {
       navigate('/auth');
       return;
     }
 
-    const cacheKey = `clustering_projects_${userId}`;
+    const cacheKey = `clustering_projects_${user?.id}`;
     const cachedData = localStorage.getItem(cacheKey);
     const cacheTime = localStorage.getItem(`${cacheKey}_time`);
     const now = Date.now();
@@ -72,7 +70,7 @@ export default function ClusteringProjects() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': String(userId)
+          'X-Session-Token': sessionToken
         }
       });
 
@@ -101,8 +99,8 @@ export default function ClusteringProjects() {
       return;
     }
 
-    if (!userId) {
-      navigate('/login');
+    if (!sessionToken) {
+      navigate('/auth');
       return;
     }
 
@@ -111,7 +109,7 @@ export default function ClusteringProjects() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': String(userId)
+          'X-Session-Token': sessionToken
         },
         body: JSON.stringify({
           name: newProjectName,
@@ -146,14 +144,14 @@ export default function ClusteringProjects() {
   };
 
   const confirmDelete = async () => {
-    if (!projectToDelete || !userId) return;
+    if (!projectToDelete || !sessionToken) return;
 
     try {
       const res = await fetch(`${API_URL}?endpoint=projects&id=${projectToDelete}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': String(userId)
+          'X-Session-Token': sessionToken
         }
       });
 
