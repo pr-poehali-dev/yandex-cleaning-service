@@ -275,30 +275,56 @@ export default function ResultsStep({
     
     const searchTerm = value.toLowerCase().trim();
     if (!searchTerm) {
+      // При очистке поиска убираем ТОЛЬКО временную подсветку, 
+      // но сохраняем УЖЕ подтверждённые минус-слова
       const newClusters = clusters.map(cluster => ({
         ...cluster,
-        phrases: cluster.phrases.map(p => ({
-          ...p,
-          isMinusWord: false,
-          minusTerm: undefined
-        })).sort((a, b) => b.count - a.count)
+        phrases: cluster.phrases.map(p => {
+          // Если фраза была подтверждена (есть в minusWords) — оставляем метку
+          const isConfirmedMinus = minusWords.some(mw => 
+            matchesWordForm(p.phrase, mw.phrase)
+          );
+          
+          if (isConfirmedMinus) {
+            return p; // Оставляем как есть
+          }
+          
+          // Иначе снимаем временную метку
+          return {
+            ...p,
+            isMinusWord: false,
+            minusTerm: undefined
+          };
+        }).sort((a, b) => b.count - a.count)
       }));
       setClusters(newClusters);
       return;
     }
     
+    // При вводе — подсвечиваем совпадения, но НЕ трогаем другие минус-слова
     const newClusters = clusters.map(cluster => {
-      const normalPhrases = cluster.phrases
-        .filter(p => !matchesWordForm(p.phrase, searchTerm))
-        .map(p => ({ ...p, isMinusWord: false, minusTerm: undefined }));
-      
-      const minusPhrases = cluster.phrases
-        .filter(p => matchesWordForm(p.phrase, searchTerm))
-        .map(p => ({ ...p, isMinusWord: true, minusTerm: searchTerm }));
+      const updatedPhrases = cluster.phrases.map(p => {
+        // Если уже помечено другим минус-словом — оставляем как есть
+        if (p.isMinusWord && p.minusTerm && p.minusTerm !== searchTerm) {
+          return p;
+        }
+        
+        // Проверяем совпадение с текущим поиском
+        if (matchesWordForm(p.phrase, searchTerm)) {
+          return { ...p, isMinusWord: true, minusTerm: searchTerm };
+        }
+        
+        // Если фраза была подсвечена этим же поиском, но больше не совпадает — снимаем метку
+        if (p.minusTerm === searchTerm) {
+          return { ...p, isMinusWord: false, minusTerm: undefined };
+        }
+        
+        return p;
+      });
       
       return {
         ...cluster,
-        phrases: [...normalPhrases, ...minusPhrases]
+        phrases: updatedPhrases
       };
     });
     
@@ -308,6 +334,18 @@ export default function ResultsStep({
   const handleConfirmMinusSearch = async () => {
     const searchTerm = minusSearchText.toLowerCase().trim();
     if (!searchTerm) return;
+
+    // Проверка дубля
+    const isDuplicate = minusWords.some(m => m.phrase.toLowerCase() === searchTerm);
+    if (isDuplicate) {
+      toast({
+        title: '⚠️ Дубль минус-слова',
+        description: `"${searchTerm}" уже есть в списке`,
+        variant: 'destructive'
+      });
+      setMinusSearchText('');
+      return;
+    }
 
     const affectedPhrases: Phrase[] = [];
     const newClusters = clusters.map(cluster => {
@@ -407,23 +445,40 @@ export default function ResultsStep({
     const searchTerm = word.toLowerCase().trim();
     if (!searchTerm) return;
 
+    // Проверка дубля
+    const isDuplicate = minusWords.some(m => m.phrase.toLowerCase() === searchTerm);
+    if (isDuplicate) {
+      toast({
+        title: '⚠️ Дубль минус-слова',
+        description: `"${searchTerm}" уже есть в списке`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     const affectedPhrases: Phrase[] = [];
     
+    // Сохраняем ВСЕ существующие минус-метки
     const updatedClusters = clusters.map(cluster => {
-      const normalPhrases = cluster.phrases
-        .filter(p => !matchesWordForm(p.phrase, searchTerm))
-        .map(p => ({ ...p, isMinusWord: false, minusTerm: undefined }));
-      
-      const minusPhrases = cluster.phrases
-        .filter(p => matchesWordForm(p.phrase, searchTerm))
-        .map(p => {
+      const updatedPhrases = cluster.phrases.map(p => {
+        // Если фраза УЖЕ помечена как минус — оставляем как есть
+        if (p.isMinusWord) {
+          return p;
+        }
+        
+        // Если фраза совпадает с новым минус-словом — помечаем
+        if (matchesWordForm(p.phrase, searchTerm)) {
           affectedPhrases.push(p);
           return { ...p, isMinusWord: true, minusTerm: searchTerm };
-        });
+        }
+        
+        // Иначе оставляем без изменений
+        return p;
+      });
       
       return {
         ...cluster,
-        phrases: [...normalPhrases, ...minusPhrases]
+        phrases: updatedPhrases
       };
     });
 
