@@ -187,6 +187,8 @@ export default function TestClustering() {
         region_names: cities.map(c => c.name)
       };
       
+      console.log('🚀 WORDSTAT REQUEST:', requestBody);
+      
       const response = await fetch(WORDSTAT_API_URL, {
         method: 'POST',
         headers: {

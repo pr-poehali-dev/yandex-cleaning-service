@@ -14,7 +14,10 @@
       "path": "/",
       "body": {
         "keywords": ["клининг", "уборка квартир"],
-        "regions": [213]
+        "regions": [213],
+        "use_openai": true,
+        "selected_intents": ["commercial", "transactional"],
+        "region_names": ["Москва"]
       },
       "expectedStatus": 200,
       "expectedBody": {
