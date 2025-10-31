@@ -172,8 +172,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     # Получаем цели через GetRetargetingGoals (Live API v4)
                     goals = []
                     
-                    if client_login and not is_sandbox:
-                        try:
+                    try:
+                        # Live API v4 не работает в sandbox, используем только для продакшна
+                        if not is_sandbox and client_login:
                             live_api_url = 'https://api.direct.yandex.ru/live/v4/json/'
                             goals_body = {
                                 'method': 'GetRetargetingGoals',
@@ -189,6 +190,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             )
                             
                             print(f'[DEBUG] GetRetargetingGoals response: {goals_response.status_code}')
+                            print(f'[DEBUG] GetRetargetingGoals body: {goals_response.text[:500]}')
                             
                             if goals_response.status_code == 200:
                                 goals_data = goals_response.json()
@@ -200,8 +202,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                         for g in goals_raw[:10]
                                     ]
                                     print(f'[DEBUG] Found {len(goals)} goals: {goals}')
-                        except Exception as e:
-                            print(f'[DEBUG] Failed to fetch goals: {str(e)}')
+                        else:
+                            print(f'[DEBUG] Skipping goals fetch: is_sandbox={is_sandbox}, client_login={client_login}')
+                    except Exception as e:
+                        print(f'[DEBUG] Failed to fetch goals: {str(e)}')
                     
                     # Если площадок нет, добавляем тестовые для демонстрации
                     if len(platforms) == 0 and is_sandbox:
