@@ -248,12 +248,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     request_headers['Client-Login'] = client_login
                 
                 # Создаём тестовую РСЯ кампанию
+                from datetime import datetime, timedelta
+                tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+                
                 campaign_data = {
                     'method': 'add',
                     'params': {
                         'Campaigns': [{
                             'Name': f'Тестовая РСЯ кампания',
-                            'StartDate': '2025-01-01',
+                            'StartDate': tomorrow,
                             'TextCampaign': {
                                 'BiddingStrategy': {
                                     'Search': {
@@ -297,7 +300,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         })
                     }
                 
-                campaign_id = data.get('result', {}).get('AddResults', [{}])[0].get('Id')
+                # Проверяем результат создания
+                add_results = data.get('result', {}).get('AddResults', [])
+                if not add_results or 'Errors' in add_results[0]:
+                    errors = add_results[0].get('Errors', []) if add_results else []
+                    error_msg = errors[0].get('Message', 'Неизвестная ошибка') if errors else 'Не удалось создать кампанию'
+                    error_detail = errors[0].get('Details', '') if errors else ''
+                    
+                    print(f'[ERROR] Campaign creation failed: {error_msg}')
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'error': error_msg,
+                            'error_detail': error_detail
+                        })
+                    }
+                
+                campaign_id = add_results[0].get('Id')
                 
                 return {
                     'statusCode': 200,
