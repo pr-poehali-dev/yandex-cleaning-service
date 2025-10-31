@@ -172,6 +172,100 @@ def cosine_similarity_simple(vec1: Dict[str, float], vec2: Dict[str, float]) -> 
     
     return dot_product / (norm1 * norm2)
 
+def clusterize_advanced(phrases: List[Dict[str, Any]], mode: str = 'context', region_names: List[str] = None, selected_intents: List[str] = None) -> tuple:
+    '''
+    Продвинутая кластеризация через улучшенный TF-IDF алгоритм
+    Создаёт МНОГО маленьких кластеров вместо одного большого
+    Args:
+        phrases: список фраз с частотностью
+        mode: 'context' (Яндекс.Директ) или 'seo' (SEO)
+    Returns: (clusters, minus_words)
+    '''
+    if len(phrases) < 5:
+        clusters = smart_clusterize(phrases, mode)
+        minus_words = detect_minus_words(phrases) if mode == 'context' else {}
+        return clusters, minus_words
+    
+    print(f'[ADVANCED] Starting advanced clustering for {len(phrases)} phrases, mode: {mode}')
+    
+    tfidf_vectors = calculate_tfidf([p['phrase'] for p in phrases])
+    
+    if mode == 'context':
+        similarity_threshold = 0.15
+        min_cluster_size = 2
+    else:
+        similarity_threshold = 0.2
+        min_cluster_size = 3
+    
+    used = set()
+    clusters_dict = []
+    
+    for i, phrase_a in enumerate(phrases):
+        if i in used:
+            continue
+        
+        cluster = [i]
+        used.add(i)
+        
+        for j, phrase_b in enumerate(phrases):
+            if j in used or j == i:
+                continue
+            
+            similarity = cosine_similarity_simple(tfidf_vectors[i], tfidf_vectors[j])
+            
+            if similarity >= similarity_threshold:
+                cluster.append(j)
+                used.add(j)
+        
+        if len(cluster) >= min_cluster_size:
+            clusters_dict.append([phrases[idx] for idx in cluster])
+    
+    remaining = [phrases[i] for i in range(len(phrases)) if i not in used]
+    if remaining:
+        print(f'[ADVANCED] {len(remaining)} phrases remain unclustered')
+        for phrase in remaining:
+            clusters_dict.append([phrase])
+    
+    clusters = []
+    for cluster_phrases in clusters_dict:
+        cluster_name = generate_cluster_name(cluster_phrases)
+        total_volume = sum(p['count'] for p in cluster_phrases)
+        
+        clusters.append({
+            'name': cluster_name,
+            'phrases': sorted(cluster_phrases, key=lambda x: x['count'], reverse=True),
+            'count': len(cluster_phrases),
+            'total_volume': total_volume
+        })
+    
+    clusters.sort(key=lambda x: x['total_volume'], reverse=True)
+    
+    minus_words = detect_minus_words(phrases) if mode == 'context' else {}
+    
+    print(f'[ADVANCED] Created {len(clusters)} clusters (avg size: {len(phrases) / len(clusters):.1f})')
+    return clusters, minus_words
+
+def generate_cluster_name(cluster_phrases: List[Dict[str, Any]]) -> str:
+    '''Генерация названия кластера на основе общих слов'''
+    stop_words = {
+        'в', 'на', 'с', 'по', 'для', 'из', 'и', 'или', 'как', 'что', 'за',
+        'это', 'то', 'так', 'но', 'а', 'о', 'у', 'от', 'к', 'до', 'при'
+    }
+    
+    word_counts = defaultdict(int)
+    for p in cluster_phrases:
+        words = [w.lower() for w in p['phrase'].split() if w.lower() not in stop_words and len(w) > 2]
+        for word in words:
+            word_counts[word] += 1
+    
+    if not word_counts:
+        return '📂 Кластер'
+    
+    top_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:3]
+    name = ' '.join([w[0] for w in top_words])
+    
+    return f'🔹 {name.capitalize()}'
+
 def clusterize_with_openai(phrases: List[Dict[str, Any]], mode: str = 'context', region_names: List[str] = None, selected_intents: List[str] = None) -> tuple:
     '''
     Кластеризация через OpenAI GPT-4o с учётом регионов и интентов
@@ -813,8 +907,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             print(f'[WORDSTAT] Got {len(top_requests)} phrases from Yandex API, mode: {clustering_mode}')
             
             if use_openai:
-                print(f'[WORDSTAT] Using OpenAI GPT-4o for clustering (regions: {region_names}, intents: {selected_intents})')
-                clusters, minus_words = clusterize_with_openai(
+                print(f'[WORDSTAT] Using advanced TF-IDF clustering')
+                clusters, minus_words = clusterize_advanced(
                     top_requests, 
                     mode=clustering_mode,
                     region_names=region_names,
