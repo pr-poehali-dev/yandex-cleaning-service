@@ -11,15 +11,15 @@ import ProcessingStep from '@/components/clustering/ProcessingStep';
 import ResultsStep from '@/components/clustering/ResultsStep';
 import StepIndicator from '@/components/clustering/StepIndicator';
 import WordstatDialog from '@/components/clustering/WordstatDialog';
-import ClusterNamesStep from '@/components/clustering/ClusterNamesStep';
+
 import { useAuth } from '@/contexts/AuthContext';
 
 
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 const WORDSTAT_API_URL = 'https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8';
-const CLUSTER_NAMES_API_URL = 'https://functions.poehali.dev/816f5c03-c259-4d9d-9a4b-44d96af0e858';
 
-type Step = 'source' | 'wordstat-dialog' | 'cities' | 'goal' | 'intents' | 'processing' | 'cluster-names' | 'results';
+
+type Step = 'source' | 'wordstat-dialog' | 'cities' | 'goal' | 'intents' | 'processing' | 'results';
 type Source = 'manual' | 'website';
 type Goal = 'context' | 'seo';
 
@@ -57,8 +57,7 @@ export default function TestClustering() {
   const [minusWords, setMinusWords] = useState<Phrase[]>([]);
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [clusterNames, setClusterNames] = useState<string[]>([]);
-  const [isGeneratingNames, setIsGeneratingNames] = useState(false);
+
   const { user, sessionToken } = useAuth();
 
   useEffect(() => {
@@ -245,35 +244,8 @@ export default function TestClustering() {
       
       await saveResultsToAPI(transformedClusters, finalMinusWords);
       
-      setStep('cluster-names');
-      setIsGeneratingNames(true);
-      
-      try {
-        const keywords = manualKeywords
-          .split('\n')
-          .map(k => k.trim())
-          .filter(k => k.length > 0);
-        
-        const response = await fetch(CLUSTER_NAMES_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ keywords })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to generate cluster names');
-        }
-
-        const aiData = await response.json();
-        setClusterNames(aiData.clusterNames || []);
-        toast.success(`OpenAI сгенерировал ${aiData.clusterNames.length} названий кластеров`);
-      } catch (error) {
-        console.error('Error generating cluster names:', error);
-        toast.error('Не удалось сгенерировать названия через OpenAI');
-        setClusterNames([]);
-      } finally {
-        setIsGeneratingNames(false);
-      }
+      toast.success('Кластеризация завершена!');
+      setStep('results');
     } catch (error) {
       console.error('Error fetching from Wordstat:', error);
       toast.error('Не удалось получить данные из Wordstat');
@@ -383,17 +355,7 @@ export default function TestClustering() {
               setObjectAddress={setObjectAddress}
               onNext={handleNextFromSource}
               onWordstatClick={() => setStep('wordstat-dialog')}
-              isLoading={isGeneratingNames}
-            />
-          )}
-
-          {step === 'cluster-names' && (
-            <ClusterNamesStep
-              clusterNames={clusterNames}
-              onClusterNamesChange={setClusterNames}
-              onNext={() => setStep('results')}
-              onBack={handleBack}
-              isLoading={isGeneratingNames}
+              isLoading={false}
             />
           )}
 
