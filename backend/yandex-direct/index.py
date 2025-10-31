@@ -169,41 +169,39 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     else:
                         print(f'[DEBUG] AdGroups request failed with status {adgroups_response.status_code}')
                     
-                    # Получаем цели через Reports API
+                    # Получаем цели через GetRetargetingGoals (Live API v4)
                     goals = []
-                    reports_url = api_url.replace('/campaigns', '/reports')
                     
-                    try:
-                        reports_response = requests.post(
-                            reports_url,
-                            headers=request_headers,
-                            json={
-                                'params': {
-                                    'SelectionCriteria': {'CampaignIds': [int(campaign_id)]},
-                                    'FieldNames': ['CampaignId', 'Impressions'],
-                                    'Goals': [],  # Пустой массив - получим все доступные цели
-                                    'ReportName': 'Goals Report',
-                                    'ReportType': 'CAMPAIGN_PERFORMANCE_REPORT',
-                                    'DateRangeType': 'LAST_30_DAYS',
-                                    'Format': 'TSV',
-                                    'IncludeVAT': 'NO'
-                                }
-                            },
-                            timeout=10
-                        )
-                        
-                        print(f'[DEBUG] Reports API response for campaign {campaign_id}: {reports_response.status_code}')
-                        
-                        if reports_response.status_code == 200:
-                            # Парсим заголовок ответа для получения целей
-                            report_headers = reports_response.headers.get('Goals', '')
-                            if report_headers:
-                                # Goals приходят в формате: [{"id":123,"name":"Заявка"},...]
-                                goals_raw = json.loads(report_headers)
-                                goals = [{'id': str(g['id']), 'name': g['name'], 'type': 'GOAL'} for g in goals_raw]
-                                print(f'[DEBUG] Found {len(goals)} goals for campaign {campaign_id}: {goals}')
-                    except Exception as e:
-                        print(f'[DEBUG] Failed to fetch goals via Reports API: {str(e)}')
+                    if client_login and not is_sandbox:
+                        try:
+                            live_api_url = 'https://api.direct.yandex.ru/live/v4/json/'
+                            goals_body = {
+                                'method': 'GetRetargetingGoals',
+                                'param': {'Logins': [client_login]},
+                                'locale': 'ru',
+                                'token': token
+                            }
+                            
+                            goals_response = requests.post(
+                                live_api_url,
+                                json=goals_body,
+                                timeout=10
+                            )
+                            
+                            print(f'[DEBUG] GetRetargetingGoals response: {goals_response.status_code}')
+                            
+                            if goals_response.status_code == 200:
+                                goals_data = goals_response.json()
+                                if 'data' in goals_data:
+                                    goals_raw = goals_data['data']
+                                    # Берем только первые 10 целей (лимит Reports API)
+                                    goals = [
+                                        {'id': str(g.get('GoalID', g.get('id'))), 'name': g.get('Name', g.get('name', 'Без названия')), 'type': 'GOAL'} 
+                                        for g in goals_raw[:10]
+                                    ]
+                                    print(f'[DEBUG] Found {len(goals)} goals: {goals}')
+                        except Exception as e:
+                            print(f'[DEBUG] Failed to fetch goals: {str(e)}')
                     
                     # Если площадок нет, добавляем тестовые для демонстрации
                     if len(platforms) == 0 and is_sandbox:
