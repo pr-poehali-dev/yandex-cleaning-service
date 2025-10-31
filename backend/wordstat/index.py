@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from typing import Dict, Any, List
 import requests
 from collections import defaultdict
@@ -1012,6 +1013,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 # Получаем частотность для каждой фразы в кавычках
                 for user_phrase in user_phrases:
                     try:
+                        time.sleep(10)  # Задержка 10 секунд между запросами к Вордстату
                         payload_user = {'phrase': user_phrase['phrase'], 'regions': regions}
                         resp_user = requests.post(api_url, json=payload_user, headers=headers, timeout=10)
                         if resp_user.status_code == 200:
@@ -1048,6 +1050,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     geo_phrases = []
                     for geo_kw in geo_keywords[:15]:  # Limit to 15 requests
                         try:
+                            time.sleep(10)  # Задержка 10 секунд между запросами к Вордстату
                             payload_geo = {'phrase': geo_kw, 'regions': regions}
                             resp_geo = requests.post(api_url, json=payload_geo, headers=headers, timeout=10)
                             if resp_geo.status_code == 200:

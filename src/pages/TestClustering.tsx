@@ -60,6 +60,51 @@ export default function TestClustering() {
 
   const { user, sessionToken } = useAuth();
 
+  // Сохранение состояния в localStorage
+  useEffect(() => {
+    if (!projectId) return;
+    const stateKey = `clustering_state_${projectId}`;
+    localStorage.setItem(stateKey, JSON.stringify({
+      step,
+      source,
+      manualKeywords,
+      websiteUrl,
+      objectAddress,
+      useGeoKeys,
+      wordstatQuery,
+      selectedCities,
+      goal,
+      selectedIntents
+    }));
+  }, [projectId, step, source, manualKeywords, websiteUrl, objectAddress, useGeoKeys, wordstatQuery, selectedCities, goal, selectedIntents]);
+
+  // Восстановление состояния из localStorage (вызывается ПОСЛЕ загрузки проекта)
+  const restoreStateFromStorage = useCallback(() => {
+    if (!projectId) return;
+    const stateKey = `clustering_state_${projectId}`;
+    const savedState = localStorage.getItem(stateKey);
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        // Восстанавливаем только если не на processing шаге (чтобы не зависнуть)
+        if (parsed.step && parsed.step !== 'processing') {
+          setStep(parsed.step);
+          setSource(parsed.source || 'manual');
+          setManualKeywords(parsed.manualKeywords || '');
+          setWebsiteUrl(parsed.websiteUrl || '');
+          setObjectAddress(parsed.objectAddress || '');
+          setUseGeoKeys(parsed.useGeoKeys || false);
+          setWordstatQuery(parsed.wordstatQuery || '');
+          setSelectedCities(parsed.selectedCities || []);
+          setGoal(parsed.goal || 'context');
+          setSelectedIntents(parsed.selectedIntents || ['commercial', 'transactional']);
+        }
+      } catch (e) {
+        console.error('Failed to restore state:', e);
+      }
+    }
+  }, [projectId]);
+
   useEffect(() => {
     const fetchProject = async () => {
       if (!projectId) {
@@ -99,6 +144,7 @@ export default function TestClustering() {
         if (project) {
           setProjectName(project.name || '');
           
+          // Если есть готовые результаты, показываем их (приоритет выше сохраненного состояния)
           if (project.results && project.results.clusters && project.results.clusters.length > 0) {
             console.log('✅ SHOWING RESULTS PAGE! Clusters:', project.results.clusters.length);
             console.log('🔍 First cluster from DB:', project.results.clusters[0]);
@@ -119,7 +165,8 @@ export default function TestClustering() {
             
             setStep('results');
           } else {
-            console.log('❌ No results - showing source step');
+            console.log('❌ No results - restoring saved state if any');
+            restoreStateFromStorage();
           }
         }
       } catch (error) {
@@ -131,7 +178,7 @@ export default function TestClustering() {
     };
 
     fetchProject();
-  }, [projectId, navigate]);
+  }, [projectId, navigate, restoreStateFromStorage]);
 
   const saveResultsToAPI = useCallback(async (clustersData: Cluster[], minusWordsData: Phrase[]) => {
     console.log('🔥 saveResultsToAPI CALLED', {
@@ -470,9 +517,15 @@ export default function TestClustering() {
                   setIsWordstatLoading(true);
                   setStep('processing');
                   
+                  // Реальный таймер: основной запрос (10 сек) + геоключи (15 запросов × 10 сек) = ~160 сек
+                  const totalTime = 160000; // 160 секунд
+                  const startTime = Date.now();
+                  
                   const progressInterval = setInterval(() => {
-                    setLoadingProgress(prev => Math.min(prev + 2, 90));
-                  }, 200);
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min((elapsed / totalTime) * 100, 95);
+                    setLoadingProgress(progress);
+                  }, 1000);
                   
                   try {
                     await handleWordstatSubmit(firstKeyword, selectedCities, goal);

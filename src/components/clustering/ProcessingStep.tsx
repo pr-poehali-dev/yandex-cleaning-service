@@ -71,8 +71,15 @@ export default function ProcessingStep({ progress, currentStage }: ProcessingSte
             ))}
           </div>
 
-          <div className="text-center text-sm text-slate-500">
-            Это может занять несколько минут. Не закрывайте страницу.
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+            <p className="text-sm text-slate-500">
+              Это может занять несколько минут. Не закрывайте страницу.
+            </p>
           </div>
         </CardContent>
       </Card>
