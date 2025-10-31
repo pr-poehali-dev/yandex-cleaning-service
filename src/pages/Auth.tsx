@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -66,6 +68,7 @@ export default function Auth() {
       setLoading(false);
       login(phone);
       toast({ title: '✅ Добро пожаловать!', description: 'Вход выполнен успешно' });
+      navigate('/');
     }, 1000);
   };
 
