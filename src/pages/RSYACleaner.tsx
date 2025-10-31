@@ -176,6 +176,47 @@ export default function RSYACleaner() {
     }
   };
 
+  const handleCreateTestCampaign = async () => {
+    const token = localStorage.getItem('yandex_direct_token');
+    const savedLogin = localStorage.getItem('yandex_client_login');
+    
+    if (!token) {
+      toast({ title: 'Токен не найден', variant: 'destructive' });
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch(YANDEX_DIRECT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'create_test_campaign', 
+          token,
+          client_login: savedLogin 
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast({ title: '✅ Кампания создана!', description: `ID: ${data.campaign_id}` });
+        await loadCampaigns(token);
+      } else {
+        toast({ 
+          title: '❌ Ошибка создания кампании', 
+          description: data.error_detail || data.error,
+          variant: 'destructive',
+          duration: 10000
+        });
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось создать тестовую кампанию', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDisconnect = () => {
     localStorage.removeItem('yandex_direct_token');
     localStorage.removeItem('yandex_client_login');
@@ -277,6 +318,41 @@ export default function RSYACleaner() {
 
         {isConnected && (
           <>
+            {useSandbox && campaigns.length === 0 && (
+              <Card className="bg-amber-50 border-amber-200">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3">
+                    <Icon name="Info" className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-amber-900 mb-1">Песочница пустая</h3>
+                      <p className="text-sm text-amber-700 mb-3">
+                        В песочнице нет кампаний. Создайте тестовую РСЯ кампанию для проверки работы сервиса.
+                      </p>
+                      <Button 
+                        onClick={handleCreateTestCampaign}
+                        disabled={loading}
+                        size="sm"
+                        variant="outline"
+                        className="border-amber-300 hover:bg-amber-100"
+                      >
+                        {loading ? (
+                          <>
+                            <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
+                            Создание...
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="Plus" className="mr-2 h-4 w-4" />
+                            Создать тестовую кампанию
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          
             <RSYAFiltersManager
               filters={filters}
               newFilter={newFilter}

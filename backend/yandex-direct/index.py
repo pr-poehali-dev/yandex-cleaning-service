@@ -221,6 +221,101 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': f'Ошибка: {str(e)}'})
                 }
         
+        # POST /create_test_campaign - создать тестовую кампанию в песочнице
+        if action == 'create_test_campaign':
+            token = body_data.get('token')
+            client_login = body_data.get('client_login')
+            
+            if not token:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'Токен не указан'})
+                }
+            
+            try:
+                api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns'
+                
+                request_headers = {
+                    'Authorization': f'Bearer {token}',
+                    'Accept-Language': 'ru'
+                }
+                
+                if client_login:
+                    request_headers['Client-Login'] = client_login
+                
+                # Создаём тестовую РСЯ кампанию
+                campaign_data = {
+                    'method': 'add',
+                    'params': {
+                        'Campaigns': [{
+                            'Name': f'Тестовая РСЯ кампания',
+                            'StartDate': '2025-01-01',
+                            'TextCampaign': {
+                                'BiddingStrategy': {
+                                    'Search': {
+                                        'BiddingStrategyType': 'HIGHEST_POSITION'
+                                    },
+                                    'Network': {
+                                        'BiddingStrategyType': 'SERVING_OFF'
+                                    }
+                                },
+                                'Settings': []
+                            }
+                        }]
+                    }
+                }
+                
+                response = requests.post(
+                    api_url,
+                    headers=request_headers,
+                    json=campaign_data,
+                    timeout=10
+                )
+                
+                data = response.json()
+                
+                if 'error' in data:
+                    return {
+                        'statusCode': 200,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': False,
+                            'error': data['error'].get('error_string', 'Неизвестная ошибка'),
+                            'error_detail': data['error'].get('error_detail', '')
+                        })
+                    }
+                
+                campaign_id = data.get('result', {}).get('AddResults', [{}])[0].get('Id')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'success': True,
+                        'campaign_id': campaign_id
+                    })
+                }
+            except Exception as e:
+                print(f'[ERROR] Create campaign exception: {str(e)}')
+                return {
+                    'statusCode': 500,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': f'Ошибка: {str(e)}'})
+                }
+        
         # POST /clean - запустить чистку площадок
         headers = event.get('headers', {})
         token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
