@@ -169,20 +169,56 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     else:
                         print(f'[DEBUG] AdGroups request failed with status {adgroups_response.status_code}')
                     
-                    # Если площадок нет, добавляем тестовые для демонстрации
+                    # Получаем цели через Reports API
                     goals = []
+                    reports_url = api_url.replace('/campaigns', '/reports')
+                    
+                    try:
+                        reports_response = requests.post(
+                            reports_url,
+                            headers=request_headers,
+                            json={
+                                'params': {
+                                    'SelectionCriteria': {'CampaignIds': [int(campaign_id)]},
+                                    'FieldNames': ['CampaignId', 'Impressions'],
+                                    'Goals': [],  # Пустой массив - получим все доступные цели
+                                    'ReportName': 'Goals Report',
+                                    'ReportType': 'CAMPAIGN_PERFORMANCE_REPORT',
+                                    'DateRangeType': 'LAST_30_DAYS',
+                                    'Format': 'TSV',
+                                    'IncludeVAT': 'NO'
+                                }
+                            },
+                            timeout=10
+                        )
+                        
+                        print(f'[DEBUG] Reports API response for campaign {campaign_id}: {reports_response.status_code}')
+                        
+                        if reports_response.status_code == 200:
+                            # Парсим заголовок ответа для получения целей
+                            report_headers = reports_response.headers.get('Goals', '')
+                            if report_headers:
+                                # Goals приходят в формате: [{"id":123,"name":"Заявка"},...]
+                                goals_raw = json.loads(report_headers)
+                                goals = [{'id': str(g['id']), 'name': g['name'], 'type': 'GOAL'} for g in goals_raw]
+                                print(f'[DEBUG] Found {len(goals)} goals for campaign {campaign_id}: {goals}')
+                    except Exception as e:
+                        print(f'[DEBUG] Failed to fetch goals via Reports API: {str(e)}')
+                    
+                    # Если площадок нет, добавляем тестовые для демонстрации
                     if len(platforms) == 0 and is_sandbox:
                         import random
                         
-                        # Генерируем цели для кампании
-                        goals = [
-                            {'id': '1', 'name': 'Заявка', 'type': 'GOAL'},
-                            {'id': '2', 'name': 'Покупка', 'type': 'GOAL'},
-                            {'id': '3', 'name': 'Регистрация', 'type': 'GOAL'},
-                            {'id': '4', 'name': 'Добавление в корзину', 'type': 'GOAL'},
-                            {'id': '5', 'name': 'Звонок', 'type': 'GOAL'},
-                            {'id': '6', 'name': 'Подписка', 'type': 'GOAL'}
-                        ]
+                        # Если цели не получены, создаем тестовые
+                        if not goals:
+                            goals = [
+                                {'id': '1', 'name': 'Заявка', 'type': 'GOAL'},
+                                {'id': '2', 'name': 'Покупка', 'type': 'GOAL'},
+                                {'id': '3', 'name': 'Регистрация', 'type': 'GOAL'},
+                                {'id': '4', 'name': 'Добавление в корзину', 'type': 'GOAL'},
+                                {'id': '5', 'name': 'Звонок', 'type': 'GOAL'},
+                                {'id': '6', 'name': 'Подписка', 'type': 'GOAL'}
+                            ]
                         
                         test_domains = [
                             'mail.ru', 'dzen.ru', 'yandex.ru', 'vk.com', 'ok.ru',
