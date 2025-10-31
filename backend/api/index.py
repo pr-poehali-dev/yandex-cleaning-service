@@ -171,14 +171,23 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         project_id = query_params.get('id')
         
         if project_id:
+            try:
+                user_id_int = int(user_id)
+            except (ValueError, TypeError):
+                return {
+                    'statusCode': 401,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Invalid user ID'})
+                }
+            
             cur.execute(
                 """
                 SELECT id, name, keywords_count, clusters_count, minus_words_count,
-                       created_at, updated_at, results
+                       created_at, updated_at, results, user_id
                 FROM clustering_projects
-                WHERE id = %s AND user_id = %s
+                WHERE id = %s
                 """,
-                (project_id, user_id)
+                (project_id,)
             )
             result = cur.fetchone()
             
@@ -187,6 +196,14 @@ def handle_projects(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
                     'statusCode': 404,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': 'Project not found'})
+                }
+            
+            project_owner_id = result[8]
+            if project_owner_id != user_id_int:
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Access denied: not your project'})
                 }
             
             project = {
