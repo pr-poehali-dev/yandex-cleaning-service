@@ -13,11 +13,19 @@ interface Filter {
   pattern: string;
 }
 
+interface Platform {
+  adgroup_id: string;
+  adgroup_name: string;
+  status: string;
+  network_enabled: boolean;
+}
+
 interface Campaign {
   id: string;
   name: string;
   type: string;
   status: string;
+  platforms?: Platform[];
 }
 
 const DEFAULT_FILTERS: Filter[] = [
