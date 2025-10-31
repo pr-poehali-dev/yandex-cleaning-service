@@ -39,9 +39,12 @@ export default function HomePage() {
   const renderSubscriptionBanner = () => {
     if (!subscription) return null;
 
+    const daysLeft = subscription.expiresAt 
+      ? Math.max(0, Math.ceil((new Date(subscription.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : 0;
+
     // Триал активен
-    if (subscription.type === 'trial' && subscription.hasAccess) {
-      const daysLeft = subscription.daysLeft || 0;
+    if (subscription.planType === 'trial' && subscription.hasAccess) {
       return (
         <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-l-green-500">
           <CardContent className="p-6">
@@ -100,9 +103,9 @@ export default function HomePage() {
     }
 
     // Подписка monthly активна
-    if (subscription.type === 'monthly' && subscription.hasAccess) {
-      const endDate = subscription.endDate 
-        ? new Date(subscription.endDate).toLocaleDateString('ru-RU', { 
+    if (subscription.planType === 'monthly' && subscription.hasAccess) {
+      const endDate = subscription.expiresAt 
+        ? new Date(subscription.expiresAt).toLocaleDateString('ru-RU', { 
             day: 'numeric', 
             month: 'long', 
             year: 'numeric' 
