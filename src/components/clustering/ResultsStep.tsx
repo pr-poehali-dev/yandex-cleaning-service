@@ -434,13 +434,18 @@ export default function ResultsStep({
     const targetLower = targetWord.toLowerCase();
     const phraseWords = phrase.toLowerCase().split(/\s+/);
     
+    // Минимальная длина поиска — 3 символа (защита от "в", "на", "по")
+    if (targetLower.length < 3) {
+      return phraseWords.some(word => word === targetLower);
+    }
+    
     return phraseWords.some(word => {
       // 1. Точное совпадение слова
       if (word === targetLower) return true;
       
       // 2. Префиксное совпадение (для коротких вводов типа "куп")
       // Слово из фразы должно начинаться с ввода И быть НЕ намного длиннее
-      if (word.startsWith(targetLower) && targetLower.length >= 2 && word.length <= targetLower.length + 3) {
+      if (word.startsWith(targetLower) && word.length <= targetLower.length + 3) {
         return true;
       }
       
