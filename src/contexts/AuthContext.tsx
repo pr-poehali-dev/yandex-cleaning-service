@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 export interface User {
   id: number;
   phone: string;
+  userId: string;
   createdAt: string;
   sessionToken: string;
 }
@@ -102,9 +103,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     const userData = await response.json();
+    const userId = `user_${userData.id}_${Date.now().toString(36)}`;
     const newUser: User = {
       id: userData.id,
       phone: userData.phone,
+      userId: userId,
       createdAt: userData.createdAt,
       sessionToken: userData.sessionToken
     };
