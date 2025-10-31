@@ -27,7 +27,7 @@ export default function Header() {
           </div>
 
           {user && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -37,13 +37,14 @@ export default function Header() {
                 <Icon name="HelpCircle" className="h-4 w-4 mr-2" />
                 Как пользоваться
               </Button>
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-slate-600">
-                  {user.phone}
-                </div>
-                <div className="px-2 py-1 bg-slate-100 rounded text-xs font-mono text-slate-500">
+              <div className="text-sm text-slate-600">
+                {user.phone}
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200">
+                <Icon name="User" size={14} className="text-slate-500" />
+                <span className="text-xs font-mono text-slate-700">
                   {user.userId}
-                </div>
+                </span>
               </div>
               <Button
                 variant="ghost"

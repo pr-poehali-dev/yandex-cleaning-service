@@ -9,6 +9,7 @@ import func2url from '../../backend/func2url.json';
 
 interface User {
   userId: string;
+  phone?: string;
   planType: string;
   status: string;
   expiresAt: string;
@@ -22,7 +23,6 @@ interface Stats {
   activeMonthly: number;
   newToday: number;
   expiringWeek: number;
-  revenue: number;
 }
 
 type TabType = 'dashboard' | 'users' | 'analytics' | 'bulk';
@@ -328,9 +328,10 @@ export default function AdminPage() {
   const exportToCSV = () => {
     const filtered = getFilteredUsers();
     const csv = [
-      ['User ID', 'Plan Type', 'Status', 'Has Access', 'Expires At', 'Created At'].join(','),
+      ['User ID', 'Phone', 'Plan Type', 'Status', 'Has Access', 'Expires At', 'Created At'].join(','),
       ...filtered.map(u => [
         u.userId,
+        u.phone || '',
         u.planType,
         u.status,
         u.hasAccess ? 'Yes' : 'No',
@@ -355,15 +356,15 @@ export default function AdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-2xl border-0">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-lg border border-slate-200">
           <CardHeader>
             <div className="flex items-center justify-center mb-4">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center">
                 <Icon name="Shield" size={40} className="text-white" />
               </div>
             </div>
-            <CardTitle className="text-3xl text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <CardTitle className="text-3xl text-center text-gray-900">
               Админ-панель
             </CardTitle>
             <CardDescription className="text-center text-base">
@@ -396,7 +397,7 @@ export default function AdminPage() {
                   className="h-12"
                 />
               </div>
-              <Button type="submit" className="w-full h-12 text-base bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+              <Button type="submit" className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700">
                 <Icon name="LogIn" size={20} className="mr-2" />
                 Войти
               </Button>
@@ -410,11 +411,11 @@ export default function AdminPage() {
   const filteredUsers = getFilteredUsers();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 shadow-lg">
+    <div className="min-h-screen bg-slate-50">
+      <div className="bg-emerald-600 text-white p-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+            <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
               <Icon name="Shield" size={28} className="text-white" />
             </div>
             <div>
@@ -441,7 +442,7 @@ export default function AdminPage() {
               key={tab.id}
               variant={activeTab === tab.id ? 'default' : 'outline'}
               onClick={() => setActiveTab(tab.id as TabType)}
-              className={activeTab === tab.id ? 'bg-gradient-to-r from-purple-600 to-pink-600' : ''}
+              className={activeTab === tab.id ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
             >
               <Icon name={tab.icon as any} size={18} className="mr-2" />
               {tab.label}
@@ -452,67 +453,66 @@ export default function AdminPage() {
         {activeTab === 'dashboard' && stats && (
           <div className="space-y-6">
             <div className="grid md:grid-cols-4 gap-4">
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+              <Card className="border border-slate-200 shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium opacity-90">Всего пользователей</CardTitle>
-                    <Icon name="Users" size={20} className="opacity-75" />
+                    <CardTitle className="text-sm font-medium text-gray-600">Всего пользователей</CardTitle>
+                    <Icon name="Users" size={20} className="text-emerald-600" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">{stats.total}</div>
-                  <p className="text-xs mt-1 opacity-75">Новых сегодня: {stats.newToday}</p>
+                  <div className="text-4xl font-bold text-gray-900">{stats.total}</div>
+                  <p className="text-xs mt-1 text-gray-500">Новых сегодня: {stats.newToday}</p>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500 to-green-600 text-white">
+              <Card className="border border-slate-200 shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium opacity-90">Активные Trial</CardTitle>
-                    <Icon name="Zap" size={20} className="opacity-75" />
+                    <CardTitle className="text-sm font-medium text-gray-600">Активные Trial</CardTitle>
+                    <Icon name="Zap" size={20} className="text-emerald-600" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">{stats.activeTrial}</div>
+                  <div className="text-4xl font-bold text-gray-900">{stats.activeTrial}</div>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+              <Card className="border border-slate-200 shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium opacity-90">Истекает на неделе</CardTitle>
-                    <Icon name="AlertTriangle" size={20} className="opacity-75" />
+                    <CardTitle className="text-sm font-medium text-gray-600">Истекает на неделе</CardTitle>
+                    <Icon name="AlertTriangle" size={20} className="text-orange-600" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">{stats.expiringWeek}</div>
+                  <div className="text-4xl font-bold text-gray-900">{stats.expiringWeek}</div>
                 </CardContent>
               </Card>
 
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+              <Card className="border border-slate-200 shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium opacity-90">Доход (мес.)</CardTitle>
-                    <Icon name="DollarSign" size={20} className="opacity-75" />
+                    <CardTitle className="text-sm font-medium text-gray-600">Активные Monthly</CardTitle>
+                    <Icon name="CheckCircle2" size={20} className="text-emerald-600" />
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold">{stats.revenue.toLocaleString()}₽</div>
-                  <p className="text-xs mt-1 opacity-75">Платных: {stats.activeMonthly}</p>
+                  <div className="text-4xl font-bold text-gray-900">{stats.activeMonthly}</div>
                 </CardContent>
               </Card>
             </div>
 
             <div className="grid md:grid-cols-3 gap-4">
-              <Card className="shadow-lg border-0">
+              <Card className="shadow-sm border border-slate-200">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Icon name="TrendingUp" size={20} />
+                    <Icon name="TrendingUp" size={20} className="text-emerald-600" />
                     Быстрые действия
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button className="w-full" onClick={() => setActiveTab('users')}>
+                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700" onClick={() => setActiveTab('users')}>
                     <Icon name="Users" size={18} className="mr-2" />
                     Все пользователи
                   </Button>
@@ -527,16 +527,16 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg border-0">
+              <Card className="shadow-sm border border-slate-200">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Icon name="Target" size={20} />
+                    <Icon name="Target" size={20} className="text-emerald-600" />
                     Конверсия
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-4">
-                    <div className="text-5xl font-bold text-purple-600 mb-2">
+                    <div className="text-5xl font-bold text-emerald-600 mb-2">
                       {stats.total > 0 ? Math.round((stats.activeMonthly / stats.total) * 100) : 0}%
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -546,21 +546,21 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-lg border-0">
+              <Card className="shadow-sm border border-slate-200">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Icon name="DollarSign" size={20} />
-                    Средний чек
+                    <Icon name="Activity" size={20} className="text-emerald-600" />
+                    Активность
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-center py-4">
-                    <div className="text-5xl font-bold text-blue-600 mb-2">
-                      500₽
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Ежемесячная подписка
-                    </p>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                    <span className="text-sm">Trial</span>
+                    <span className="text-lg font-bold text-emerald-600">{stats.activeTrial}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-slate-50 rounded">
+                    <span className="text-sm">Monthly</span>
+                    <span className="text-lg font-bold text-emerald-600">{stats.activeMonthly}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -624,7 +624,7 @@ export default function AdminPage() {
                       value={newPlan.days}
                       onChange={(e) => setNewPlan({ ...newPlan, days: parseInt(e.target.value) || 1 })}
                     />
-                    <Button onClick={handleUpdateSubscription} disabled={loading}>
+                    <Button onClick={handleUpdateSubscription} disabled={loading} className="bg-emerald-600 hover:bg-emerald-700">
                       <Icon name="Check" size={18} className="mr-2" />
                       Назначить
                     </Button>
@@ -669,7 +669,7 @@ export default function AdminPage() {
               <CardContent>
                 {loading ? (
                   <div className="text-center py-12">
-                    <Icon name="Loader2" size={32} className="animate-spin mx-auto text-purple-600" />
+                    <Icon name="Loader2" size={32} className="animate-spin mx-auto text-emerald-600" />
                     <p className="mt-4 text-muted-foreground">Загрузка...</p>
                   </div>
                 ) : filteredUsers.length === 0 ? (
@@ -684,6 +684,7 @@ export default function AdminPage() {
                         <thead>
                           <tr className="border-b bg-slate-50">
                             <th className="text-left p-3 font-semibold">User ID</th>
+                            <th className="text-left p-3 font-semibold">Телефон</th>
                             <th className="text-left p-3 font-semibold">Тариф</th>
                             <th className="text-left p-3 font-semibold">Доступ</th>
                             <th className="text-left p-3 font-semibold">Истекает</th>
@@ -693,13 +694,14 @@ export default function AdminPage() {
                         </thead>
                         <tbody>
                           {filteredUsers.map((user, idx) => (
-                            <tr key={idx} className="border-b hover:bg-purple-50 transition-colors">
+                            <tr key={idx} className="border-b hover:bg-slate-50 transition-colors">
                               <td className="p-3 font-mono text-sm">{user.userId}</td>
+                              <td className="p-3 text-sm">{user.phone || '—'}</td>
                               <td className="p-3">
                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                                   user.planType === 'monthly' 
-                                    ? 'bg-blue-100 text-blue-700' 
-                                    : 'bg-green-100 text-green-700'
+                                    ? 'bg-emerald-100 text-emerald-700' 
+                                    : 'bg-slate-100 text-slate-700'
                                 }`}>
                                   {user.planType}
                                 </span>
@@ -707,7 +709,7 @@ export default function AdminPage() {
                               <td className="p-3">
                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                                   user.hasAccess 
-                                    ? 'bg-green-100 text-green-700' 
+                                    ? 'bg-emerald-100 text-emerald-700' 
                                     : 'bg-red-100 text-red-700'
                                 }`}>
                                   {user.hasAccess ? 'Активен' : 'Истек'}

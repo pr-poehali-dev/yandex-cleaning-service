@@ -49,12 +49,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 offset = int(query_params.get('offset', 0))
                 
                 cur.execute(
-                    """SELECT user_id, plan_type, status, 
-                              trial_started_at, trial_ends_at,
-                              subscription_started_at, subscription_ends_at,
-                              created_at, updated_at
-                       FROM subscriptions 
-                       ORDER BY created_at DESC
+                    """SELECT s.user_id, s.plan_type, s.status, 
+                              s.trial_started_at, s.trial_ends_at,
+                              s.subscription_started_at, s.subscription_ends_at,
+                              s.created_at, s.updated_at,
+                              u.phone
+                       FROM subscriptions s
+                       LEFT JOIN users u ON s.user_id = CAST(u.id AS TEXT)
+                       ORDER BY s.created_at DESC
                        LIMIT %s OFFSET %s""",
                     (limit, offset)
                 )
@@ -79,6 +81,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     users.append({
                         'userId': sub['user_id'],
+                        'phone': sub.get('phone', ''),
                         'planType': sub['plan_type'],
                         'status': sub['status'],
                         'hasAccess': has_access,
@@ -226,8 +229,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'activeTrial': active_trial,
                         'activeMonthly': active_monthly,
                         'newToday': new_today,
-                        'expiringWeek': expiring_week,
-                        'revenue': active_monthly * 500
+                        'expiringWeek': expiring_week
                     })
                 }
         
