@@ -288,20 +288,22 @@ export default function ResultsStep({
       return;
     }
     
-    // При вводе — подсвечиваем все совпадения с текущим поиском
+    // При вводе — полностью пересчитываем временные совпадения
     const newClusters = clusters.map(cluster => {
       const updatedPhrases = cluster.phrases.map(p => {
         // Проверяем совпадение с текущим поиском
         const matches = matchesWordForm(p.phrase, searchTerm);
         
         if (matches) {
-          // Подсвечиваем совпадение
+          // Фраза совпадает — подсвечиваем с текущим поисковым термом
           return { ...p, isMinusWord: true, minusTerm: searchTerm };
-        } else if (p.minusTerm === searchTerm) {
-          // Если раньше совпадало с этим поиском, но теперь нет — снимаем метку
+        } else if (p.minusTerm !== undefined) {
+          // Фраза НЕ совпадает И имеет временную метку от поиска — снимаем метку
+          // (подтверждённые минус-слова имеют minusTerm: undefined, их не трогаем)
           return { ...p, isMinusWord: false, minusTerm: undefined };
         }
         
+        // Оставляем как есть (это может быть подтверждённое минус-слово)
         return p;
       });
       
@@ -334,7 +336,14 @@ export default function ResultsStep({
     const newClusters = clusters.map(cluster => {
       const matching = cluster.phrases.filter(p => matchesWordForm(p.phrase, searchTerm));
       affectedPhrases.push(...matching);
-      return cluster;
+      
+      // Удаляем совпадающие фразы из кластера
+      const filteredPhrases = cluster.phrases.filter(p => !matchesWordForm(p.phrase, searchTerm));
+      
+      return {
+        ...cluster,
+        phrases: filteredPhrases
+      };
     });
 
     if (affectedPhrases.length > 0) {
@@ -350,6 +359,7 @@ export default function ResultsStep({
       
       const newMinusWords = [...minusWords, newMinusWord].sort((a, b) => b.count - a.count);
       setMinusWords(newMinusWords);
+      setClusters(newClusters);
       setMinusSearchText('');
 
       if (onSaveChanges) {
