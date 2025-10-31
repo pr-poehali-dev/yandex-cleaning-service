@@ -69,7 +69,6 @@ export default function ResultsStep({
   const [draggedPhrase, setDraggedPhrase] = useState<{clusterIdx: number, phraseIdx: number} | null>(null);
   const [excludeRedPhrases, setExcludeRedPhrases] = useState(true);
   const [includeFrequency, setIncludeFrequency] = useState(false);
-  const [isSuggestingMinus, setIsSuggestingMinus] = useState(false);
   const { toast } = useToast();
 
   const clustersDataKey = propsClusters.map(c => c.name).join(',');
@@ -262,106 +261,6 @@ export default function ResultsStep({
     });
     
     setClusters(newClusters);
-  };
-
-  const suggestMinusWords = async () => {
-    setIsSuggestingMinus(true);
-    
-    try {
-      const allPhrases = clusters.flatMap(c => c.phrases.map(p => p.phrase));
-      
-      const response = await fetch('https://functions.poehali.dev/a3b515b5-d6e9-4a65-bddf-78522f3920a3', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ phrases: allPhrases })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to suggest minus words');
-      }
-      
-      const data = await response.json();
-      const suggested = data.suggestedMinusWords || [];
-      
-      if (suggested.length === 0) {
-        toast({
-          title: '✅ Всё чисто',
-          description: 'OpenAI не нашёл явных минус-слов'
-        });
-        return;
-      }
-      
-      const newMinusWords = [...minusWords];
-      let totalAffected = 0;
-      
-      for (const minusWord of suggested) {
-        const affectedPhrases: Phrase[] = [];
-        clusters.forEach(cluster => {
-          const matching = cluster.phrases.filter(p => 
-            p.phrase.toLowerCase().includes(minusWord.toLowerCase())
-          );
-          affectedPhrases.push(...matching);
-        });
-        
-        if (affectedPhrases.length > 0) {
-          newMinusWords.push({
-            phrase: minusWord,
-            count: 0,
-            removedPhrases: affectedPhrases
-          });
-          totalAffected += affectedPhrases.length;
-        }
-      }
-      
-      const sortedMinusWords = newMinusWords.sort((a, b) => b.count - a.count);
-      setMinusWords(sortedMinusWords);
-      
-      const newClusters = clusters.map(cluster => ({
-        ...cluster,
-        phrases: cluster.phrases.map(p => {
-          const hasMinusWord = suggested.some(minus => 
-            p.phrase.toLowerCase().includes(minus.toLowerCase())
-          );
-          
-          if (hasMinusWord) {
-            const minusTerm = suggested.find(minus => 
-              p.phrase.toLowerCase().includes(minus.toLowerCase())
-            );
-            return {
-              ...p,
-              isMinusWord: true,
-              minusTerm: minusTerm
-            };
-          }
-          return p;
-        })
-      }));
-      
-      setClusters(newClusters);
-      
-      if (onSaveChanges) {
-        await onSaveChanges(
-          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
-          sortedMinusWords
-        );
-      }
-      
-      toast({
-        title: '🤖 OpenAI предложил минус-слова',
-        description: `Добавлено ${suggested.length} минус-слов (${totalAffected} фраз помечено)`
-      });
-    } catch (error) {
-      console.error('Error suggesting minus words:', error);
-      toast({
-        title: '❌ Ошибка',
-        description: 'Не удалось получить предложения от OpenAI',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSuggestingMinus(false);
-    }
   };
 
   const handleConfirmMinusSearch = async () => {
@@ -928,17 +827,21 @@ export default function ResultsStep({
           ))}
 
           <div
-            className="flex-shrink-0 flex items-center justify-center px-8"
+            className="flex-shrink-0 border-r border-gray-300 flex flex-col cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => addNewCluster(clusters.length - 1)}
             style={{ 
-              width: '120px'
+              width: '280px',
+              backgroundColor: '#F5F5F5',
+              maxHeight: 'calc(100vh - 250px)'
             }}
           >
-            <button
-              onClick={() => addNewCluster(clusters.length - 1)}
-              className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105"
-            >
-              <Icon name="Plus" size={32} />
-            </button>
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+              <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mb-4">
+                <Icon name="Plus" size={32} className="text-gray-600" />
+              </div>
+              <div className="text-gray-600 font-medium text-sm mb-1">Создать кластер</div>
+              <div className="text-gray-400 text-xs">Нажмите, чтобы добавить</div>
+            </div>
           </div>
 
           <div
@@ -982,31 +885,15 @@ export default function ResultsStep({
                 {minusWords.length} фраз
               </div>
 
-              <div className="flex gap-1.5 mb-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={copyMinusPhrases}
-                  className="flex-1 text-xs h-7 hover:bg-white/80"
-                >
-                  <Icon name="Copy" size={12} className="mr-1.5" />
-                  Копировать
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={suggestMinusWords}
-                  className="flex-1 text-xs h-7 hover:bg-purple-50 hover:text-purple-700 border border-purple-200"
-                  disabled={isSuggestingMinus}
-                >
-                  {isSuggestingMinus ? (
-                    <Icon name="Loader2" size={12} className="mr-1.5 animate-spin" />
-                  ) : (
-                    <Icon name="Sparkles" size={12} className="mr-1.5" />
-                  )}
-                  {isSuggestingMinus ? 'Думаю...' : 'Найти'}
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyMinusPhrases}
+                className="w-full text-xs h-7 hover:bg-white/80 mb-2"
+              >
+                <Icon name="Copy" size={12} className="mr-1.5" />
+                Копировать
+              </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto">
