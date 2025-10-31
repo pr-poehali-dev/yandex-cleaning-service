@@ -237,7 +237,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             try:
-                api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns'
+                api_url = 'https://api.direct.yandex.com/json/v5/campaigns'
                 
                 request_headers = {
                     'Authorization': f'Bearer {token}',
