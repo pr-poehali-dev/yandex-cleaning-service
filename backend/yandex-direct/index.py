@@ -269,12 +269,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 }
                 
+                print(f'[DEBUG] Creating campaign with data: {campaign_data}')
+                
                 response = requests.post(
                     api_url,
                     headers=request_headers,
                     json=campaign_data,
                     timeout=10
                 )
+                
+                print(f'[DEBUG] Create campaign response status: {response.status_code}')
+                print(f'[DEBUG] Create campaign response: {response.text}')
                 
                 data = response.json()
                 
