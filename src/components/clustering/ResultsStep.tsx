@@ -328,21 +328,27 @@ export default function ResultsStep({
 
     const affectedPhrases: Phrase[] = [];
     const newClusters = clusters.map(cluster => {
-      const matching = cluster.phrases.filter(p => matchesWordForm(p.phrase, searchTerm));
-      
-      const withClusterInfo = matching.map(p => ({
-        ...p,
-        sourceCluster: cluster.name,
-        sourceColor: cluster.bgColor
-      }));
-      affectedPhrases.push(...withClusterInfo);
-      
-      // Удаляем совпадающие фразы из кластера
-      const filteredPhrases = cluster.phrases.filter(p => !matchesWordForm(p.phrase, searchTerm));
+      const updatedPhrases = cluster.phrases.map(p => {
+        if (matchesWordForm(p.phrase, searchTerm)) {
+          affectedPhrases.push({
+            ...p,
+            sourceCluster: cluster.name,
+            sourceColor: cluster.bgColor
+          });
+          
+          // Закрепляем фразу как минус-слово (НЕ удаляем!)
+          return {
+            ...p,
+            isMinusWord: true,
+            minusTerm: undefined  // undefined = подтверждённое минус-слово
+          };
+        }
+        return p;
+      });
       
       return {
         ...cluster,
-        phrases: filteredPhrases
+        phrases: updatedPhrases
       };
     });
 
@@ -635,25 +641,25 @@ export default function ResultsStep({
     const minusWord = minusWords[minusIndex];
     const newMinusWords = minusWords.filter((_, idx) => idx !== minusIndex);
     
-    const phrasesToRestore = minusWord.removedPhrases || [];
+    const phrasesToUnmark = minusWord.removedPhrases || [];
+    const phraseTexts = new Set(phrasesToUnmark.map(p => p.phrase.toLowerCase()));
     
     const newClusters = clusters.map(cluster => {
-      const phrasesForThisCluster = phrasesToRestore.filter(p => 
-        p.sourceCluster === cluster.name
-      );
-      
-      const restoredPhrases = phrasesForThisCluster.map(p => ({
-        ...p,
-        isMinusWord: false,
-        minusTerm: undefined,
-        sourceCluster: undefined,
-        sourceColor: undefined,
-        isTemporary: false
-      }));
+      const updatedPhrases = cluster.phrases.map(p => {
+        // Снимаем зачёркивание с фраз которые были в этом минус-слове
+        if (phraseTexts.has(p.phrase.toLowerCase()) && p.isMinusWord && p.minusTerm === undefined) {
+          return {
+            ...p,
+            isMinusWord: false,
+            minusTerm: undefined
+          };
+        }
+        return p;
+      });
       
       return {
         ...cluster,
-        phrases: [...cluster.phrases, ...restoredPhrases].sort((a, b) => b.count - a.count)
+        phrases: updatedPhrases.sort((a, b) => b.count - a.count)
       };
     });
     
@@ -669,7 +675,7 @@ export default function ResultsStep({
     
     toast({
       title: '↩️ Фразы восстановлены',
-      description: `Восстановлено ${phrasesToRestore.length} фраз`
+      description: `Восстановлено ${phrasesToUnmark.length} фраз`
     });
   };
 
