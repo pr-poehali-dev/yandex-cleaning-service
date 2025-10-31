@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Auth from "./pages/Auth";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
 import Projects from "./pages/Projects";
 import ClusteringProjects from "./pages/ClusteringProjects";
 import RSYAProjects from "./pages/RSYAProjects";
@@ -31,6 +32,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />

@@ -33,6 +33,14 @@ export default function AppSidebar() {
       <nav className="p-4 space-y-2">
         <button
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+          onClick={() => navigate('/home')}
+        >
+          <Icon name="Home" size={20} />
+          <span>О проекте</span>
+        </button>
+
+        <button
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
           onClick={() => navigate('/clustering')}
         >
           <Icon name="Search" size={20} />
@@ -49,6 +57,7 @@ export default function AppSidebar() {
 
         <button
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+          onClick={() => navigate('/home')}
         >
           <Icon name="Settings" size={20} />
           <span>Настройки</span>
