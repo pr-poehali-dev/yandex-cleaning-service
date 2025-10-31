@@ -5,8 +5,41 @@ import requests
 from collections import defaultdict
 import math
 import pymorphy3
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from datetime import datetime
 
 morph = pymorphy3.MorphAnalyzer()
+
+def check_subscription(user_id: str) -> bool:
+    try:
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg2.connect(dsn, cursor_factory=RealDictCursor)
+        cur = conn.cursor()
+        
+        cur.execute(
+            "SELECT * FROM subscriptions WHERE user_id = %s",
+            (user_id,)
+        )
+        subscription = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not subscription:
+            return False
+        
+        now = datetime.now()
+        
+        if subscription['plan_type'] == 'trial':
+            if subscription['trial_ends_at'] and now < subscription['trial_ends_at']:
+                return True
+        elif subscription['plan_type'] == 'monthly':
+            if subscription['subscription_ends_at'] and now < subscription['subscription_ends_at']:
+                return True
+        
+        return False
+    except Exception:
+        return False
 
 def lemmatize_phrase(phrase: str) -> str:
     '''Лемматизация фразы — приводит слова к начальной форме'''
@@ -772,10 +805,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
                 'Access-Control-Max-Age': '86400'
             },
             'body': ''
+        }
+    
+    headers_dict = event.get('headers', {})
+    user_id = headers_dict.get('x-user-id') or headers_dict.get('X-User-Id')
+    
+    if not user_id:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'User ID required'}),
+            'isBase64Encoded': False
+        }
+    
+    if not check_subscription(user_id):
+        return {
+            'statusCode': 403,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Subscription required', 'code': 'SUBSCRIPTION_REQUIRED'}),
+            'isBase64Encoded': False
         }
     
     token = os.environ.get('YANDEX_WORDSTAT_TOKEN')

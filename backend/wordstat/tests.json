@@ -12,6 +12,9 @@
       "name": "POST запрос с ключевыми словами",
       "method": "POST",
       "path": "/",
+      "headers": {
+        "X-User-Id": "test-user-wordstat"
+      },
       "body": {
         "keywords": ["клининг", "уборка квартир"],
         "regions": [213],
@@ -29,6 +32,9 @@
       "name": "POST без ключевых слов",
       "method": "POST",
       "path": "/",
+      "headers": {
+        "X-User-Id": "test-user-wordstat"
+      },
       "body": {},
       "expectedStatus": 400,
       "expectedBody": {
