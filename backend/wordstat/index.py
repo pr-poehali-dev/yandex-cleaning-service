@@ -938,40 +938,74 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
         
         try:
-            payload = {
-                'phrase': keywords[0],
-                'regions': regions
-            }
+            # Собираем ВСЕ 40 страниц результатов (2000 фраз вместо 50)
+            all_top_requests = []
+            max_pages = 40
             
-            print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}')
+            # Первый кластер: запросы пользователя оборачиваем в кавычки
+            user_phrases = []
+            for kw in keywords:
+                if kw.strip():
+                    # Добавляем кавычки для точного соответствия
+                    quoted_phrase = f'"{kw.strip()}"'
+                    user_phrases.append({
+                        'phrase': quoted_phrase,
+                        'count': 0  # Частота будет получена из API
+                    })
             
-            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            print(f'[WORDSTAT] Collecting all pages (up to {max_pages}) for phrase: {keywords[0]}')
             
-            if response.status_code != 200:
-                return {
-                    'statusCode': response.status_code,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'isBase64Encoded': False,
-                    'body': json.dumps({'error': f'API error: {response.status_code}'})
+            for page_num in range(max_pages):
+                payload = {
+                    'phrase': keywords[0],
+                    'regions': regions,
+                    'page': page_num
                 }
+                
+                print(f'[WORDSTAT] Requesting page {page_num + 1}/{max_pages}...')
+                
+                response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+                
+                if response.status_code != 200:
+                    print(f'[WORDSTAT] API error on page {page_num}: {response.status_code}')
+                    if page_num == 0:  # Если первая страница не загрузилась - ошибка
+                        return {
+                            'statusCode': response.status_code,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'isBase64Encoded': False,
+                            'body': json.dumps({'error': f'API error: {response.status_code}'})
+                        }
+                    break  # Останавливаемся если страница не загрузилась
+                
+                data = response.json()
+                
+                if 'error' in data:
+                    if page_num == 0:
+                        return {
+                            'statusCode': 400,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'isBase64Encoded': False,
+                            'body': json.dumps({'error': data.get('error')})
+                        }
+                    break
+                
+                page_requests = data.get('topRequests', [])
+                
+                if not page_requests:
+                    print(f'[WORDSTAT] No more results on page {page_num}, stopping')
+                    break
+                
+                all_top_requests.extend(page_requests)
+                print(f'[WORDSTAT] Page {page_num + 1}: got {len(page_requests)} phrases (total: {len(all_top_requests)})')
             
-            data = response.json()
-            
-            if 'error' in data:
-                return {
-                    'statusCode': 400,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'isBase64Encoded': False,
-                    'body': json.dumps({'error': data.get('error')})
-                }
-            
-            top_requests = data.get('topRequests', [])
+            print(f'[WORDSTAT] Collected {len(all_top_requests)} total phrases from {page_num + 1} pages')
+            top_requests = all_top_requests
             clustering_mode = body_data.get('mode', 'seo')
             print(f'[WORDSTAT] Got {len(top_requests)} phrases from Yandex API, mode: {clustering_mode}')
             
@@ -994,6 +1028,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if minus_words:
                 total_minus = sum(v.get('count', 0) if isinstance(v, dict) else len(v) if isinstance(v, list) else 0 for v in minus_words.values())
                 print(f'[WORDSTAT] Detected {total_minus} minus-words')
+            
+            # Добавляем первый кластер: запросы пользователя в кавычках
+            if user_phrases:
+                # Получаем частотность для каждой фразы в кавычках
+                for user_phrase in user_phrases:
+                    try:
+                        payload_user = {'phrase': user_phrase['phrase'], 'regions': regions}
+                        resp_user = requests.post(api_url, json=payload_user, headers=headers, timeout=10)
+                        if resp_user.status_code == 200:
+                            data_user = resp_user.json()
+                            top_req_user = data_user.get('topRequests', [])
+                            if top_req_user:
+                                user_phrase['count'] = top_req_user[0]['count']
+                                print(f"[USER_PHRASES] Got frequency for {user_phrase['phrase']}: {user_phrase['count']}")
+                    except Exception as e:
+                        print(f"[USER_PHRASES] Error getting frequency: {e}")
+                        user_phrase['count'] = 0
+                
+                user_cluster = {
+                    'cluster_name': '🎯 Ваши запросы',
+                    'total_count': sum(p['count'] for p in user_phrases),
+                    'phrases_count': len(user_phrases),
+                    'avg_words': round(sum(len(p['phrase'].split()) for p in user_phrases) / len(user_phrases), 1) if user_phrases else 0,
+                    'max_frequency': max(p['count'] for p in user_phrases) if user_phrases else 0,
+                    'min_frequency': min(p['count'] for p in user_phrases) if user_phrases else 0,
+                    'intent': 'commercial',
+                    'phrases': sorted(user_phrases, key=lambda x: x['count'], reverse=True)
+                }
+                clusters.insert(0, user_cluster)
+                print(f'[USER_PHRASES] Added user cluster with {len(user_phrases)} phrases')
             
             # Добавляем геоключи, если указан адрес объекта
             geo_cluster = None
