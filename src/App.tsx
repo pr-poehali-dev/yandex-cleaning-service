@@ -18,6 +18,7 @@ import WordstatNew from "./pages/WordstatNew";
 import TestClustering from "./pages/TestClustering";
 import HowToUse from "./pages/HowToUse";
 import Subscription from "./pages/Subscription";
+import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./components/Home";
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/wordstat" element={<ProtectedRoute><WordstatNew /></ProtectedRoute>} />
           <Route path="/wordstat-old" element={<ProtectedRoute><Wordstat /></ProtectedRoute>} />
           <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/how-to-use" element={<HowToUse />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
