@@ -261,7 +261,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'StartDate': tomorrow,
                             'ClientInfo': f'Тестовая кампания {random.randint(1000, 9999)}',
                             'TextCampaign': {
-                                'CounterIds': [87164937],
                                 'Settings': [
                                     {'Option': 'ADD_METRICA_TAG', 'Value': 'YES'},
                                     {'Option': 'ADD_OPENSTAT_TAG', 'Value': 'YES'},
