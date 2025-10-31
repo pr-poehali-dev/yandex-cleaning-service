@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import Auth from "./pages/Auth";
 import LoginPage from "./pages/LoginPage";
 import Projects from "./pages/Projects";
@@ -25,8 +26,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+        <AuthProvider>
+          <Routes>
+          <Route path="/" element={<Navigate to="/auth" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
@@ -40,6 +42,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

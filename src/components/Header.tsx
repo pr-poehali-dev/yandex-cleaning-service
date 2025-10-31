@@ -1,16 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Header() {
   const navigate = useNavigate();
-  const userId = localStorage.getItem('userId');
-  const phone = localStorage.getItem('userPhone');
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userPhone');
-    navigate('/');
+    logout();
+    navigate('/auth');
   };
 
   return (
@@ -27,10 +26,10 @@ export default function Header() {
             <span className="text-xl font-semibold text-slate-800">AI сбор ключей</span>
           </div>
 
-          {userId && (
+          {user && (
             <div className="flex items-center gap-4">
               <div className="text-sm text-slate-600">
-                {phone}
+                {user.phone}
               </div>
               <Button
                 variant="ghost"

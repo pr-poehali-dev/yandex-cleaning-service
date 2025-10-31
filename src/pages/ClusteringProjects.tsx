@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import Icon from '@/components/ui/icon';
 import { useNavigate } from 'react-router-dom';
 import AppSidebar from '@/components/layout/AppSidebar';
+import { useAuth } from '@/contexts/AuthContext';
 
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 
@@ -40,8 +41,9 @@ export default function ClusteringProjects() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<number | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const userId = localStorage.getItem('userId');
+  const userId = user?.id;
 
   useEffect(() => {
     loadProjects();
@@ -49,7 +51,7 @@ export default function ClusteringProjects() {
 
   const loadProjects = async () => {
     if (!userId) {
-      navigate('/login');
+      navigate('/auth');
       return;
     }
 

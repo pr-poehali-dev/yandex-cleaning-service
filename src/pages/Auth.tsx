@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 type AuthStep = 'phone' | 'code';
 
@@ -15,7 +15,7 @@ export default function Auth() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -54,10 +54,8 @@ export default function Auth() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      localStorage.setItem('directkit_auth', 'true');
-      localStorage.setItem('directkit_phone', phone);
+      login(phone);
       toast({ title: '✅ Добро пожаловать!', description: 'Вход выполнен успешно' });
-      navigate('/projects');
     }, 1000);
   };
 

@@ -11,6 +11,7 @@ import ProcessingStep from '@/components/clustering/ProcessingStep';
 import ResultsStep from '@/components/clustering/ResultsStep';
 import StepIndicator from '@/components/clustering/StepIndicator';
 import WordstatDialog from '@/components/clustering/WordstatDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
@@ -54,6 +55,7 @@ export default function TestClustering() {
   const [minusWords, setMinusWords] = useState<Phrase[]>([]);
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -62,10 +64,10 @@ export default function TestClustering() {
         return;
       }
 
-      const userId = localStorage.getItem('userId');
+      const userId = user?.id;
       if (!userId) {
         toast.error('Ошибка: пользователь не авторизован');
-        navigate('/');
+        navigate('/auth');
         return;
       }
 
@@ -123,7 +125,7 @@ export default function TestClustering() {
       return;
     }
 
-    const userId = localStorage.getItem('userId');
+    const userId = user?.id;
     if (!userId) {
       console.error('❌ No userId found');
       toast.error('Ошибка: пользователь не авторизован');
