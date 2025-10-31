@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -6,6 +7,8 @@ import Icon from '@/components/ui/icon';
 import { Textarea } from '@/components/ui/textarea';
 import AppSidebar from '@/components/layout/AppSidebar';
 import ExcelClustersTable from '@/components/wordstat/ExcelClustersTable';
+import { useAuth } from '@/contexts/AuthContext';
+import func2url from '../../backend/func2url.json';
 
 interface TopRequest {
   phrase: string;
@@ -34,6 +37,8 @@ export default function WordstatNew() {
   const [mode, setMode] = useState<'context' | 'seo'>('context');
   const [step, setStep] = useState<WorkflowStep>('input');
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const regions = [
     { id: '225', name: 'Россия' },
@@ -55,7 +60,46 @@ export default function WordstatNew() {
     { id: '172', name: 'Уфа' }
   ];
 
+  // Проверка подписки при монтировании компонента
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user?.id) return;
 
+      try {
+        const response = await fetch(func2url.subscription, {
+          method: 'GET',
+          headers: {
+            'X-User-Id': user.id
+          }
+        });
+
+        if (response.status === 403) {
+          toast({
+            title: 'Доступ ограничен',
+            description: 'Требуется активная подписка',
+            variant: 'destructive'
+          });
+          navigate('/subscription');
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.code === 'SUBSCRIPTION_REQUIRED' || data.hasAccess === false) {
+          toast({
+            title: 'Доступ ограничен',
+            description: 'Требуется активная подписка',
+            variant: 'destructive'
+          });
+          navigate('/subscription');
+        }
+      } catch (error) {
+        console.error('Ошибка проверки подписки:', error);
+      }
+    };
+
+    checkSubscription();
+  }, [user, navigate, toast]);
 
   const fetchClusters = async () => {
     if (!keywords.trim()) {
@@ -63,17 +107,35 @@ export default function WordstatNew() {
       return;
     }
 
+    if (!user?.id) {
+      toast({ title: 'Ошибка', description: 'Пользователь не авторизован', variant: 'destructive' });
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Id': user.id
+        },
         body: JSON.stringify({
           keywords: keywords.split('\n').filter(k => k.trim()),
           regions: [parseInt(region)],
           clustering_mode: mode
         })
       });
+
+      if (response.status === 403) {
+        toast({
+          title: 'Доступ ограничен',
+          description: 'Требуется активная подписка',
+          variant: 'destructive'
+        });
+        navigate('/subscription');
+        return;
+      }
 
       if (!response.ok) throw new Error('Ошибка запроса');
 

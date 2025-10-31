@@ -2,11 +2,44 @@ import json
 import os
 from typing import Dict, Any
 import requests
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from datetime import datetime
+
+def check_subscription(user_id: str) -> bool:
+    try:
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg2.connect(dsn, cursor_factory=RealDictCursor)
+        cur = conn.cursor()
+        
+        cur.execute(
+            "SELECT * FROM subscriptions WHERE user_id = %s",
+            (user_id,)
+        )
+        subscription = cur.fetchone()
+        cur.close()
+        conn.close()
+        
+        if not subscription:
+            return False
+        
+        now = datetime.now()
+        
+        if subscription['plan_type'] == 'trial':
+            if subscription['trial_ends_at'] and now < subscription['trial_ends_at']:
+                return True
+        elif subscription['plan_type'] == 'monthly':
+            if subscription['subscription_ends_at'] and now < subscription['subscription_ends_at']:
+                return True
+        
+        return False
+    except Exception:
+        return False
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
     Business: Сбор ключевых фраз из Wordstat API v1
-    Args: event - dict с httpMethod (POST), body с phrase, regions[]
+    Args: event - dict с httpMethod (POST), body с phrase, regions[], headers с X-User-Id
           context - объект с атрибутами request_id, function_name
     Returns: HTTP response с массивом phrases [{phrase, count}]
     '''
@@ -18,7 +51,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -30,6 +63,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 405,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': 'Method not allowed'}),
+            'isBase64Encoded': False
+        }
+    
+    headers = event.get('headers', {})
+    user_id = headers.get('x-user-id') or headers.get('X-User-Id')
+    
+    if not user_id:
+        return {
+            'statusCode': 401,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'User ID required'}),
+            'isBase64Encoded': False
+        }
+    
+    if not check_subscription(user_id):
+        return {
+            'statusCode': 403,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Subscription required', 'code': 'SUBSCRIPTION_REQUIRED'}),
             'isBase64Encoded': False
         }
     

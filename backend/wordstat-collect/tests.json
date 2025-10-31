@@ -1,9 +1,12 @@
 {
   "tests": [
     {
-      "name": "Test keyword collection",
+      "name": "Test keyword collection with subscription",
       "method": "POST",
       "path": "/",
+      "headers": {
+        "X-User-Id": "test-user-collect"
+      },
       "body": {
         "phrase": "купить квартиру",
         "regions": [213]
