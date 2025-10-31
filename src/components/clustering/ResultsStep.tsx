@@ -668,11 +668,17 @@ export default function ResultsStep({
     
     const phrasesToUnmark = minusWord.removedPhrases || [];
     const phraseTexts = new Set(phrasesToUnmark.map(p => p.phrase.toLowerCase()));
+    const minusPhraseLower = minusWord.phrase.toLowerCase();
     
     const newClusters = clusters.map(cluster => {
       const updatedPhrases = cluster.phrases.map(p => {
-        // Снимаем зачёркивание с фраз которые были в этом минус-слове
-        if (phraseTexts.has(p.phrase.toLowerCase()) && p.isMinusWord && p.minusTerm === undefined) {
+        // Снимаем зачёркивание с фраз которые:
+        // 1. Были в removedPhrases этого минус-слова ИЛИ
+        // 2. Совпадают с этим минус-словом (проверка через matchesMinusPhrase)
+        const isInRemovedList = phraseTexts.has(p.phrase.toLowerCase());
+        const matchesThisMinusWord = p.isMinusWord && matchesMinusPhrase(p.phrase, minusPhraseLower);
+        
+        if (isInRemovedList || matchesThisMinusWord) {
           return {
             ...p,
             isMinusWord: false,
