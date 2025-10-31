@@ -275,47 +275,30 @@ export default function ResultsStep({
     
     const searchTerm = value.toLowerCase().trim();
     if (!searchTerm) {
-      // При очистке поиска убираем ТОЛЬКО временную подсветку, 
-      // но сохраняем УЖЕ подтверждённые минус-слова
+      // При очистке поиска снимаем всю временную подсветку
       const newClusters = clusters.map(cluster => ({
         ...cluster,
-        phrases: cluster.phrases.map(p => {
-          // Если фраза была подтверждена (есть в minusWords) — оставляем метку
-          const isConfirmedMinus = minusWords.some(mw => 
-            matchesWordForm(p.phrase, mw.phrase)
-          );
-          
-          if (isConfirmedMinus) {
-            return p; // Оставляем как есть
-          }
-          
-          // Иначе снимаем временную метку
-          return {
-            ...p,
-            isMinusWord: false,
-            minusTerm: undefined
-          };
-        }).sort((a, b) => b.count - a.count)
+        phrases: cluster.phrases.map(p => ({
+          ...p,
+          isMinusWord: false,
+          minusTerm: undefined
+        })).sort((a, b) => b.count - a.count)
       }));
       setClusters(newClusters);
       return;
     }
     
-    // При вводе — подсвечиваем совпадения, но НЕ трогаем другие минус-слова
+    // При вводе — подсвечиваем все совпадения с текущим поиском
     const newClusters = clusters.map(cluster => {
       const updatedPhrases = cluster.phrases.map(p => {
-        // Если уже помечено другим минус-словом — оставляем как есть
-        if (p.isMinusWord && p.minusTerm && p.minusTerm !== searchTerm) {
-          return p;
-        }
-        
         // Проверяем совпадение с текущим поиском
-        if (matchesWordForm(p.phrase, searchTerm)) {
-          return { ...p, isMinusWord: true, minusTerm: searchTerm };
-        }
+        const matches = matchesWordForm(p.phrase, searchTerm);
         
-        // Если фраза была подсвечена этим же поиском, но больше не совпадает — снимаем метку
-        if (p.minusTerm === searchTerm) {
+        if (matches) {
+          // Подсвечиваем совпадение
+          return { ...p, isMinusWord: true, minusTerm: searchTerm };
+        } else if (p.minusTerm === searchTerm) {
+          // Если раньше совпадало с этим поиском, но теперь нет — снимаем метку
           return { ...p, isMinusWord: false, minusTerm: undefined };
         }
         
@@ -421,9 +404,10 @@ export default function ResultsStep({
 
   const matchesWordForm = (phrase: string, targetWord: string): boolean => {
     if (!useWordForms) {
-      // Ищем только целые слова, а не подстроки
+      // Ищем слова которые НАЧИНАЮТСЯ с введенного текста
       const phraseWords = phrase.toLowerCase().split(/\s+/);
-      return phraseWords.includes(targetWord.toLowerCase());
+      const target = targetWord.toLowerCase();
+      return phraseWords.some(word => word.startsWith(target));
     }
     
     const targetRoot = getWordRoot(targetWord);
