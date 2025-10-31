@@ -938,10 +938,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
         
         try:
-            # Собираем ВСЕ 40 страниц результатов (2000 фраз вместо 50)
-            all_top_requests = []
-            max_pages = 40
-            
             # Первый кластер: запросы пользователя оборачиваем в кавычки
             user_phrases = []
             for kw in keywords:
@@ -953,59 +949,40 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'count': 0  # Частота будет получена из API
                     })
             
-            print(f'[WORDSTAT] Collecting all pages (up to {max_pages}) for phrase: {keywords[0]}')
+            payload = {
+                'phrase': keywords[0],
+                'regions': regions
+            }
             
-            for page_num in range(max_pages):
-                payload = {
-                    'phrase': keywords[0],
-                    'regions': regions,
-                    'page': page_num
+            print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}')
+            
+            response = requests.post(api_url, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code != 200:
+                return {
+                    'statusCode': response.status_code,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': f'API error: {response.status_code}'})
                 }
-                
-                print(f'[WORDSTAT] Requesting page {page_num + 1}/{max_pages}...')
-                
-                response = requests.post(api_url, json=payload, headers=headers, timeout=30)
-                
-                if response.status_code != 200:
-                    print(f'[WORDSTAT] API error on page {page_num}: {response.status_code}')
-                    if page_num == 0:  # Если первая страница не загрузилась - ошибка
-                        return {
-                            'statusCode': response.status_code,
-                            'headers': {
-                                'Content-Type': 'application/json',
-                                'Access-Control-Allow-Origin': '*'
-                            },
-                            'isBase64Encoded': False,
-                            'body': json.dumps({'error': f'API error: {response.status_code}'})
-                        }
-                    break  # Останавливаемся если страница не загрузилась
-                
-                data = response.json()
-                
-                if 'error' in data:
-                    if page_num == 0:
-                        return {
-                            'statusCode': 400,
-                            'headers': {
-                                'Content-Type': 'application/json',
-                                'Access-Control-Allow-Origin': '*'
-                            },
-                            'isBase64Encoded': False,
-                            'body': json.dumps({'error': data.get('error')})
-                        }
-                    break
-                
-                page_requests = data.get('topRequests', [])
-                
-                if not page_requests:
-                    print(f'[WORDSTAT] No more results on page {page_num}, stopping')
-                    break
-                
-                all_top_requests.extend(page_requests)
-                print(f'[WORDSTAT] Page {page_num + 1}: got {len(page_requests)} phrases (total: {len(all_top_requests)})')
             
-            print(f'[WORDSTAT] Collected {len(all_top_requests)} total phrases from {page_num + 1} pages')
-            top_requests = all_top_requests
+            data = response.json()
+            
+            if 'error' in data:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': data.get('error')})
+                }
+            
+            top_requests = data.get('topRequests', [])
             clustering_mode = body_data.get('mode', 'seo')
             print(f'[WORDSTAT] Got {len(top_requests)} phrases from Yandex API, mode: {clustering_mode}')
             
