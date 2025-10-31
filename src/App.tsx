@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import Auth from "./pages/Auth";
 import LoginPage from "./pages/LoginPage";
@@ -17,6 +17,7 @@ import WordstatNew from "./pages/WordstatNew";
 import TestClustering from "./pages/TestClustering";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./components/Home";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-          <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
