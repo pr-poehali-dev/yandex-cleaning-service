@@ -223,6 +223,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             ]
                         
                         test_domains = [
+                            # Нормальные площадки
                             'mail.ru', 'dzen.ru', 'yandex.ru', 'vk.com', 'ok.ru',
                             'rambler.ru', 'lenta.ru', 'ria.ru', 'gazeta.ru', 'kommersant.ru',
                             'rbc.ru', 'vedomosti.ru', 'forbes.ru', 'tass.ru', 'interfax.ru',
@@ -232,7 +233,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'ozon.ru', 'lamoda.ru', 'citilink.ru', 'mvideo.ru', 'eldorado.ru',
                             'dns-shop.ru', 'aliexpress.ru', 'sberbank.ru', 'tinkoff.ru', 'vtb.ru',
                             'alfabank.ru', 'gosuslugi.ru', 'mos.ru', 'spb.ru', 'travel.ru',
-                            'aviasales.ru', 'booking.com', 'tripadvisor.ru', 'hotels.ru', 'tutu.ru'
+                            'aviasales.ru', 'booking.com', 'tripadvisor.ru', 'hotels.ru', 'tutu.ru',
+                            # Странные/мусорные площадки
+                            'dsp.ewer.ru', 'puzzles.yandex.ru', 'vps.com', 'cdn-tracker.net',
+                            'ad-server.xyz', 'promo.click', 'banner-exchange.io', 'rtb-network.org',
+                            'adtech.solutions', 'media-buy.pro', 'traffic-source.biz', 'click-farm.co',
+                            'bot-traffic.ru', 'fake-impressions.net', 'spam-ads.com', 'junk-traffic.org',
+                            '123-ads.ru', 'xxx-promo.net', 'casino-traffic.biz', 'adult-banner.xxx',
+                            'redirect-chain.io', 'cloaking-site.ru', 'doorway-page.com', 'parked-domain.net',
+                            'expired-ssl.org', 'malware-host.ru', 'phishing-page.net', 'scam-ads.biz'
                         ]
                         
                         for i in range(100):
