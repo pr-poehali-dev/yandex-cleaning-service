@@ -352,10 +352,23 @@ export default function ResultsStep({
     if (!searchTerm) return;
 
     const affectedPhrases: Phrase[] = [];
-    const newClusters = clusters.map(cluster => {
-      const matching = cluster.phrases.filter(p => matchesWordForm(p.phrase, searchTerm));
-      affectedPhrases.push(...matching);
-      return cluster;
+    
+    const updatedClusters = clusters.map(cluster => {
+      const normalPhrases = cluster.phrases
+        .filter(p => !matchesWordForm(p.phrase, searchTerm))
+        .map(p => ({ ...p, isMinusWord: false, minusTerm: undefined }));
+      
+      const minusPhrases = cluster.phrases
+        .filter(p => matchesWordForm(p.phrase, searchTerm))
+        .map(p => {
+          affectedPhrases.push(p);
+          return { ...p, isMinusWord: true, minusTerm: searchTerm };
+        });
+      
+      return {
+        ...cluster,
+        phrases: [...normalPhrases, ...minusPhrases]
+      };
     });
 
     if (affectedPhrases.length > 0) {
@@ -371,12 +384,12 @@ export default function ResultsStep({
       
       const newMinusWords = [...minusWords, newMinusWord].sort((a, b) => b.count - a.count);
       
-      handleMinusSearchChange(searchTerm);
+      setClusters(updatedClusters);
       setMinusWords(newMinusWords);
 
       if (onSaveChanges) {
         await onSaveChanges(
-          newClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
+          updatedClusters.map(c => ({ name: c.name, intent: c.intent, color: c.color, icon: c.icon, phrases: c.phrases })),
           newMinusWords
         );
       }
