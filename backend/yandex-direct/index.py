@@ -40,7 +40,71 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить цели из кампаний через PriorityGoals (API Директа v5)
+    # GET ?action=counters - получить все счётчики Метрики
+    if method == 'GET' and query_params.get('action') == 'counters':
+        headers_raw = event.get('headers', {})
+        token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
+        
+        if not token:
+            return {
+                'statusCode': 401,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': 'Отсутствует токен авторизации'})
+            }
+        
+        try:
+            all_counters = []
+            offset = 1
+            per_page = 100
+            metrika_headers = {'Authorization': f'OAuth {token}'}
+            
+            print('[DEBUG] Loading all Metrika counters...')
+            
+            while True:
+                counters_url = f'https://api-metrika.yandex.net/management/v1/counters?per_page={per_page}&offset={offset}'
+                counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
+                
+                if counters_response.status_code != 200:
+                    print(f'[ERROR] Failed to load counters: {counters_response.status_code}')
+                    break
+                
+                counters_data = counters_response.json()
+                page_counters = counters_data.get('counters', [])
+                
+                for counter in page_counters:
+                    all_counters.append({
+                        'id': str(counter['id']),
+                        'name': counter.get('name', f"Счётчик {counter['id']}"),
+                        'site': counter.get('site', ''),
+                        'owner_login': counter.get('owner_login', '')
+                    })
+                
+                print(f'[DEBUG] Loaded {len(page_counters)} counters (total: {len(all_counters)})')
+                
+                if len(page_counters) < per_page:
+                    break
+                offset += per_page
+            
+            print(f'[DEBUG] Total counters found: {len(all_counters)}')
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({'counters': all_counters})
+            }
+            
+        except Exception as e:
+            print(f'[ERROR] Failed to load counters: {str(e)}')
+            return {
+                'statusCode': 500,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': str(e)})
+            }
+    
+    # GET ?action=goals - получить цели из выбранных счётчиков Метрики
     if method == 'GET' and query_params.get('action') == 'goals':
         headers_raw = event.get('headers', {})
         token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
@@ -54,7 +118,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            print(f'[DEBUG] Loading goals from campaigns PriorityGoals with token: {token[:10]}...')
+            # Получаем список ID счётчиков из query параметров
+            counter_ids_param = query_params.get('counter_ids', '')
+            selected_counter_ids = set(counter_ids_param.split(',')) if counter_ids_param else set()
+            
+            print(f'[DEBUG] Loading goals from selected counters: {selected_counter_ids}')
             
             is_sandbox = query_params.get('sandbox') == 'true'
             client_login = query_params.get('client_login')
@@ -212,14 +280,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         break
                 
                 if len(all_counters) > 0:
-                    counters = all_counters
-                    
-                    print(f'[DEBUG] Found {len(counters)} Metrika counters')
+                    # Фильтруем счётчики если заданы selected_counter_ids
+                    if selected_counter_ids:
+                        counters = [c for c in all_counters if str(c['id']) in selected_counter_ids]
+                        print(f'[DEBUG] Filtered to {len(counters)} selected counters from {len(all_counters)} total')
+                    else:
+                        counters = all_counters
+                        print(f'[DEBUG] No filter applied, using all {len(counters)} counters')
                     
                     # Создаём словарь счётчиков
                     counters_map = {str(c['id']): c.get('name', f"Счётчик {c['id']}") for c in counters}
                     
-                    # Для каждого счётчика получаем цели
+                    # Для каждого выбранного счётчика получаем цели
                     goals_details = {}
                     for counter in counters:
                         counter_id = counter['id']

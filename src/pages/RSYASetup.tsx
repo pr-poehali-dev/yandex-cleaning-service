@@ -23,6 +23,13 @@ interface Goal {
   counter_name?: string;
 }
 
+interface Counter {
+  id: string;
+  name: string;
+  site: string;
+  owner_login: string;
+}
+
 const RSYA_PROJECTS_URL = func2url['rsya-projects'] || 'https://functions.poehali.dev/08f68ba6-cbbb-4ca1-841f-185671e0757d';
 
 export default function RSYASetup() {
@@ -32,9 +39,13 @@ export default function RSYASetup() {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadingCounters, setLoadingCounters] = useState(false);
+  const [loadingGoals, setLoadingGoals] = useState(false);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [counters, setCounters] = useState<Counter[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set());
+  const [selectedCounters, setSelectedCounters] = useState<Set<string>>(new Set());
   const [selectedGoals, setSelectedGoals] = useState<Set<string>>(new Set());
   const [autoSelectCampaigns, setAutoSelectCampaigns] = useState(true);
 
@@ -101,29 +112,21 @@ export default function RSYASetup() {
         setSelectedCampaigns(campaignIds);
       }
       
-      console.log('🎯 Загружаем цели из API...');
-      const goalsResponse = await fetch(`https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals`, {
+      console.log('📊 Загружаем счётчики Метрики...');
+      setLoadingCounters(true);
+      const countersResponse = await fetch(`https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=counters`, {
         headers: {
           'X-Auth-Token': token
         }
       });
 
-      console.log('🎯 Статус загрузки целей:', goalsResponse.status);
-
-      if (goalsResponse.ok) {
-        const goalsData = await goalsResponse.json();
-        console.log('🎯 Данные целей:', goalsData);
-        const allGoals = goalsData.goals || [];
-        console.log('🎯 Всего целей:', allGoals.length);
-        setGoals(allGoals);
-        
-        if (allGoals.length > 0) {
-          const goalIds = new Set(allGoals.map((g: Goal) => g.id));
-          setSelectedGoals(goalIds);
-        }
-      } else {
-        console.error('❌ Ошибка загрузки целей:', await goalsResponse.text());
+      if (countersResponse.ok) {
+        const countersData = await countersResponse.json();
+        const allCounters = countersData.counters || [];
+        console.log('📊 Всего счётчиков:', allCounters.length);
+        setCounters(allCounters);
       }
+      setLoadingCounters(false);
       
     } catch (error) {
       console.error('Error loading data:', error);
@@ -169,6 +172,89 @@ export default function RSYASetup() {
   const handleSelectAllGoals = () => {
     const allIds = new Set(goals.map(g => g.id));
     setSelectedGoals(allIds);
+  };
+
+  const handleCounterToggle = (counterId: string) => {
+    const newSelected = new Set(selectedCounters);
+    if (newSelected.has(counterId)) {
+      newSelected.delete(counterId);
+    } else {
+      newSelected.add(counterId);
+    }
+    setSelectedCounters(newSelected);
+  };
+
+  const handleSelectAllCounters = () => {
+    const allIds = new Set(counters.map(c => c.id));
+    setSelectedCounters(allIds);
+  };
+
+  const handleDeselectAllCounters = () => {
+    setSelectedCounters(new Set());
+  };
+
+  const loadGoalsFromSelectedCounters = async () => {
+    if (selectedCounters.size === 0) {
+      toast({
+        title: 'Выберите счётчики',
+        description: 'Сначала выберите счётчики Метрики',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setLoadingGoals(true);
+      
+      const userId = localStorage.getItem('user_id') || '1';
+      const projectResponse = await fetch(`${RSYA_PROJECTS_URL}?project_id=${projectId}`, {
+        method: 'GET',
+        headers: { 'X-User-Id': userId }
+      });
+      
+      if (!projectResponse.ok) return;
+      
+      const projectData = await projectResponse.json();
+      const token = projectData.project.yandex_token;
+      
+      const counterIds = Array.from(selectedCounters).join(',');
+      console.log('🎯 Загружаем цели из выбранных счётчиков:', counterIds);
+      
+      const goalsResponse = await fetch(
+        `https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals&counter_ids=${counterIds}`,
+        {
+          headers: {
+            'X-Auth-Token': token
+          }
+        }
+      );
+
+      if (goalsResponse.ok) {
+        const goalsData = await goalsResponse.json();
+        const allGoals = goalsData.goals || [];
+        console.log('🎯 Загружено целей:', allGoals.length);
+        setGoals(allGoals);
+        
+        if (allGoals.length > 0) {
+          const goalIds = new Set(allGoals.map((g: Goal) => g.id));
+          setSelectedGoals(goalIds);
+        }
+        
+        toast({
+          title: 'Цели загружены',
+          description: `Найдено ${allGoals.length} целей из выбранных счётчиков`
+        });
+      }
+    } catch (error) {
+      console.error('Error loading goals:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить цели',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingGoals(false);
+    }
   };
 
   const handleSave = async () => {
@@ -265,7 +351,7 @@ export default function RSYASetup() {
             </Button>
             <div>
               <h1 className="text-4xl font-bold text-slate-900 mb-2">Настройка проекта РСЯ</h1>
-              <p className="text-lg text-slate-600">Выберите кампании и цели для автоматической чистки</p>
+              <p className="text-lg text-slate-600">Выберите кампании, счётчики и цели для автоматической чистки</p>
             </div>
           </div>
 
@@ -333,11 +419,103 @@ export default function RSYASetup() {
             </Card>
 
             <Card className="border-2">
+              <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50">
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Icon name="BarChart3" className="h-5 w-5 text-orange-600" />
+                    <span className="text-lg">Счётчики Метрики</span>
+                  </span>
+                  <span className="text-xs font-normal text-slate-600">
+                    {selectedCounters.size} из {counters.length}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loadingCounters ? (
+                  <div className="text-center py-8">
+                    <Icon name="Loader2" className="h-8 w-8 animate-spin text-orange-600 mx-auto mb-2" />
+                    <p className="text-slate-600">Загрузка счётчиков...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2 mb-4">
+                      <Button
+                        onClick={handleSelectAllCounters}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Icon name="CheckSquare" className="h-4 w-4 mr-2" />
+                        Выбрать все
+                      </Button>
+                      <Button
+                        onClick={handleDeselectAllCounters}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Icon name="Square" className="h-4 w-4 mr-2" />
+                        Снять все
+                      </Button>
+                      <Button
+                        onClick={loadGoalsFromSelectedCounters}
+                        disabled={selectedCounters.size === 0 || loadingGoals}
+                        className="ml-auto"
+                        size="sm"
+                      >
+                        {loadingGoals ? (
+                          <>
+                            <Icon name="Loader2" className="h-4 w-4 mr-2 animate-spin" />
+                            Загрузка...
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="Download" className="h-4 w-4 mr-2" />
+                            Загрузить цели
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {counters.length === 0 ? (
+                        <div className="col-span-full text-center py-8 text-slate-500">
+                          <Icon name="AlertCircle" className="h-12 w-12 mx-auto mb-2 text-slate-400" />
+                          <p>Счётчики не найдены</p>
+                          <p className="text-sm">Проверьте доступ к Яндекс.Метрике</p>
+                        </div>
+                      ) : (
+                        counters.map((counter) => (
+                          <div
+                            key={counter.id}
+                            className="flex items-start gap-2 p-3 rounded-lg border bg-white hover:bg-slate-50 cursor-pointer transition-colors"
+                            onClick={() => handleCounterToggle(counter.id)}
+                          >
+                            <Checkbox
+                              checked={selectedCounters.has(counter.id)}
+                              onCheckedChange={() => handleCounterToggle(counter.id)}
+                              className="mt-0.5 flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate">{counter.name}</p>
+                              <p className="text-xs text-slate-500">ID: {counter.id}</p>
+                              {counter.site && (
+                                <p className="text-xs text-orange-600 mt-0.5">{counter.site}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-2">
               <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Icon name="Trophy" className="h-5 w-5 text-purple-600" />
-                    <span className="text-lg">Цели Метрики</span>
+                    <span className="text-lg">Цели из выбранных счётчиков</span>
                   </span>
                   <span className="text-xs font-normal text-slate-600">
                     {selectedGoals.size} из {goals.length}
@@ -359,9 +537,9 @@ export default function RSYASetup() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   {goals.length === 0 ? (
                     <div className="col-span-full text-center py-8 text-slate-500">
-                      <Icon name="AlertCircle" className="h-12 w-12 mx-auto mb-2 text-slate-400" />
-                      <p>Цели не найдены</p>
-                      <p className="text-sm">Убедитесь что в кампаниях настроены цели Метрики</p>
+                      <Icon name="Target" className="h-12 w-12 mx-auto mb-2 text-slate-400" />
+                      <p className="font-medium">Цели не загружены</p>
+                      <p className="text-sm mt-1">Выберите счётчики Метрики выше и нажмите "Загрузить цели"</p>
                     </div>
                   ) : (
                     goals.map((goal) => (
