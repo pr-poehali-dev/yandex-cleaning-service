@@ -40,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить уникальные цели из кампаний через Reports API
+    # GET ?action=goals - получить цели из кампаний через AdGroups API Директа
     if method == 'GET' and query_params.get('action') == 'goals':
         headers_raw = event.get('headers', {})
         token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
@@ -48,129 +48,115 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not token:
             return {
                 'statusCode': 401,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
                 'body': json.dumps({'error': 'Отсутствует токен авторизации'})
             }
         
         try:
-            print(f'[DEBUG] Loading goals from Reports API with token: {token[:10]}...')
+            print(f'[DEBUG] Loading goals from Direct API with token: {token[:10]}...')
             
             is_sandbox = query_params.get('sandbox') == 'true'
             client_login = query_params.get('client_login')
             
-            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
+            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/adgroups' if is_sandbox else 'https://api.direct.yandex.com/json/v5/adgroups'
             
-            headers_api = {
-                'Content-Type': 'application/json',
-                'Accept-Language': 'ru',
-                'skipReportHeader': 'true',
-                'returnMoneyInMicros': 'false'
-            }
-            
+            headers_api = {'Content-Type': 'application/json', 'Accept-Language': 'ru'}
             if client_login:
                 headers_api['Client-Login'] = client_login
             
-            # Запрос отчёта по конверсиям за последние 7 дней
-            import datetime
-            today = datetime.date.today()
-            week_ago = today - datetime.timedelta(days=7)
-            
-            report_body = {
-                'params': {
-                    'SelectionCriteria': {
-                        'DateFrom': week_ago.strftime('%Y-%m-%d'),
-                        'DateTo': today.strftime('%Y-%m-%d')
-                    },
-                    'FieldNames': ['CampaignId', 'CampaignName', 'GoalId', 'Conversions'],
-                    'ReportName': 'Goals Report',
-                    'ReportType': 'CUSTOM_REPORT',
-                    'DateRangeType': 'CUSTOM_DATE',
-                    'Format': 'TSV',
-                    'IncludeVAT': 'NO'
-                }
-            }
-            
+            # Запрос всех групп объявлений с целями
             response = requests.post(
                 api_url,
                 headers=headers_api,
                 params={'oauth_token': token},
-                json=report_body,
-                timeout=60
+                json={
+                    'method': 'get',
+                    'params': {
+                        'SelectionCriteria': {},
+                        'FieldNames': ['Id', 'CampaignId', 'Name'],
+                        'TextAdGroupFieldNames': ['TrackingParams']
+                    }
+                },
+                timeout=30
             )
             
-            print(f'[DEBUG] Reports API response status: {response.status_code}')
-            
-            if response.status_code == 201:
-                return {
-                    'statusCode': 202,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'isBase64Encoded': False,
-                    'body': json.dumps({'message': 'Отчёт формируется, повторите запрос через несколько секунд'})
-                }
+            print(f'[DEBUG] AdGroups API response: {response.status_code}')
             
             if response.status_code != 200:
-                error_data = response.json() if response.headers.get('Content-Type', '').startswith('application/json') else {'error': response.text}
+                error_data = response.json()
+                print(f'[ERROR] API error: {json.dumps(error_data)}')
                 return {
                     'statusCode': 400,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка Reports API', 'details': error_data})
+                    'body': json.dumps({'error': 'Ошибка Direct API', 'details': error_data})
                 }
             
-            # Парсим TSV
-            tsv_data = response.text
-            lines = tsv_data.strip().split('\n')
+            data = response.json()
             
-            goals_dict = {}
+            if 'error' in data:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': data['error'].get('error_string', 'API Error'), 'details': data['error']})
+                }
             
-            for line in lines[1:]:  # Пропускаем заголовок
-                parts = line.split('\t')
-                if len(parts) >= 4:
-                    goal_id = parts[2]
-                    campaign_name = parts[1]
-                    conversions = parts[3]
+            # Парсим цели из TrackingParams или ищем через campaigns
+            goals_set = set()
+            adgroups = data.get('result', {}).get('AdGroups', [])
+            
+            print(f'[DEBUG] Found {len(adgroups)} ad groups, extracting goals...')
+            
+            # Альтернативный способ - получить все кампании и их цели
+            campaigns_url = api_url.replace('/adgroups', '/campaigns')
+            campaigns_response = requests.post(
+                campaigns_url,
+                headers=headers_api,
+                params={'oauth_token': token},
+                json={
+                    'method': 'get',
+                    'params': {
+                        'SelectionCriteria': {},
+                        'FieldNames': ['Id', 'Name'],
+                        'TextCampaignFieldNames': ['CounterIds', 'Goals']
+                    }
+                },
+                timeout=30
+            )
+            
+            if campaigns_response.status_code == 200:
+                campaigns_data = campaigns_response.json()
+                campaigns = campaigns_data.get('result', {}).get('Campaigns', [])
+                
+                goals_list = []
+                for campaign in campaigns:
+                    text_campaign = campaign.get('TextCampaign', {})
+                    campaign_goals = text_campaign.get('Goals', [])
                     
-                    if goal_id and goal_id != '--':
-                        if goal_id not in goals_dict:
-                            goals_dict[goal_id] = {
-                                'id': goal_id,
-                                'campaigns': set(),
-                                'total_conversions': 0
-                            }
-                        
-                        goals_dict[goal_id]['campaigns'].add(campaign_name)
-                        goals_dict[goal_id]['total_conversions'] += int(conversions) if conversions != '--' else 0
-            
-            # Преобразуем в список
-            goals_list = []
-            for goal_id, data in goals_dict.items():
-                goals_list.append({
-                    'id': goal_id,
-                    'campaigns_count': len(data['campaigns']),
-                    'campaigns': list(data['campaigns']),
-                    'total_conversions': data['total_conversions']
-                })
-            
-            print(f'[DEBUG] Found {len(goals_list)} unique goals')
+                    for goal in campaign_goals:
+                        goals_list.append({
+                            'id': goal.get('GoalId'),
+                            'value': goal.get('Value'),
+                            'campaign_id': campaign.get('Id'),
+                            'campaign_name': campaign.get('Name')
+                        })
+                
+                print(f'[DEBUG] Found {len(goals_list)} goals from campaigns')
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'goals': goals_list})
+                }
             
             return {
                 'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
-                'body': json.dumps({'goals': goals_list})
+                'body': json.dumps({'goals': []})
             }
         
         except Exception as e:
@@ -179,10 +165,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             print(f'[ERROR] Traceback: {traceback.format_exc()}')
             return {
                 'statusCode': 500,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
                 'body': json.dumps({'error': str(e)})
             }
