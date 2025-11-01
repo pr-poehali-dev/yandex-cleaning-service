@@ -40,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить цели из Метрики через campaigns
+    # GET ?action=goals - получить цели из кампаний Директа
     if method == 'GET' and query_params.get('action') == 'goals':
         headers_raw = event.get('headers', {})
         token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
@@ -54,7 +54,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            print(f'[DEBUG] Loading goals from campaigns with token: {token[:10]}...')
+            print(f'[DEBUG] Loading goals from Direct campaigns with token: {token[:10]}...')
             
             is_sandbox = query_params.get('sandbox') == 'true'
             client_login = query_params.get('client_login')
@@ -69,7 +69,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if client_login:
                 headers_api['Client-Login'] = client_login
             
-            # Запрос кампаний с Goals
+            # Запрос кампаний с PriorityGoals
             response = requests.post(
                 api_url,
                 headers=headers_api,
@@ -77,14 +77,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'method': 'get',
                     'params': {
                         'SelectionCriteria': {},
-                        'FieldNames': ['Id', 'Name'],
-                        'TextCampaignFieldNames': ['Settings']
+                        'FieldNames': ['Id', 'Name', 'Type'],
+                        'TextCampaignFieldNames': ['PriorityGoals'],
+                        'DynamicTextCampaignFieldNames': ['PriorityGoals']
                     }
                 },
                 timeout=30
             )
             
-            print(f'[DEBUG] Campaigns API response: {response.status_code}')
+            print(f'[DEBUG] Direct API response: {response.status_code}')
             
             if response.status_code != 200:
                 error_data = response.json()
@@ -93,7 +94,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка Campaigns API', 'details': error_data})
+                    'body': json.dumps({'error': 'Ошибка Direct API', 'details': error_data})
                 }
             
             data = response.json()
@@ -110,34 +111,47 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             campaigns = data.get('result', {}).get('Campaigns', [])
             print(f'[DEBUG] Found {len(campaigns)} campaigns')
             
-            # Парсим цели из Settings кампаний
+            # Собираем все цели из PriorityGoals
             all_goals = []
-            goals_seen = set()
+            goals_map = {}
             
             for campaign in campaigns:
-                text_campaign = campaign.get('TextCampaign', {})
-                settings = text_campaign.get('Settings', [])
+                campaign_type = campaign.get('Type')
+                priority_goals = []
                 
-                print(f'[DEBUG] Campaign {campaign.get("Name")}: {len(settings)} settings')
+                if campaign_type == 'TEXT_CAMPAIGN':
+                    text_campaign = campaign.get('TextCampaign', {})
+                    priority_goals = text_campaign.get('PriorityGoals', {}).get('Items', [])
+                elif campaign_type == 'DYNAMIC_TEXT_CAMPAIGN':
+                    dynamic_campaign = campaign.get('DynamicTextCampaign', {})
+                    priority_goals = dynamic_campaign.get('PriorityGoals', {}).get('Items', [])
                 
-                # Ищем настройки с целями
-                for setting in settings:
-                    if setting.get('Option') == 'GOALS':
-                        value = setting.get('Value')
-                        if value:
-                            # Value содержит ID целей через запятую
-                            goal_ids = value.split(',')
-                            for goal_id in goal_ids:
-                                goal_id = goal_id.strip()
-                                if goal_id and goal_id not in goals_seen:
-                                    goals_seen.add(goal_id)
-                                    all_goals.append({
-                                        'id': goal_id,
-                                        'campaign_id': campaign.get('Id'),
-                                        'campaign_name': campaign.get('Name')
-                                    })
+                for goal in priority_goals:
+                    goal_id = goal.get('GoalId')
+                    goal_value = goal.get('Value')
+                    
+                    if goal_id:
+                        if goal_id not in goals_map:
+                            goals_map[goal_id] = {
+                                'id': goal_id,
+                                'value': goal_value,
+                                'campaigns': []
+                            }
+                        
+                        goals_map[goal_id]['campaigns'].append({
+                            'id': campaign.get('Id'),
+                            'name': campaign.get('Name')
+                        })
             
-            print(f'[DEBUG] Total goals found: {len(all_goals)}')
+            # Преобразуем в список
+            for goal_id, goal_data in goals_map.items():
+                all_goals.append({
+                    'id': goal_id,
+                    'value': goal_data['value'],
+                    'campaigns': goal_data['campaigns']
+                })
+            
+            print(f'[DEBUG] Total unique goals: {len(all_goals)}')
             
             return {
                 'statusCode': 200,
