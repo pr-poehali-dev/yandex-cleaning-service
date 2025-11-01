@@ -170,7 +170,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             redirect_uri = 'https://functions.poehali.dev/052a3544-14b2-4ce8-af5e-26f0e7d0c33a'
-            auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&state={user_id}'
+            # Запрашиваем права на Директ и Метрику
+            scope = 'direct:api metrika:read'
+            auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&scope={scope}&state={user_id}'
             
             return {
                 'statusCode': 200,
