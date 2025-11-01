@@ -86,6 +86,20 @@ export default function RSYACleaner() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const hash = window.location.hash.substring(1);
+    const hashParams = new URLSearchParams(hash);
+    const accessToken = hashParams.get('access_token');
+    
+    if (accessToken) {
+      localStorage.setItem('yandex_direct_token', accessToken);
+      setIsConnected(true);
+      setShowCodeInput(false);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      toast({ title: '✅ Яндекс подключен!', description: 'Токен получен, загружаем кампании...' });
+      loadCampaigns(accessToken);
+      return;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const yandexConnected = urlParams.get('yandex_connected');
@@ -256,31 +270,12 @@ export default function RSYACleaner() {
     }
   };
 
-  const handleConnect = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = user.id || 'anonymous';
-      
-      const response = await fetch(func2url['yandex-oauth'], {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': userId
-        },
-        body: JSON.stringify({ action: 'auth-url' })
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        toast({ title: 'Ошибка подключения', description: error.error || 'Не удалось получить ссылку авторизации', variant: 'destructive' });
-        return;
-      }
-      
-      const data = await response.json();
-      window.location.href = data.auth_url;
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось запустить OAuth', variant: 'destructive' });
-    }
+  const handleConnect = () => {
+    const clientId = 'fa264103fca547b7baa436de1a416fbe';
+    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+    const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}`;
+    
+    window.location.href = authUrl;
   };
 
   const handleCodeSubmit = async () => {
