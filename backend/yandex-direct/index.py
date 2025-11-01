@@ -61,7 +61,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns' if is_sandbox else 'https://api.direct.yandex.com/json/v5/campaigns'
             
-            headers_api = {'Content-Type': 'application/json', 'Accept-Language': 'ru'}
+            headers_api = {
+                'Content-Type': 'application/json', 
+                'Accept-Language': 'ru',
+                'Authorization': f'Bearer {token}'
+            }
             if client_login:
                 headers_api['Client-Login'] = client_login
             
@@ -69,7 +73,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             response = requests.post(
                 api_url,
                 headers=headers_api,
-                params={'oauth_token': token},
                 json={
                     'method': 'get',
                     'params': {
