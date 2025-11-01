@@ -191,7 +191,7 @@ export default function RSYAProjects() {
                 {projects.map((project) => (
                   <Card 
                     key={project.id}
-                    className="hover:shadow-lg transition-all cursor-pointer group border hover:border-green-200 bg-white"
+                    className="hover:shadow-lg transition-all cursor-pointer group border hover:border-green-200 bg-white relative"
                     onClick={() => navigate(`/rsya/${project.id}`)}
                   >
                     <CardHeader>
@@ -199,15 +199,25 @@ export default function RSYAProjects() {
                         <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
                           <Icon name="ShieldOff" size={24} className="text-green-600" />
                         </div>
-                        {project.has_token ? (
-                          <div className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                            Подключён
-                          </div>
-                        ) : (
-                          <div className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
-                            Не подключён
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {project.has_token ? (
+                            <div className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                              Подключён
+                            </div>
+                          ) : (
+                            <div className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                              Не подключён
+                            </div>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => deleteProject(project.id, e)}
+                            className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Icon name="Trash2" size={16} />
+                          </Button>
+                        </div>
                       </div>
                       <CardTitle className="text-xl">
                         {project.name}
