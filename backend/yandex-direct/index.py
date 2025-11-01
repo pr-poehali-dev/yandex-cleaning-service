@@ -151,7 +151,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         # Reports API работает и в sandbox, и в production
                         reports_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
                         
-                        # Используем базовые поля без площадок (AdGroupId + AdGroupName)
+                        # Используем только базовые метрики без AdGroup полей
+                        # GoalId также может вызывать ошибку, пробуем без него
                         report_body = {
                             'params': {
                                 'SelectionCriteria': {
@@ -161,15 +162,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 },
                                 'FieldNames': [
                                     'Date',
-                                    'AdGroupId',
-                                    'AdGroupName', 
+                                    'CampaignName',
                                     'Impressions',
                                     'Clicks',
                                     'Cost',
-                                    'Conversions',
-                                    'GoalId'
+                                    'Conversions'
                                 ],
-                                'ReportName': f'RSYAPlatforms_{campaign_id}',
+                                'ReportName': f'RSYACampaign_{campaign_id}',
                                 'ReportType': 'CUSTOM_REPORT',
                                 'DateRangeType': 'LAST_30_DAYS',
                                 'Format': 'TSV',
