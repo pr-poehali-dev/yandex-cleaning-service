@@ -118,15 +118,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 campaign_type = campaign.get('Type')
                 campaign_id = campaign.get('Id')
                 campaign_name = campaign.get('Name')
-                priority_goals = None
                 
-                # Извлекаем PriorityGoals в зависимости от типа кампании
+                # Собираем ID целей из разных мест
+                goal_ids_in_campaign = set()
+                
+                # 1. Извлекаем PriorityGoals
+                priority_goals = None
                 if campaign_type == 'TEXT_CAMPAIGN':
                     text_campaign = campaign.get('TextCampaign')
                     if text_campaign:
                         priority_goals_obj = text_campaign.get('PriorityGoals')
                         if priority_goals_obj:
                             priority_goals = priority_goals_obj.get('Items', [])
+                        
+                        # 2. Извлекаем цели из стратегий BiddingStrategy
+                        bidding = text_campaign.get('BiddingStrategy', {})
+                        for location in ['Search', 'Network']:
+                            strategy = bidding.get(location, {})
+                            # Разные типы стратегий с целями
+                            for strategy_type in ['WbMaximumConversionRate', 'AverageCpa', 'AverageCpaMultipleGoals', 'PayForConversion']:
+                                strategy_data = strategy.get(strategy_type, {})
+                                if isinstance(strategy_data, dict):
+                                    # Одна цель
+                                    if 'GoalId' in strategy_data:
+                                        goal_ids_in_campaign.add(str(strategy_data['GoalId']))
+                                    # Несколько целей
+                                    if 'GoalIds' in strategy_data:
+                                        for gid in strategy_data['GoalIds']:
+                                            goal_ids_in_campaign.add(str(gid))
+                
                 elif campaign_type == 'UNIFIED_CAMPAIGN':
                     unified_campaign = campaign.get('UnifiedCampaign')
                     if unified_campaign:
@@ -134,92 +154,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         if priority_goals_obj:
                             priority_goals = priority_goals_obj.get('Items', [])
                 
+                # Добавляем цели из PriorityGoals
                 if priority_goals:
                     for goal in priority_goals:
                         goal_id = str(goal.get('GoalId', ''))
-                        
-                        if goal_id and goal_id not in goals_map:
-                            goals_map[goal_id] = {
-                                'id': goal_id,
-                                'value': goal.get('Value'),
-                                'campaigns': []
-                            }
-                        
                         if goal_id:
-                            goals_map[goal_id]['campaigns'].append({
-                                'id': campaign_id,
-                                'name': campaign_name
-                            })
+                            goal_ids_in_campaign.add(goal_id)
+                
+                # Добавляем все найденные цели в общий словарь
+                for goal_id in goal_ids_in_campaign:
+                    if goal_id and goal_id not in goals_map:
+                        goals_map[goal_id] = {
+                            'id': goal_id,
+                            'name': f'Цель {goal_id}',
+                            'campaigns': []
+                        }
+                    
+                    if goal_id:
+                        goals_map[goal_id]['campaigns'].append({
+                            'id': campaign_id,
+                            'name': campaign_name
+                        })
             
             # Преобразуем в список
             goals_from_campaigns = list(goals_map.values())
             
-            print(f'[DEBUG] Total unique goals from campaigns PriorityGoals: {len(goals_from_campaigns)}')
+            print(f'[DEBUG] Total unique goals from campaigns: {len(goals_from_campaigns)}')
             
-            # Получаем ВСЕ цели из Метрики (не только из PriorityGoals)
-            all_goals_dict = {}
-            
-            print('[DEBUG] Starting to load goals from Metrika...')
-            
-            try:
-                counters_url = 'https://api-metrika.yandex.net/management/v1/counters'
-                metrika_headers = {'Authorization': f'OAuth {token}'}
-                
-                print(f'[DEBUG] Requesting counters from {counters_url}')
-                counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
-                print(f'[DEBUG] Counters response status: {counters_response.status_code}')
-                
-                if counters_response.status_code == 200:
-                    counters_data = counters_response.json()
-                    counters = counters_data.get('counters', [])
-                    
-                    print(f'[DEBUG] Found {len(counters)} Metrika counters')
-                    
-                    # Для каждого счётчика получаем все цели
-                    for counter in counters:
-                        counter_id = counter['id']
-                        goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
-                        
-                        print(f'[DEBUG] Requesting goals for counter {counter_id}')
-                        goals_response = requests.get(goals_url, headers=metrika_headers, timeout=10)
-                        
-                        if goals_response.status_code == 200:
-                            goals_data = goals_response.json()
-                            counter_goals = goals_data.get('goals', [])
-                            print(f'[DEBUG] Counter {counter_id}: {len(counter_goals)} goals')
-                            
-                            for goal in counter_goals:
-                                goal_id_str = str(goal.get('id', ''))
-                                if goal_id_str and goal_id_str not in all_goals_dict:
-                                    all_goals_dict[goal_id_str] = {
-                                        'id': goal_id_str,
-                                        'name': goal.get('name', f'Цель {goal_id_str}'),
-                                        'type': goal.get('type', 'unknown'),
-                                        'counter_id': counter_id
-                                    }
-                        else:
-                            print(f'[WARN] Failed to load goals for counter {counter_id}: {goals_response.status_code}')
-                    
-                    print(f'[DEBUG] Total unique goals from Metrika: {len(all_goals_dict)}')
-                else:
-                    print(f'[ERROR] Failed to load counters: {counters_response.status_code} - {counters_response.text[:200]}')
-                    
-            except Exception as metrika_error:
-                import traceback
-                print(f'[ERROR] Failed to load goals from Metrika: {metrika_error}')
-                print(f'[ERROR] Traceback: {traceback.format_exc()}')
-                
-            # Если не удалось получить из Метрики, используем только цели из кампаний
-            if len(all_goals_dict) == 0:
-                print('[WARN] No goals from Metrika, using goals from campaigns')
-                for goal in goals_from_campaigns:
-                    all_goals_dict[goal['id']] = {
-                        'id': goal['id'],
-                        'name': f"Цель {goal['id']}",
-                        'type': 'unknown'
-                    }
-            
-            all_goals = list(all_goals_dict.values())
+            # Используем цели из кампаний (токен OAuth от Директа не имеет доступа к Метрике)
+            all_goals = goals_from_campaigns
             print(f'[DEBUG] Final goals count: {len(all_goals)}')
             
             return {
