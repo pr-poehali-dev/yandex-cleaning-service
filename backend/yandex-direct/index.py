@@ -71,6 +71,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[DEBUG] Metrika response status: {response.status_code}')
             data = response.json()
+            print(f'[DEBUG] Metrika response body: {json.dumps(data)[:500]}')
             
             if response.status_code != 200:
                 return {
