@@ -275,10 +275,27 @@ export default function RSYACleaner() {
       
       setApiError(null);
       
-      setCampaigns(data.campaigns || []);
+      // Присваиваем цели кампаниям из goalsData
+      const campaignsWithGoals = (data.campaigns || []).map((campaign: Campaign) => {
+        // Находим цели, которые привязаны к этой кампании
+        const campaignGoals = goalsData
+          .filter(goal => goal.campaigns?.some((c: any) => c.id === parseInt(campaign.id)))
+          .map(goal => ({
+            id: goal.id,
+            name: `Цель ${goal.id}`,
+            type: 'conversion'
+          }));
+        
+        return {
+          ...campaign,
+          goals: campaignGoals
+        };
+      });
       
-      const totalPlatforms = (data.campaigns || []).reduce((sum: number, c: Campaign) => sum + (c.platforms?.length || 0), 0);
-      const totalGoals = (data.campaigns || []).reduce((sum: number, c: Campaign) => sum + (c.goals?.length || 0), 0);
+      setCampaigns(campaignsWithGoals);
+      
+      const totalPlatforms = campaignsWithGoals.reduce((sum: number, c: Campaign) => sum + (c.platforms?.length || 0), 0);
+      const totalGoals = campaignsWithGoals.reduce((sum: number, c: Campaign) => sum + (c.goals?.length || 0), 0);
       
       toast({ 
         title: '✅ Данные загружены', 
