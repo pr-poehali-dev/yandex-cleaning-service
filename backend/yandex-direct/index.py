@@ -156,6 +156,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[DEBUG] Total unique goals from campaigns: {len(all_goals)}')
             
+            # Получаем названия целей из Метрики
+            unique_goal_ids = list(goals_map.keys())
+            if unique_goal_ids:
+                try:
+                    # Получаем список счётчиков
+                    counters_url = 'https://api-metrika.yandex.net/management/v1/counters'
+                    metrika_headers = {'Authorization': f'OAuth {token}'}
+                    counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
+                    
+                    if counters_response.status_code == 200:
+                        counters_data = counters_response.json()
+                        counters = counters_data.get('counters', [])
+                        
+                        # Для каждого счётчика пытаемся найти цели
+                        goal_names = {}
+                        for counter in counters[:3]:  # Берём первые 3 счётчика
+                            counter_id = counter['id']
+                            goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
+                            goals_response = requests.get(goals_url, headers=metrika_headers, timeout=10)
+                            
+                            if goals_response.status_code == 200:
+                                goals_data = goals_response.json()
+                                for goal in goals_data.get('goals', []):
+                                    goal_id_str = str(goal.get('id', ''))
+                                    if goal_id_str in unique_goal_ids:
+                                        goal_names[goal_id_str] = goal.get('name', f'Цель {goal_id_str}')
+                        
+                        # Добавляем названия к целям
+                        for goal in all_goals:
+                            goal['name'] = goal_names.get(goal['id'], f"Цель {goal['id']}")
+                        
+                        print(f'[DEBUG] Enriched {len(goal_names)} goals with names from Metrika')
+                except Exception as metrika_error:
+                    print(f'[WARN] Failed to enrich goals with Metrika names: {metrika_error}')
+                    # Если не удалось получить из Метрики, используем ID
+                    for goal in all_goals:
+                        goal['name'] = f"Цель {goal['id']}"
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
