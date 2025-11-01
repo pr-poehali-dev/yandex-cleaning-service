@@ -173,7 +173,7 @@ export default function RSYAProjects() {
             </div>
 
             {projects.length === 0 && !loading ? (
-              <Card className="p-12 text-center">
+              <div className="p-12 text-center">
                 <Icon name="ShieldOff" size={64} className="mx-auto mb-4 text-slate-300" />
                 <h3 className="text-xl font-semibold mb-2 text-slate-700">Нет проектов</h3>
                 <p className="text-slate-500 mb-6">Создайте первый проект для начала работы</p>
@@ -184,7 +184,7 @@ export default function RSYAProjects() {
                   <Icon name="Plus" size={20} className="mr-2" />
                   Создать проект
                 </Button>
-              </Card>
+              </div>
             ) : (
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
