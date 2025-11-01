@@ -77,8 +77,22 @@ export default function RSYACleaner() {
   const [results, setResults] = useState<{ disabled: number; total: number } | null>(null);
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [authCode, setAuthCode] = useState('');
-  const [clientLogin, setClientLogin] = useState('');
-  const [useSandbox, setUseSandbox] = useState(true);
+  const [clientLogin, setClientLoginState] = useState('');
+  
+  const setClientLogin = (value: string) => {
+    setClientLoginState(value);
+    if (value.trim()) {
+      localStorage.setItem('yandex_client_login', value.trim());
+    } else {
+      localStorage.removeItem('yandex_client_login');
+    }
+  };
+  const [useSandbox, setUseSandboxState] = useState(true);
+  
+  const setUseSandbox = (value: boolean) => {
+    setUseSandboxState(value);
+    localStorage.setItem('yandex_use_sandbox', String(value));
+  };
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'campaigns' | 'platforms'>('campaigns');
   const [apiError, setApiError] = useState<{code: number; message: string; detail: string} | null>(null);
@@ -116,8 +130,8 @@ export default function RSYACleaner() {
     
     if (token) {
       setIsConnected(true);
-      if (savedLogin) setClientLogin(savedLogin);
-      if (savedSandbox !== null) setUseSandbox(savedSandbox === 'true');
+      if (savedLogin) setClientLoginState(savedLogin);
+      if (savedSandbox !== null) setUseSandboxState(savedSandbox === 'true');
       loadCampaigns(token);
     }
   }, [toast]);
@@ -358,11 +372,13 @@ export default function RSYACleaner() {
   const handleDisconnect = () => {
     localStorage.removeItem('yandex_direct_token');
     localStorage.removeItem('yandex_client_login');
+    localStorage.removeItem('yandex_use_sandbox');
     setIsConnected(false);
     setCampaigns([]);
     setSelectedCampaigns([]);
     setResults(null);
-    setClientLogin('');
+    setClientLoginState('');
+    setUseSandboxState(true);
     toast({ title: 'Яндекс.Директ отключён' });
   };
 
