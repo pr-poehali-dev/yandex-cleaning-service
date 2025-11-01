@@ -40,10 +40,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить цели через Live API v4
+    # GET ?action=goals - получить цели из Яндекс.Метрики
     if method == 'GET' and query_params.get('action') == 'goals':
         headers_raw = event.get('headers', {})
         token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
+        counter_id = query_params.get('counter_id')
         
         if not token:
             return {
@@ -54,32 +55,51 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            print(f'[DEBUG] Loading goals via Live API v4 with token: {token[:10]}...')
+            print(f'[DEBUG] Loading goals from Metrika with token: {token[:10]}...')
             
-            is_sandbox = query_params.get('sandbox') == 'true'
-            client_login = query_params.get('client_login')
+            # Если не указан counter_id, сначала получим список счётчиков
+            if not counter_id:
+                print('[DEBUG] No counter_id - fetching all counters first')
+                counters_url = 'https://api-metrika.yandex.net/management/v1/counters'
+                headers_api = {
+                    'Authorization': f'OAuth {token}'
+                }
+                
+                response = requests.get(counters_url, headers=headers_api, timeout=30)
+                
+                if response.status_code != 200:
+                    print(f'[ERROR] Counters API error: {response.text}')
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'error': 'Не удалось получить счётчики Метрики'})
+                    }
+                
+                data = response.json()
+                counters = data.get('counters', [])
+                
+                if not counters:
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'isBase64Encoded': False,
+                        'body': json.dumps({'goals': [], 'message': 'Нет счётчиков Метрики'})
+                    }
+                
+                # Берём первый счётчик
+                counter_id = counters[0]['id']
+                print(f'[DEBUG] Using first counter: {counter_id}')
             
-            api_url = 'https://api-sandbox.direct.yandex.ru/live/v4/json/' if is_sandbox else 'https://api.direct.yandex.ru/live/v4/json/'
-            
+            # Получаем цели для счётчика
+            goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
             headers_api = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {token}'
+                'Authorization': f'OAuth {token}'
             }
-            if client_login:
-                headers_api['Client-Login'] = client_login
             
-            # Запрос целей через GetRetargetingGoals
-            response = requests.post(
-                api_url,
-                headers=headers_api,
-                json={
-                    'method': 'GetRetargetingGoals',
-                    'param': {}
-                },
-                timeout=30
-            )
+            response = requests.get(goals_url, headers=headers_api, timeout=30)
             
-            print(f'[DEBUG] Live API response: {response.status_code}')
+            print(f'[DEBUG] Metrika API response: {response.status_code}')
             
             if response.status_code != 200:
                 error_text = response.text
@@ -88,29 +108,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка Live API', 'details': error_text})
+                    'body': json.dumps({'error': 'Ошибка Metrika API', 'details': error_text})
                 }
             
             data = response.json()
-            
-            if data.get('error_code') or data.get('error_str'):
-                error_msg = data.get('error_detail') or data.get('error_str') or 'Unknown error'
-                print(f'[ERROR] Response error: {error_msg}')
-                return {
-                    'statusCode': 400,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'isBase64Encoded': False,
-                    'body': json.dumps({'error': error_msg, 'error_code': data.get('error_code')})
-                }
-            
-            goals = data.get('data', [])
-            print(f'[DEBUG] Found {len(goals)} goals')
+            goals = data.get('goals', [])
+            print(f'[DEBUG] Found {len(goals)} goals from counter {counter_id}')
             
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
-                'body': json.dumps({'goals': goals})
+                'body': json.dumps({'goals': goals, 'counter_id': counter_id})
             }
         
         except Exception as e:
