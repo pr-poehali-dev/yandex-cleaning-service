@@ -270,12 +270,30 @@ export default function RSYACleaner() {
     }
   };
 
-  const handleConnect = () => {
-    const clientId = 'fa264103fca547b7baa436de1a416fbe';
-    const redirectUri = window.location.origin + window.location.pathname;
-    const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    
-    window.location.href = authUrl;
+  const handleConnect = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.id || 'anonymous';
+      
+      const response = await fetch(func2url['yandex-oauth'], {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId
+        },
+        body: JSON.stringify({ action: 'auth-url' })
+      });
+      
+      if (!response.ok) {
+        toast({ title: 'Ошибка', description: 'Не удалось получить ссылку OAuth', variant: 'destructive' });
+        return;
+      }
+      
+      const data = await response.json();
+      window.location.href = data.auth_url;
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось запустить OAuth', variant: 'destructive' });
+    }
   };
 
   const handleCodeSubmit = async () => {

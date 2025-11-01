@@ -125,7 +125,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         print(f'[YANDEX_OAUTH] Token saved for user: {user_id}, login: {yandex_login}')
         
-        redirect_url = f'https://yclean.ru/rsya?yandex_connected=true'
+        frontend_host = event.get('headers', {}).get('referer', 'https://yclean.ru')
+        if frontend_host.endswith('/'):
+            frontend_host = frontend_host[:-1]
+        redirect_url = f'{frontend_host}/rsya?yandex_connected=true'
         
         return {
             'statusCode': 302,
