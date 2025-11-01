@@ -87,49 +87,7 @@ export default function RSYAConnectionCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {setUseSandbox && (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setUseSandbox(true)}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                useSandbox
-                  ? 'border-amber-400 bg-amber-50 shadow-md'
-                  : 'border-slate-200 bg-white hover:border-amber-300'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="TestTube" className={`h-5 w-5 ${useSandbox ? 'text-amber-600' : 'text-slate-400'}`} />
-                <span className={`font-semibold ${useSandbox ? 'text-amber-900' : 'text-slate-700'}`}>
-                  Песочница
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 text-left">
-                Для тестирования без реальных данных
-              </p>
-            </button>
-            <button
-              onClick={() => setUseSandbox(false)}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                !useSandbox
-                  ? 'border-emerald-400 bg-emerald-50 shadow-md'
-                  : 'border-slate-200 bg-white hover:border-emerald-300'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="Zap" className={`h-5 w-5 ${!useSandbox ? 'text-emerald-600' : 'text-slate-400'}`} />
-                <span className={`font-semibold ${!useSandbox ? 'text-emerald-900' : 'text-slate-700'}`}>
-                  Production
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 text-left">
-                Работа с реальными кампаниями
-              </p>
-            </button>
-          </div>
-        )}
-
-        {!useSandbox && (
-          <div className="bg-blue-100 border border-blue-300 rounded-lg p-4">
+        <div className="bg-blue-100 border border-blue-300 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <Icon name="Info" className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1 text-sm">
@@ -152,7 +110,7 @@ export default function RSYAConnectionCard({
           </div>
         )}
 
-        {showInstructions && !useSandbox && (
+        {showInstructions && (
           <div className="bg-white border-2 border-blue-200 rounded-lg p-4 space-y-3 text-sm">
             <h4 className="font-bold text-slate-900 flex items-center gap-2">
               <Icon name="BookOpen" className="h-4 w-4 text-blue-600" />
