@@ -258,6 +258,49 @@ export default function RSYACleaner() {
     }
   };
 
+  const loadGoals = async (token: string) => {
+    try {
+      const actualSandbox = localStorage.getItem('yandex_use_sandbox') === 'true';
+      const url = `${YANDEX_DIRECT_URL}?action=goals${actualSandbox ? '&sandbox=true' : ''}`;
+      
+      toast({ 
+        title: '⏳ Загрузка целей...', 
+        description: 'Получаем список целей из Метрики'
+      });
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'X-Auth-Token': token }
+      });
+
+      if (!response.ok) throw new Error('Ошибка загрузки целей');
+
+      const data = await response.json();
+      
+      if (data.error) {
+        toast({ 
+          title: '❌ Ошибка загрузки целей', 
+          description: data.details?.error_detail || data.error,
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      console.log('Goals loaded:', data.goals);
+      
+      toast({ 
+        title: '✅ Цели загружены', 
+        description: `Найдено целей: ${data.goals?.length || 0}`
+      });
+    } catch (error) {
+      toast({ 
+        title: 'Ошибка загрузки целей', 
+        description: String(error), 
+        variant: 'destructive' 
+      });
+    }
+  };
+
   const checkYandexConnection = async () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userId = user.id;
@@ -555,6 +598,17 @@ export default function RSYACleaner() {
                         >
                           <Icon name="RefreshCw" className="mr-2 h-4 w-4" />
                           Проверить снова
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            const token = localStorage.getItem('yandex_direct_token');
+                            if (token) loadGoals(token);
+                          }}
+                          variant="outline"
+                          className="border-green-500 text-green-700 hover:bg-green-50"
+                        >
+                          <Icon name="Target" className="mr-2 h-4 w-4" />
+                          Загрузить цели
                         </Button>
                       </div>
                     </div>

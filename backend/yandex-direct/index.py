@@ -40,6 +40,74 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
+    # GET ?action=goals - получить список целей
+    if method == 'GET' and query_params.get('action') == 'goals':
+        headers = event.get('headers', {})
+        token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+        
+        if not token:
+            return {
+                'statusCode': 401,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': 'Отсутствует токен авторизации'})
+            }
+        
+        try:
+            is_sandbox = query_params.get('sandbox') == 'true'
+            api_url = 'https://api-sandbox.direct.yandex.com/live/v4/json/' if is_sandbox else 'https://api.direct.yandex.ru/live/v4/json/'
+            
+            response = requests.post(
+                api_url,
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Accept-Language': 'ru'
+                },
+                json={
+                    'method': 'GetRetargetingGoals',
+                    'param': {}
+                },
+                timeout=30
+            )
+            
+            data = response.json()
+            
+            if 'error_code' in data or 'error' in data:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Yandex API error',
+                        'details': data
+                    })
+                }
+            
+            goals = data.get('data', [])
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'goals': goals})
+            }
+        
+        except Exception as e:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'error': str(e)})
+            }
+    
     # GET /campaigns - получить кампании РСЯ
     if method == 'GET':
         headers = event.get('headers', {})
