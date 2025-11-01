@@ -181,6 +181,8 @@ export default function RSYACleaner() {
         const errorTitle = data.error;
         const errorDetail = data.error_detail || '';
         
+        console.error('Yandex API Error:', { errorCode, errorTitle, errorDetail, fullResponse: data });
+        
         setApiError({
           code: errorCode,
           message: errorTitle,
@@ -190,7 +192,12 @@ export default function RSYACleaner() {
         let toastTitle = '❌ Ошибка API Яндекс.Директ';
         let toastDescription = errorDetail || errorTitle;
         
-        if (errorCode === 513 && useSandbox) {
+        if (errorCode === 53) {
+          toastTitle = '❌ Недействительный OAuth токен';
+          toastDescription = 'Токен истёк или невалиден. Получите новый токен через OAuth';
+          localStorage.removeItem('yandex_direct_token');
+          setIsConnected(false);
+        } else if (errorCode === 513 && useSandbox) {
           toastTitle = '🧪 Песочница не активирована';
           toastDescription = errorDetail;
         } else if (errorCode === 513) {
