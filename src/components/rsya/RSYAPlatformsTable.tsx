@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -85,6 +85,8 @@ export default function RSYAPlatformsTable({
   const [sortField, setSortField] = useState<SortField>('cost');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
   const [filters, setFilters] = useState<FilterConfig>({
     search: '',
     minImpressions: 0,
@@ -112,7 +114,7 @@ export default function RSYAPlatformsTable({
     }
   };
 
-  const filteredAndSortedPlatforms = useMemo(() => {
+  const filteredPlatforms = useMemo(() => {
     const result = platforms.filter(p => {
       if (searchTerm && !p.adgroup_name.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
@@ -138,6 +140,11 @@ export default function RSYAPlatformsTable({
       return true;
     });
 
+    return result;
+  }, [platforms, searchTerm, filters]);
+
+  const sortedPlatforms = useMemo(() => {
+    const result = [...filteredPlatforms];
     result.sort((a, b) => {
       let aVal: any = 0;
       let bVal: any = 0;
@@ -162,16 +169,22 @@ export default function RSYAPlatformsTable({
       
       return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
     });
-
     return result;
-  }, [platforms, searchTerm, sortField, sortOrder, filters]);
+  }, [filteredPlatforms, sortField, sortOrder]);
+
+  const totalPages = Math.ceil(sortedPlatforms.length / itemsPerPage);
+  const paginatedPlatforms = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return sortedPlatforms.slice(start, end);
+  }, [sortedPlatforms, currentPage, itemsPerPage]);
 
   const stats = useMemo(() => {
-    const total = filteredAndSortedPlatforms.length;
+    const total = sortedPlatforms.length;
     const selected = selectedPlatforms.length;
-    const strange = filteredAndSortedPlatforms.filter(p => isStrangeDomain(p.adgroup_name)).length;
+    const strange = sortedPlatforms.filter(p => isStrangeDomain(p.adgroup_name)).length;
     
-    const totalStats = filteredAndSortedPlatforms.reduce((acc, p) => {
+    const totalStats = sortedPlatforms.reduce((acc, p) => {
       if (p.stats) {
         acc.impressions += p.stats.impressions;
         acc.clicks += p.stats.clicks;
@@ -181,7 +194,7 @@ export default function RSYAPlatformsTable({
       return acc;
     }, { impressions: 0, clicks: 0, cost: 0, conversions: 0 });
     
-    const selectedStats = filteredAndSortedPlatforms
+    const selectedStats = sortedPlatforms
       .filter(p => selectedPlatforms.includes(p.adgroup_id))
       .reduce((acc, p) => {
         if (p.stats) {
@@ -194,10 +207,26 @@ export default function RSYAPlatformsTable({
       }, { impressions: 0, clicks: 0, cost: 0, conversions: 0 });
     
     return { total, selected, strange, totalStats, selectedStats };
-  }, [filteredAndSortedPlatforms, selectedPlatforms]);
+  }, [sortedPlatforms, selectedPlatforms]);
 
-  const allSelected = filteredAndSortedPlatforms.length > 0 && 
-    filteredAndSortedPlatforms.every(p => selectedPlatforms.includes(p.adgroup_id));
+  const allSelected = paginatedPlatforms.length > 0 && 
+    paginatedPlatforms.every(p => selectedPlatforms.includes(p.adgroup_id));
+
+  const handleSelectAllVisible = useCallback(() => {
+    paginatedPlatforms.forEach(p => {
+      if (!selectedPlatforms.includes(p.adgroup_id)) {
+        onTogglePlatform(p.adgroup_id);
+      }
+    });
+  }, [paginatedPlatforms, selectedPlatforms, onTogglePlatform]);
+
+  const handleDeselectAllVisible = useCallback(() => {
+    paginatedPlatforms.forEach(p => {
+      if (selectedPlatforms.includes(p.adgroup_id)) {
+        onTogglePlatform(p.adgroup_id);
+      }
+    });
+  }, [paginatedPlatforms, selectedPlatforms, onTogglePlatform]);
 
   const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <button
@@ -266,15 +295,15 @@ export default function RSYAPlatformsTable({
             />
           </div>
           <Button
-            onClick={allSelected ? onDeselectAll : onSelectAll}
+            onClick={allSelected ? handleDeselectAllVisible : handleSelectAllVisible}
             variant="outline"
             size="sm"
           >
-            {allSelected ? 'Снять все' : 'Выбрать все'}
+            {allSelected ? 'Снять на странице' : 'Выбрать на странице'}
           </Button>
           <Button
             onClick={() => {
-              const strangeIds = filteredAndSortedPlatforms
+              const strangeIds = sortedPlatforms
                 .filter(p => isStrangeDomain(p.adgroup_name))
                 .map(p => p.adgroup_id);
               strangeIds.forEach(id => {
@@ -408,7 +437,7 @@ export default function RSYAPlatformsTable({
               </tr>
             </thead>
             <tbody>
-              {filteredAndSortedPlatforms.map((platform, idx) => {
+              {paginatedPlatforms.map((platform, idx) => {
                 const isSelected = selectedPlatforms.includes(platform.adgroup_id);
                 const isStrange = isStrangeDomain(platform.adgroup_name);
                 
@@ -496,7 +525,7 @@ export default function RSYAPlatformsTable({
             </tbody>
           </table>
           
-          {filteredAndSortedPlatforms.length === 0 && (
+          {sortedPlatforms.length === 0 && (
             <div className="text-center py-12 text-slate-500">
               <Icon name="Search" className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <div className="font-medium">Площадки не найдены</div>
@@ -504,6 +533,92 @@ export default function RSYAPlatformsTable({
             </div>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t bg-slate-50 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-slate-600">
+                Показано <span className="font-semibold">{(currentPage - 1) * itemsPerPage + 1}</span> - <span className="font-semibold">{Math.min(currentPage * itemsPerPage, sortedPlatforms.length)}</span> из <span className="font-semibold">{sortedPlatforms.length}</span>
+              </div>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-1 border rounded-md text-sm bg-white"
+              >
+                <option value={25}>25 на странице</option>
+                <option value={50}>50 на странице</option>
+                <option value={100}>100 на странице</option>
+                <option value={200}>200 на странице</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                variant="outline"
+                size="sm"
+              >
+                <Icon name="ChevronsLeft" className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                variant="outline"
+                size="sm"
+              >
+                <Icon name="ChevronLeft" className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 4) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 3) {
+                    pageNum = totalPages - 6 + i;
+                  } else {
+                    pageNum = currentPage - 3 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      variant={currentPage === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      className="min-w-[40px]"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <Button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                variant="outline"
+                size="sm"
+              >
+                <Icon name="ChevronRight" className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                variant="outline"
+                size="sm"
+              >
+                <Icon name="ChevronsRight" className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

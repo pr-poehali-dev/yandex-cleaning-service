@@ -299,12 +299,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     except Exception as e:
                         print(f'[DEBUG] Failed to fetch reports: {str(e)}')
                     
-                    # Если нет данных в Reports API, просто оставляем пустой массив
-                    if len(platforms) == 0:
-                        print(f'[DEBUG] No platform data found in Reports API for campaign {campaign_id}')
-                    
-                    # ОТКЛЮЧЕНО: генерация тестовых данных
-                    if False and len(platforms) == 0 and is_sandbox:
+                    # Если площадок нет, добавляем тестовые для демонстрации
+                    if len(platforms) == 0 and is_sandbox:
                         import random
                         
                         # Если цели не получены, создаем тестовые
