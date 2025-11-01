@@ -534,36 +534,98 @@ export default function RSYASetup() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                <div className="space-y-6">
                   {goals.length === 0 ? (
-                    <div className="col-span-full text-center py-8 text-slate-500">
+                    <div className="text-center py-8 text-slate-500">
                       <Icon name="Target" className="h-12 w-12 mx-auto mb-2 text-slate-400" />
                       <p className="font-medium">Цели не загружены</p>
                       <p className="text-sm mt-1">Выберите счётчики Метрики выше и нажмите "Загрузить цели"</p>
                     </div>
                   ) : (
-                    goals.map((goal) => (
-                      <div
-                        key={goal.id}
-                        className="flex items-start gap-2 p-2.5 rounded-lg border bg-white hover:bg-slate-50 cursor-pointer transition-colors"
-                        onClick={() => handleGoalToggle(goal.id)}
-                      >
-                        <Checkbox
-                          checked={selectedGoals.has(goal.id)}
-                          onCheckedChange={() => handleGoalToggle(goal.id)}
-                          className="mt-0.5 flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 break-words leading-tight">{goal.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <p className="text-xs text-slate-500">ID: {goal.id}</p>
-                            {goal.counter_name && (
-                              <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{goal.counter_name}</span>
-                            )}
+                    (() => {
+                      // Группируем цели по счётчикам
+                      const goalsByCounter: Record<string, Goal[]> = {};
+                      goals.forEach(goal => {
+                        const counterId = goal.counter_id || 'unknown';
+                        if (!goalsByCounter[counterId]) {
+                          goalsByCounter[counterId] = [];
+                        }
+                        goalsByCounter[counterId].push(goal);
+                      });
+
+                      return Object.entries(goalsByCounter).map(([counterId, counterGoals]) => {
+                        const counterName = counterGoals[0]?.counter_name || `Счётчик ${counterId}`;
+                        const selectedInCounter = counterGoals.filter(g => selectedGoals.has(g.id)).length;
+                        
+                        return (
+                          <div key={counterId} className="space-y-3">
+                            {/* Заголовок счётчика */}
+                            <div className="flex items-center justify-between bg-gradient-to-r from-purple-100 to-pink-100 p-3 rounded-lg border-2 border-purple-200">
+                              <div className="flex items-center gap-3">
+                                <Icon name="BarChart3" className="h-5 w-5 text-purple-600" />
+                                <div>
+                                  <h3 className="font-semibold text-slate-900">{counterName}</h3>
+                                  <p className="text-xs text-slate-600">ID: {counterId}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-purple-700">
+                                  {selectedInCounter} / {counterGoals.length}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    const allSelected = counterGoals.every(g => selectedGoals.has(g.id));
+                                    const newSelected = new Set(selectedGoals);
+                                    if (allSelected) {
+                                      counterGoals.forEach(g => newSelected.delete(g.id));
+                                    } else {
+                                      counterGoals.forEach(g => newSelected.add(g.id));
+                                    }
+                                    setSelectedGoals(newSelected);
+                                  }}
+                                  className="text-xs h-7 px-2"
+                                >
+                                  {counterGoals.every(g => selectedGoals.has(g.id)) ? (
+                                    <>
+                                      <Icon name="Square" className="h-3 w-3 mr-1" />
+                                      Снять все
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Icon name="CheckSquare" className="h-3 w-3 mr-1" />
+                                      Выбрать все
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Цели счётчика */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pl-2">
+                              {counterGoals.map((goal) => (
+                                <div
+                                  key={goal.id}
+                                  className="flex items-start gap-2 p-2.5 rounded-lg border bg-white hover:bg-purple-50 cursor-pointer transition-colors"
+                                  onClick={() => handleGoalToggle(goal.id)}
+                                >
+                                  <Checkbox
+                                    checked={selectedGoals.has(goal.id)}
+                                    onCheckedChange={() => handleGoalToggle(goal.id)}
+                                    className="mt-0.5 flex-shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-slate-900 break-words leading-tight">{goal.name}</p>
+                                    <p className="text-xs text-slate-500 mt-1">ID: {goal.id}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))
+                        );
+                      });
+                    })()
                   )}
                 </div>
               </CardContent>
