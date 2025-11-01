@@ -123,11 +123,15 @@ export default function RSYASetup() {
         }
       );
 
+      console.log('🎯 Статус загрузки целей:', goalsResponse.status);
       if (goalsResponse.ok) {
         const goalsData = await goalsResponse.json();
+        console.log('🎯 Ответ от бэкенда (цели):', goalsData);
         const allGoals = goalsData.goals || [];
         console.log('🎯 Загружено целей:', allGoals.length);
-        console.log('🎯 Пример цели:', allGoals[0]);
+        if (allGoals.length > 0) {
+          console.log('🎯 Пример цели:', allGoals[0]);
+        }
         setGoals(allGoals);
         
         // Извлекаем уникальные ID счётчиков из целей
@@ -154,10 +158,15 @@ export default function RSYASetup() {
             }
           );
 
+          console.log('📊 Статус загрузки счётчиков:', countersResponse.status);
           if (countersResponse.ok) {
             const countersData = await countersResponse.json();
+            console.log('📊 Ответ от бэкенда (счётчики):', countersData);
             const directCounters = countersData.counters || [];
             console.log('📊 Загружено счётчиков из Директа:', directCounters.length);
+            if (directCounters.length > 0) {
+              console.log('📊 Пример счётчика:', directCounters[0]);
+            }
             setCounters(directCounters);
             
             // Автоматически выбираем все счётчики
@@ -434,18 +443,7 @@ export default function RSYASetup() {
                     <p className="text-slate-600">Загружаем счётчики из Директа...</p>
                   </div>
                 ) : (
-                  <>
-                    <div className="mb-4 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
-                      <div className="flex items-start gap-3">
-                        <Icon name="Sparkles" className="h-5 w-5 text-green-600 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-semibold text-green-900">Умная фильтрация включена</p>
-                          <p className="text-xs text-green-700 mt-1">Показаны только счётчики, которые используются в выбранных кампаниях РСЯ</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {counters.length === 0 ? (
                         <div className="col-span-full text-center py-8 text-slate-500">
                           <Icon name="AlertCircle" className="h-12 w-12 mx-auto mb-2 text-slate-400" />
@@ -487,8 +485,7 @@ export default function RSYASetup() {
                           );
                         })
                       )}
-                    </div>
-                  </>
+                  </div>
                 )}
               </CardContent>
             </Card>
