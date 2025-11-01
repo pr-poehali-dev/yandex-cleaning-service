@@ -373,7 +373,6 @@ export default function RSYACleaner() {
   const loadGoalsFromDirect = async (token: string) => {
     console.log('🎯 loadGoalsFromDirect called');
     try {
-      const actualSandbox = localStorage.getItem('yandex_use_sandbox') === 'true';
       const clientLogin = localStorage.getItem('yandex_client_login') || undefined;
       
       toast({ 
@@ -381,7 +380,7 @@ export default function RSYACleaner() {
         description: 'Получаем цели из Яндекс.Директ'
       });
       
-      const url = `${YANDEX_DIRECT_URL}?action=goals${actualSandbox ? '&sandbox=true' : ''}${clientLogin ? `&client_login=${clientLogin}` : ''}`;
+      const url = `${YANDEX_DIRECT_URL}?action=goals${clientLogin ? `&client_login=${clientLogin}` : ''}`;
       
       const response = await fetch(url, {
         method: 'GET',
@@ -474,7 +473,6 @@ export default function RSYACleaner() {
       const token = authCode.trim();
       
       // Сохраняем настройки
-      localStorage.setItem('yandex_use_sandbox', String(useSandbox));
       if (clientLogin.trim()) {
         localStorage.setItem('yandex_client_login', clientLogin.trim());
       } else {
@@ -544,13 +542,11 @@ export default function RSYACleaner() {
   const handleDisconnect = () => {
     localStorage.removeItem('yandex_direct_token');
     localStorage.removeItem('yandex_client_login');
-    localStorage.removeItem('yandex_use_sandbox');
     setIsConnected(false);
     setCampaigns([]);
     setSelectedCampaigns([]);
     setResults(null);
     setClientLoginState('');
-    setUseSandboxState(true);
     toast({ title: 'Яндекс.Директ отключён' });
   };
 
