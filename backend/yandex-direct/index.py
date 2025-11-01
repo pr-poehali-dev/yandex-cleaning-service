@@ -69,7 +69,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if client_login:
                 headers_api['Client-Login'] = client_login
             
-            # Запрос кампаний с CounterIds
+            # Запрос кампаний с Goals
             response = requests.post(
                 api_url,
                 headers=headers_api,
@@ -78,7 +78,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'params': {
                         'SelectionCriteria': {},
                         'FieldNames': ['Id', 'Name'],
-                        'TextCampaignFieldNames': ['CounterIds']
+                        'TextCampaignFieldNames': ['Settings']
                     }
                 },
                 timeout=30
@@ -110,49 +110,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             campaigns = data.get('result', {}).get('Campaigns', [])
             print(f'[DEBUG] Found {len(campaigns)} campaigns')
             
-            # Собираем все CounterIds
-            counter_ids = set()
+            # Парсим цели из Settings кампаний
+            all_goals = []
+            goals_seen = set()
+            
             for campaign in campaigns:
                 text_campaign = campaign.get('TextCampaign', {})
-                campaign_counter_ids = text_campaign.get('CounterIds', {})
+                settings = text_campaign.get('Settings', [])
                 
-                if isinstance(campaign_counter_ids, dict):
-                    for counter_id in campaign_counter_ids.get('Items', []):
-                        counter_ids.add(counter_id)
-                elif isinstance(campaign_counter_ids, list):
-                    counter_ids.update(campaign_counter_ids)
-            
-            print(f'[DEBUG] Found {len(counter_ids)} unique counter IDs: {list(counter_ids)}')
-            
-            # Для каждого счётчика получаем цели из Метрики
-            all_goals = []
-            
-            for counter_id in counter_ids:
-                metrika_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
+                print(f'[DEBUG] Campaign {campaign.get("Name")}: {len(settings)} settings')
                 
-                metrika_response = requests.get(
-                    metrika_url,
-                    headers={'Authorization': f'OAuth {token}'},
-                    timeout=30
-                )
-                
-                if metrika_response.status_code == 200:
-                    metrika_data = metrika_response.json()
-                    goals = metrika_data.get('goals', [])
-                    
-                    for goal in goals:
-                        all_goals.append({
-                            'id': goal.get('id'),
-                            'name': goal.get('name'),
-                            'type': goal.get('type'),
-                            'counter_id': counter_id
-                        })
-                    
-                    print(f'[DEBUG] Counter {counter_id}: loaded {len(goals)} goals')
-                else:
-                    print(f'[WARN] Failed to load goals for counter {counter_id}: {metrika_response.status_code}')
+                # Ищем настройки с целями
+                for setting in settings:
+                    if setting.get('Option') == 'GOALS':
+                        value = setting.get('Value')
+                        if value:
+                            # Value содержит ID целей через запятую
+                            goal_ids = value.split(',')
+                            for goal_id in goal_ids:
+                                goal_id = goal_id.strip()
+                                if goal_id and goal_id not in goals_seen:
+                                    goals_seen.add(goal_id)
+                                    all_goals.append({
+                                        'id': goal_id,
+                                        'campaign_id': campaign.get('Id'),
+                                        'campaign_name': campaign.get('Name')
+                                    })
             
-            print(f'[DEBUG] Total goals loaded: {len(all_goals)}')
+            print(f'[DEBUG] Total goals found: {len(all_goals)}')
             
             return {
                 'statusCode': 200,
