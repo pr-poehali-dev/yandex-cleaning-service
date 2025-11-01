@@ -165,8 +165,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                     'Impressions',
                                     'Clicks',
                                     'Cost',
-                                    'Ctr',
-                                    'AvgCpc',
                                     'Conversions',
                                     'GoalId'
                                 ],
