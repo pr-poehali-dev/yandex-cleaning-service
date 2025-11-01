@@ -81,42 +81,39 @@ export default function RSYASetup() {
         return;
       }
 
-      const response = await fetch(`https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23`, {
+      const campaignsResponse = await fetch(`https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23`, {
         headers: {
           'X-Auth-Token': token
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Ошибка загрузки данных');
+      if (!campaignsResponse.ok) {
+        throw new Error('Ошибка загрузки кампаний');
       }
 
-      const data = await response.json();
+      const campaignsData = await campaignsResponse.json();
+      setCampaigns(campaignsData.campaigns || []);
       
-      setCampaigns(data.campaigns || []);
-      
-      const allGoals: Goal[] = [];
-      const goalsMap = new Map<string, Goal>();
-      
-      data.campaigns?.forEach((camp: any) => {
-        camp.goals?.forEach((goal: Goal) => {
-          if (!goalsMap.has(goal.id)) {
-            goalsMap.set(goal.id, goal);
-            allGoals.push(goal);
-          }
-        });
-      });
-      
-      setGoals(allGoals);
-      
-      if (autoSelectCampaigns && data.campaigns?.length > 0) {
-        const campaignIds = new Set(data.campaigns.map((c: Campaign) => c.id));
+      if (autoSelectCampaigns && campaignsData.campaigns?.length > 0) {
+        const campaignIds = new Set(campaignsData.campaigns.map((c: Campaign) => c.id));
         setSelectedCampaigns(campaignIds);
       }
       
-      if (allGoals.length > 0) {
-        const goalIds = new Set(allGoals.map(g => g.id));
-        setSelectedGoals(goalIds);
+      const goalsResponse = await fetch(`https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals`, {
+        headers: {
+          'X-Auth-Token': token
+        }
+      });
+
+      if (goalsResponse.ok) {
+        const goalsData = await goalsResponse.json();
+        const allGoals = goalsData.goals || [];
+        setGoals(allGoals);
+        
+        if (allGoals.length > 0) {
+          const goalIds = new Set(allGoals.map((g: Goal) => g.id));
+          setSelectedGoals(goalIds);
+        }
       }
       
     } catch (error) {
