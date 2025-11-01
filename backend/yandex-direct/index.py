@@ -40,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить список целей
+    # GET ?action=goals - получить список целей из Метрики
     if method == 'GET' and query_params.get('action') == 'goals':
         headers = event.get('headers', {})
         token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
@@ -52,42 +52,56 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
+                'isBase64Encoded': False,
                 'body': json.dumps({'error': 'Отсутствует токен авторизации'})
             }
         
         try:
-            is_sandbox = query_params.get('sandbox') == 'true'
-            api_url = 'https://api-sandbox.direct.yandex.com/live/v4/json/' if is_sandbox else 'https://api.direct.yandex.ru/live/v4/json/'
+            print(f'[DEBUG] Loading goals with token: {token[:10]}...')
             
-            response = requests.post(
-                api_url,
-                headers={
-                    'Authorization': f'Bearer {token}',
-                    'Accept-Language': 'ru'
-                },
-                json={
-                    'method': 'GetRetargetingGoals',
-                    'param': {}
-                },
+            # Используем Метрика API для получения целей
+            metrika_url = 'https://api-metrika.yandex.net/management/v1/counters'
+            
+            response = requests.get(
+                metrika_url,
+                headers={'Content-Type': 'application/json'},
+                params={'oauth_token': token, 'field': 'goals'},
                 timeout=30
             )
             
+            print(f'[DEBUG] Metrika response status: {response.status_code}')
             data = response.json()
             
-            if 'error_code' in data or 'error' in data:
+            if response.status_code != 200:
                 return {
                     'statusCode': 400,
                     'headers': {
                         'Content-Type': 'application/json',
                         'Access-Control-Allow-Origin': '*'
                     },
-                    'body': json.dumps({
-                        'error': 'Yandex API error',
-                        'details': data
-                    })
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': 'Ошибка API Метрики', 'details': data})
                 }
             
-            goals = data.get('data', [])
+            # Собираем все цели из всех счётчиков
+            all_goals = []
+            counters = data.get('counters', [])
+            
+            for counter in counters:
+                counter_id = counter.get('id')
+                counter_name = counter.get('name', 'Без названия')
+                goals = counter.get('goals', [])
+                
+                for goal in goals:
+                    all_goals.append({
+                        'id': goal.get('id'),
+                        'name': goal.get('name'),
+                        'type': goal.get('type'),
+                        'counter_id': counter_id,
+                        'counter_name': counter_name
+                    })
+            
+            print(f'[DEBUG] Found {len(all_goals)} goals from {len(counters)} counters')
             
             return {
                 'statusCode': 200,
@@ -95,16 +109,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
-                'body': json.dumps({'goals': goals})
+                'isBase64Encoded': False,
+                'body': json.dumps({'goals': all_goals, 'counters': len(counters)})
             }
         
         except Exception as e:
+            print(f'[ERROR] Failed to load goals: {str(e)}')
             return {
                 'statusCode': 500,
                 'headers': {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
+                'isBase64Encoded': False,
                 'body': json.dumps({'error': str(e)})
             }
     
