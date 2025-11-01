@@ -207,21 +207,19 @@ export default function RSYAConnectionCard({
                 </p>
               </div>
               
-              {!useSandbox && (
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">
-                    Логин клиента <span className="text-slate-400 font-normal">(для агентских аккаунтов)</span>
-                  </label>
-                  <Input
-                    value={clientLogin}
-                    onChange={(e) => setClientLogin(e.target.value)}
-                    placeholder="client-login"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Оставьте пустым, если используете прямой доступ
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-1 block">
+                  Логин клиента <span className="text-slate-400 font-normal">(для агентских аккаунтов)</span>
+                </label>
+                <Input
+                  value={clientLogin}
+                  onChange={(e) => setClientLogin(e.target.value)}
+                  placeholder="client-login"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Оставьте пустым, если используете прямой доступ
+                </p>
+              </div>
               
               <Button 
                 onClick={onSubmitCode} 
