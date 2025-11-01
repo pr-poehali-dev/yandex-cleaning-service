@@ -118,9 +118,9 @@ export default function RSYAProjects() {
   };
 
   return (
-    <>
+    <div className="flex">
       <AppSidebar />
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 ml-64">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 ml-64 flex-1">
         <div className="p-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-8">
@@ -234,6 +234,7 @@ export default function RSYAProjects() {
                 ))}
               </div>
             )}
+          </div>
         </div>
       </div>
     </div>
