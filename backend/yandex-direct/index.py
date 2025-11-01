@@ -181,7 +181,84 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[DEBUG] Total unique goals from campaigns: {len(goals_from_campaigns)}')
             
-            # Используем цели из кампаний (токен OAuth от Директа не имеет доступа к Метрике)
+            # Пытаемся обогатить данные из Метрики (названия целей и счётчиков)
+            try:
+                print('[DEBUG] Attempting to enrich goals with Metrika data...')
+                
+                # Получаем список счётчиков
+                counters_url = 'https://api-metrika.yandex.net/management/v1/counters'
+                metrika_headers = {'Authorization': f'OAuth {token}'}
+                counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
+                
+                print(f'[DEBUG] Metrika counters response: {counters_response.status_code}')
+                
+                if counters_response.status_code == 200:
+                    counters_data = counters_response.json()
+                    counters = counters_data.get('counters', [])
+                    
+                    print(f'[DEBUG] Found {len(counters)} Metrika counters')
+                    
+                    # Создаём словарь счётчиков
+                    counters_map = {str(c['id']): c.get('name', f"Счётчик {c['id']}") for c in counters}
+                    
+                    # Для каждого счётчика получаем цели
+                    goals_details = {}
+                    for counter in counters:
+                        counter_id = counter['id']
+                        counter_name = counter.get('name', f'Счётчик {counter_id}')
+                        
+                        goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
+                        goals_response = requests.get(goals_url, headers=metrika_headers, timeout=10)
+                        
+                        if goals_response.status_code == 200:
+                            goals_data = goals_response.json()
+                            counter_goals = goals_data.get('goals', [])
+                            
+                            print(f'[DEBUG] Counter {counter_id} ({counter_name}): {len(counter_goals)} goals')
+                            
+                            for goal in counter_goals:
+                                goal_id_str = str(goal.get('id', ''))
+                                if goal_id_str:
+                                    goals_details[goal_id_str] = {
+                                        'name': goal.get('name', f'Цель {goal_id_str}'),
+                                        'counter_id': str(counter_id),
+                                        'counter_name': counter_name,
+                                        'type': goal.get('type', 'unknown')
+                                    }
+                    
+                    print(f'[DEBUG] Enriched {len(goals_details)} goals from Metrika')
+                    
+                    # Обогащаем цели данными из Метрики
+                    for goal in goals_from_campaigns:
+                        goal_id = goal['id']
+                        if goal_id in goals_details:
+                            goal['name'] = goals_details[goal_id]['name']
+                            goal['counter_id'] = goals_details[goal_id]['counter_id']
+                            goal['counter_name'] = goals_details[goal_id]['counter_name']
+                            goal['type'] = goals_details[goal_id]['type']
+                        else:
+                            # Если цель не найдена в Метрике, оставляем ID
+                            goal['name'] = f"Цель {goal_id}"
+                            goal['counter_name'] = "Неизвестный счётчик"
+                    
+                    print(f'[DEBUG] Successfully enriched goals with Metrika data')
+                    
+                else:
+                    print(f'[WARN] Cannot access Metrika API (status {counters_response.status_code}). Using goal IDs only.')
+                    # Если нет доступа к Метрике, используем только ID
+                    for goal in goals_from_campaigns:
+                        goal['name'] = f"Цель {goal['id']}"
+                        goal['counter_name'] = "Требуется доступ к Метрике"
+                        
+            except Exception as metrika_error:
+                print(f'[ERROR] Failed to enrich with Metrika: {metrika_error}')
+                # В случае ошибки используем ID
+                for goal in goals_from_campaigns:
+                    if 'name' not in goal or not goal['name']:
+                        goal['name'] = f"Цель {goal['id']}"
+                    if 'counter_name' not in goal:
+                        goal['counter_name'] = "Ошибка загрузки"
+            
             all_goals = goals_from_campaigns
             print(f'[DEBUG] Final goals count: {len(all_goals)}')
             

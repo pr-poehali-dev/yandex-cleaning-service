@@ -19,6 +19,8 @@ interface Goal {
   id: string;
   name: string;
   type: string;
+  counter_id?: string;
+  counter_name?: string;
 }
 
 const RSYA_PROJECTS_URL = func2url['rsya-projects'] || 'https://functions.poehali.dev/08f68ba6-cbbb-4ca1-841f-185671e0757d';
@@ -375,7 +377,12 @@ export default function RSYASetup() {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-slate-900 break-words leading-tight">{goal.name}</p>
-                          <p className="text-xs text-slate-500 mt-1">ID: {goal.id}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-slate-500">ID: {goal.id}</p>
+                            {goal.counter_name && (
+                              <span className="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">{goal.counter_name}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))
