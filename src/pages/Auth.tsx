@@ -131,7 +131,13 @@ export default function Auth() {
       localStorage.setItem('sessionToken', data.sessionToken);
 
       toast({ title: '✅ Добро пожаловать!', description: 'Вход выполнен успешно' });
-      window.location.href = '/home';
+      
+      console.log('💾 Токен сохранён в localStorage:', {
+        user: localStorage.getItem('user'),
+        sessionToken: localStorage.getItem('sessionToken')
+      });
+      
+      navigate('/home');
     } catch (error: any) {
       toast({ 
         title: 'Ошибка входа', 

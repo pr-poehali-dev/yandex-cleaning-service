@@ -125,6 +125,20 @@ def handle_auth(event: Dict[str, Any], cur, conn) -> Dict[str, Any]:
         
         user_id, stored_code, expires_at = user
         
+        if stored_code != code:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Invalid verification code'})
+            }
+        
+        if datetime.now() > expires_at:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Verification code expired'})
+            }
+        
         session_token = secrets.token_hex(32)
         token_expires = datetime.now() + timedelta(days=30)
         
