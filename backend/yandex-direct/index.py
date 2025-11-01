@@ -444,6 +444,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 except Exception as e:
                     print(f'[DEBUG] Failed to fetch reports: {str(e)}')
             
+            # Фильтруем кампании - оставляем только РСЯ (только CONTEXT, без SEARCH)
+            rsya_campaign_ids = set()
+            for campaign_id, placements in all_platforms_by_campaign.items():
+                has_search = False
+                has_context = False
+                
+                for placement_name in placements.keys():
+                    if placement_name == 'SEARCH':
+                        has_search = True
+                    elif placement_name == 'CONTEXT':
+                        has_context = True
+                
+                # РСЯ кампания = есть показы в CONTEXT И нет показов в SEARCH
+                if has_context and not has_search:
+                    rsya_campaign_ids.add(campaign_id)
+                    print(f'[DEBUG] Campaign {campaign_id} is RSA-only (CONTEXT only)')
+                else:
+                    print(f'[DEBUG] Campaign {campaign_id} is NOT RSA-only (has_search={has_search}, has_context={has_context})')
+            
+            print(f'[DEBUG] Filtered to {len(rsya_campaign_ids)} RSA campaigns from {len(all_platforms_by_campaign)} total')
+            
             # Формируем список кампаний с их площадками и целями
             campaigns = []
             for c in campaigns_raw:
@@ -451,6 +472,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 campaign_id = str(c.get('Id'))
                 
                 if campaign_type != 'TEXT_CAMPAIGN':
+                    continue
+                
+                # Пропускаем кампании, которые НЕ являются РСЯ-only
+                if campaign_id not in rsya_campaign_ids and all_platforms_by_campaign:
                     continue
                 
                 platforms = []
