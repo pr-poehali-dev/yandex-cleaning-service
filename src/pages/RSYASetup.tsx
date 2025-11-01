@@ -25,7 +25,6 @@ const RSYA_PROJECTS_URL = func2url['rsya-projects'] || 'https://functions.poehal
 
 export default function RSYASetup() {
   const { id: projectId } = useParams<{ id: string }>();
-  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -38,23 +37,25 @@ export default function RSYASetup() {
   const [autoSelectCampaigns, setAutoSelectCampaigns] = useState(true);
 
   useEffect(() => {
-    if (user?.id && projectId) {
+    if (projectId) {
       loadData();
     }
-  }, [projectId, user]);
+  }, [projectId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       
-      if (!user?.id || !projectId) {
+      const userId = localStorage.getItem('user_id') || '1';
+      
+      if (!projectId) {
         navigate('/rsya');
         return;
       }
       
       const projectResponse = await fetch(`${RSYA_PROJECTS_URL}?project_id=${projectId}`, {
         method: 'GET',
-        headers: { 'X-User-Id': user.id.toString() }
+        headers: { 'X-User-Id': userId }
       });
       
       if (!projectResponse.ok) {

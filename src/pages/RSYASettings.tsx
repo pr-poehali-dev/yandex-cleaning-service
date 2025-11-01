@@ -27,7 +27,6 @@ const RSYA_PROJECTS_URL = func2url['rsya-projects'] || 'https://functions.poehal
 
 export default function RSYASettings() {
   const { id: projectId } = useParams<{ id: string }>();
-  const { user } = useAuth();
   const [projectName, setProjectName] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -50,13 +49,15 @@ export default function RSYASettings() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user?.id || !projectId) {
+    const userId = localStorage.getItem('user_id') || '1';
+    
+    if (!projectId) {
       navigate('/rsya');
       return;
     }
     
-    loadProject(user.id.toString(), projectId);
-  }, [projectId, user, navigate]);
+    loadProject(userId, projectId);
+  }, [projectId, navigate]);
 
   const loadProject = async (uid: string, pid: string) => {
     try {
@@ -191,10 +192,11 @@ export default function RSYASettings() {
         localStorage.removeItem('yandex_client_login');
       }
       
-      if (token.length > 10 && user?.id) {
+      if (token.length > 10) {
+        const userId = localStorage.getItem('user_id') || '1';
         localStorage.setItem('yandex_direct_token', token);
         localStorage.setItem('rsya_yandex_token', token);
-        await saveTokenToProject(user.id.toString(), projectId!, token);
+        await saveTokenToProject(userId, projectId!, token);
         toast({ 
           title: '✅ Токен сохранён', 
           description: 'Переход к настройке кампаний...' 
