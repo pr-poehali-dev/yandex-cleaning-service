@@ -14,6 +14,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Returns: HTTP response с access_token или редирект
     '''
     method: str = event.get('httpMethod', 'GET')
+    path_params = event.get('pathParams', {})
+    path = event.get('url', '')
     
     if method == 'OPTIONS':
         return {
@@ -144,6 +146,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'statusCode': 401,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'error': 'User ID required'}),
+                'isBase64Encoded': False
+            }
+        
+        if '/auth-url' in path or path_params.get('action') == 'auth-url':
+            client_id = os.environ.get('YANDEX_DIRECT_CLIENT_ID')
+            
+            if not client_id:
+                return {
+                    'statusCode': 500,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Client ID not configured'}),
+                    'isBase64Encoded': False
+                }
+            
+            redirect_uri = 'https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23'
+            auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&state={user_id}'
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'auth_url': auth_url}),
                 'isBase64Encoded': False
             }
         

@@ -261,15 +261,29 @@ export default function RSYACleaner() {
     }
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userId = user.id || 'default_user';
     
-    const clientId = import.meta.env.VITE_YANDEX_CLIENT_ID || 'YOUR_CLIENT_ID';
-    const redirectUri = `${window.location.origin}/rsya`;
-    const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${userId}`;
-    
-    window.location.href = authUrl;
+    try {
+      const response = await fetch(func2url['yandex-oauth'] + '/auth-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId
+        }
+      });
+      
+      if (!response.ok) {
+        toast({ title: 'Ошибка подключения', description: 'Не удалось получить ссылку авторизации', variant: 'destructive' });
+        return;
+      }
+      
+      const data = await response.json();
+      window.location.href = data.auth_url;
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось запустить OAuth', variant: 'destructive' });
+    }
   };
 
   const handleCodeSubmit = async () => {
