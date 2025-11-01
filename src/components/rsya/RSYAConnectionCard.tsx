@@ -107,8 +107,7 @@ export default function RSYAConnectionCard({
                 </button>
               </div>
             </div>
-          </div>
-        )}
+        </div>
 
         {showInstructions && (
           <div className="bg-white border-2 border-blue-200 rounded-lg p-4 space-y-3 text-sm">
