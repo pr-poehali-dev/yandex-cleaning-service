@@ -139,6 +139,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 (project_name, user_id_int)
             )
             row = cursor.fetchone()
+            conn.commit()
             
             project = {
                 'id': row[0],
@@ -187,6 +188,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': 'Project not found'})
                 }
+            
+            conn.commit()
             
             cursor.close()
             conn.close()
@@ -258,6 +261,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "UPDATE rsya_projects SET is_configured = true, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
                 (project_id,)
             )
+            
+            conn.commit()
             
             print(f'[DEBUG] Setup completed for project {project_id}: campaigns={len(campaigns)}, goals={len(goals)}, is_configured=true')
             
