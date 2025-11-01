@@ -213,27 +213,51 @@ export default function RSYAConnectionCard({
         )}
 
         {!showCodeInput ? (
-          <div className="flex flex-col gap-3">
-            <Button onClick={onConnect} className="bg-blue-600 hover:bg-blue-700 text-white" size="lg">
-              <Icon name="Key" className="h-5 w-5 mr-2" />
+          <div className="space-y-3">
+            <Button onClick={onConnect} className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="lg">
+              <Icon name="Lock" className="h-5 w-5 mr-2" />
               Авторизоваться через OAuth
             </Button>
-            <Button onClick={onToggleCodeInput} variant="outline" size="lg">
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-slate-300" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-gradient-to-br from-blue-50 to-indigo-50 px-2 text-slate-500">или</span>
+              </div>
+            </div>
+            
+            <Button onClick={onToggleCodeInput} variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-100">
               <Icon name="Terminal" className="h-5 w-5 mr-2" />
-              У меня есть токен
+              У меня есть код подтверждения
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-2">
+                <Icon name="Info" className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-semibold mb-1">Если автоматическое окно не сработало:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-2">
+                    <li>Скопируйте код с страницы Яндекса</li>
+                    <li>Вставьте его в поле ниже</li>
+                    <li>Нажмите "Подключиться"</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+            
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-1 block">
-                  Токен доступа
+                  Код подтверждения
                 </label>
                 <Input
                   value={authCode}
                   onChange={(e) => setAuthCode(e.target.value)}
-                  placeholder="y0_AgA..."
+                  placeholder="1234567"
                   className="font-mono text-sm"
                 />
               </div>
