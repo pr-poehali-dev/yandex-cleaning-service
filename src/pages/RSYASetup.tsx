@@ -174,12 +174,23 @@ export default function RSYASetup() {
     setSelectedGoals(allIds);
   };
 
-  const handleCounterToggle = (counterId: string) => {
+  const handleCounterToggle = async (counterId: string) => {
     const newSelected = new Set(selectedCounters);
-    if (newSelected.has(counterId)) {
+    const wasSelected = newSelected.has(counterId);
+    
+    if (wasSelected) {
       newSelected.delete(counterId);
+      // Удаляем цели этого счётчика
+      const updatedGoals = goals.filter(g => g.counter_id !== counterId);
+      setGoals(updatedGoals);
+      // Удаляем выбранные цели этого счётчика
+      const newSelectedGoals = new Set(selectedGoals);
+      goals.filter(g => g.counter_id === counterId).forEach(g => newSelectedGoals.delete(g.id));
+      setSelectedGoals(newSelectedGoals);
     } else {
       newSelected.add(counterId);
+      // Автоматически загружаем цели для этого счётчика
+      await loadGoalsForCounter(counterId);
     }
     setSelectedCounters(newSelected);
   };
@@ -193,16 +204,7 @@ export default function RSYASetup() {
     setSelectedCounters(new Set());
   };
 
-  const loadGoalsFromSelectedCounters = async () => {
-    if (selectedCounters.size === 0) {
-      toast({
-        title: 'Выберите счётчики',
-        description: 'Сначала выберите счётчики Метрики',
-        variant: 'destructive'
-      });
-      return;
-    }
-
+  const loadGoalsForCounter = async (counterId: string) => {
     try {
       setLoadingGoals(true);
       
@@ -217,11 +219,10 @@ export default function RSYASetup() {
       const projectData = await projectResponse.json();
       const token = projectData.project.yandex_token;
       
-      const counterIds = Array.from(selectedCounters).join(',');
-      console.log('🎯 Загружаем цели из выбранных счётчиков:', counterIds);
+      console.log('🎯 Загружаем цели из счётчика:', counterId);
       
       const goalsResponse = await fetch(
-        `https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals&counter_ids=${counterIds}`,
+        `https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals&counter_ids=${counterId}`,
         {
           headers: {
             'X-Auth-Token': token
@@ -231,18 +232,21 @@ export default function RSYASetup() {
 
       if (goalsResponse.ok) {
         const goalsData = await goalsResponse.json();
-        const allGoals = goalsData.goals || [];
-        console.log('🎯 Загружено целей:', allGoals.length);
-        setGoals(allGoals);
+        const counterGoals = goalsData.goals || [];
+        console.log('🎯 Загружено целей из счётчика:', counterGoals.length);
         
-        if (allGoals.length > 0) {
-          const goalIds = new Set(allGoals.map((g: Goal) => g.id));
-          setSelectedGoals(goalIds);
-        }
+        // Добавляем цели к существующим (не заменяем)
+        const updatedGoals = [...goals, ...counterGoals];
+        setGoals(updatedGoals);
+        
+        // Автоматически выбираем новые цели
+        const newSelectedGoals = new Set(selectedGoals);
+        counterGoals.forEach((g: Goal) => newSelectedGoals.add(g.id));
+        setSelectedGoals(newSelectedGoals);
         
         toast({
           title: 'Цели загружены',
-          description: `Найдено ${allGoals.length} целей из выбранных счётчиков`
+          description: `Добавлено ${counterGoals.length} целей из счётчика`
         });
       }
     } catch (error) {
@@ -438,41 +442,11 @@ export default function RSYASetup() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex gap-2 mb-4">
-                      <Button
-                        onClick={handleSelectAllCounters}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Icon name="CheckSquare" className="h-4 w-4 mr-2" />
-                        Выбрать все
-                      </Button>
-                      <Button
-                        onClick={handleDeselectAllCounters}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Icon name="Square" className="h-4 w-4 mr-2" />
-                        Снять все
-                      </Button>
-                      <Button
-                        onClick={loadGoalsFromSelectedCounters}
-                        disabled={selectedCounters.size === 0 || loadingGoals}
-                        className="ml-auto"
-                        size="sm"
-                      >
-                        {loadingGoals ? (
-                          <>
-                            <Icon name="Loader2" className="h-4 w-4 mr-2 animate-spin" />
-                            Загрузка...
-                          </>
-                        ) : (
-                          <>
-                            <Icon name="Download" className="h-4 w-4 mr-2" />
-                            Загрузить цели
-                          </>
-                        )}
-                      </Button>
+                    <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-sm text-orange-800">
+                        <Icon name="Info" className="h-4 w-4 inline mr-1" />
+                        Нажмите на счётчик чтобы загрузить его цели
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -483,26 +457,36 @@ export default function RSYASetup() {
                           <p className="text-sm">Проверьте доступ к Яндекс.Метрике</p>
                         </div>
                       ) : (
-                        counters.map((counter) => (
-                          <div
-                            key={counter.id}
-                            className="flex items-start gap-2 p-3 rounded-lg border bg-white hover:bg-slate-50 cursor-pointer transition-colors"
-                            onClick={() => handleCounterToggle(counter.id)}
-                          >
-                            <Checkbox
-                              checked={selectedCounters.has(counter.id)}
-                              onCheckedChange={() => handleCounterToggle(counter.id)}
-                              className="mt-0.5 flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-900 truncate">{counter.name}</p>
-                              <p className="text-xs text-slate-500">ID: {counter.id}</p>
-                              {counter.site && (
-                                <p className="text-xs text-orange-600 mt-0.5">{counter.site}</p>
+                        counters.map((counter) => {
+                          const isSelected = selectedCounters.has(counter.id);
+                          return (
+                            <div
+                              key={counter.id}
+                              className={`flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition-all ${
+                                isSelected 
+                                  ? 'bg-orange-50 border-orange-300 shadow-sm' 
+                                  : 'bg-white hover:bg-orange-50 hover:border-orange-200'
+                              }`}
+                              onClick={() => handleCounterToggle(counter.id)}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => handleCounterToggle(counter.id)}
+                                className="mt-0.5 flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 truncate">{counter.name}</p>
+                                <p className="text-xs text-slate-500">ID: {counter.id}</p>
+                                {counter.site && (
+                                  <p className="text-xs text-orange-600 mt-0.5">{counter.site}</p>
+                                )}
+                              </div>
+                              {loadingGoals && isSelected && (
+                                <Icon name="Loader2" className="h-4 w-4 animate-spin text-orange-600" />
                               )}
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </>
@@ -539,7 +523,7 @@ export default function RSYASetup() {
                     <div className="text-center py-8 text-slate-500">
                       <Icon name="Target" className="h-12 w-12 mx-auto mb-2 text-slate-400" />
                       <p className="font-medium">Цели не загружены</p>
-                      <p className="text-sm mt-1">Выберите счётчики Метрики выше и нажмите "Загрузить цели"</p>
+                      <p className="text-sm mt-1">Нажмите на счётчики выше чтобы загрузить их цели</p>
                     </div>
                   ) : (
                     (() => {
