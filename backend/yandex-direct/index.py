@@ -40,10 +40,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить список целей из Метрики
+    # GET ?action=goals - получить уникальные цели из кампаний через Reports API
     if method == 'GET' and query_params.get('action') == 'goals':
-        headers = event.get('headers', {})
-        token = headers.get('X-Auth-Token') or headers.get('x-auth-token')
+        headers_raw = event.get('headers', {})
+        token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
         
         if not token:
             return {
@@ -57,23 +57,62 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            print(f'[DEBUG] Loading goals with token: {token[:10]}...')
+            print(f'[DEBUG] Loading goals from Reports API with token: {token[:10]}...')
             
-            # Используем Метрика API для получения целей
-            metrika_url = 'https://api-metrika.yandex.net/management/v1/counters'
+            is_sandbox = query_params.get('sandbox') == 'true'
+            client_login = query_params.get('client_login')
             
-            response = requests.get(
-                metrika_url,
-                headers={'Content-Type': 'application/json'},
-                params={'oauth_token': token, 'field': 'goals'},
-                timeout=30
+            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
+            
+            headers_api = {
+                'Content-Type': 'application/json',
+                'Accept-Language': 'ru',
+                'skipReportHeader': 'true',
+                'returnMoneyInMicros': 'false'
+            }
+            
+            if client_login:
+                headers_api['Client-Login'] = client_login
+            
+            # Запрос отчёта по конверсиям за последние 7 дней
+            report_body = {
+                'params': {
+                    'SelectionCriteria': {
+                        'DateFrom': (time.strftime('%Y-%m-%d', time.gmtime(time.time() - 7*86400))),
+                        'DateTo': time.strftime('%Y-%m-%d', time.gmtime())
+                    },
+                    'FieldNames': ['CampaignId', 'CampaignName', 'GoalId', 'Conversions'],
+                    'ReportName': 'Goals Report',
+                    'ReportType': 'CUSTOM_REPORT',
+                    'DateRangeType': 'CUSTOM_DATE',
+                    'Format': 'TSV',
+                    'IncludeVAT': 'NO'
+                }
+            }
+            
+            response = requests.post(
+                api_url,
+                headers=headers_api,
+                params={'oauth_token': token},
+                json=report_body,
+                timeout=60
             )
             
-            print(f'[DEBUG] Metrika response status: {response.status_code}')
-            data = response.json()
-            print(f'[DEBUG] Metrika response body: {json.dumps(data)[:500]}')
+            print(f'[DEBUG] Reports API response status: {response.status_code}')
+            
+            if response.status_code == 201:
+                return {
+                    'statusCode': 202,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'message': 'Отчёт формируется, повторите запрос через несколько секунд'})
+                }
             
             if response.status_code != 200:
+                error_data = response.json() if response.headers.get('Content-Type', '').startswith('application/json') else {'error': response.text}
                 return {
                     'statusCode': 400,
                     'headers': {
@@ -81,28 +120,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'Access-Control-Allow-Origin': '*'
                     },
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка API Метрики', 'details': data})
+                    'body': json.dumps({'error': 'Ошибка Reports API', 'details': error_data})
                 }
             
-            # Собираем все цели из всех счётчиков
-            all_goals = []
-            counters = data.get('counters', [])
+            # Парсим TSV
+            tsv_data = response.text
+            lines = tsv_data.strip().split('\n')
             
-            for counter in counters:
-                counter_id = counter.get('id')
-                counter_name = counter.get('name', 'Без названия')
-                goals = counter.get('goals', [])
-                
-                for goal in goals:
-                    all_goals.append({
-                        'id': goal.get('id'),
-                        'name': goal.get('name'),
-                        'type': goal.get('type'),
-                        'counter_id': counter_id,
-                        'counter_name': counter_name
-                    })
+            goals_dict = {}
             
-            print(f'[DEBUG] Found {len(all_goals)} goals from {len(counters)} counters')
+            for line in lines[1:]:  # Пропускаем заголовок
+                parts = line.split('\t')
+                if len(parts) >= 4:
+                    goal_id = parts[2]
+                    campaign_name = parts[1]
+                    conversions = parts[3]
+                    
+                    if goal_id and goal_id != '--':
+                        if goal_id not in goals_dict:
+                            goals_dict[goal_id] = {
+                                'id': goal_id,
+                                'campaigns': set(),
+                                'total_conversions': 0
+                            }
+                        
+                        goals_dict[goal_id]['campaigns'].add(campaign_name)
+                        goals_dict[goal_id]['total_conversions'] += int(conversions) if conversions != '--' else 0
+            
+            # Преобразуем в список
+            goals_list = []
+            for goal_id, data in goals_dict.items():
+                goals_list.append({
+                    'id': goal_id,
+                    'campaigns_count': len(data['campaigns']),
+                    'campaigns': list(data['campaigns']),
+                    'total_conversions': data['total_conversions']
+                })
+            
+            print(f'[DEBUG] Found {len(goals_list)} unique goals')
             
             return {
                 'statusCode': 200,
@@ -111,11 +166,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Access-Control-Allow-Origin': '*'
                 },
                 'isBase64Encoded': False,
-                'body': json.dumps({'goals': all_goals, 'counters': len(counters)})
+                'body': json.dumps({'goals': goals_list})
             }
         
         except Exception as e:
             print(f'[ERROR] Failed to load goals: {str(e)}')
+            import traceback
+            print(f'[ERROR] Traceback: {traceback.format_exc()}')
             return {
                 'statusCode': 500,
                 'headers': {
