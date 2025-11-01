@@ -86,20 +86,15 @@ export default function RSYACleaner() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    if (!user.id) {
-      toast({ title: 'Требуется авторизация', description: 'Сначала войдите в систему', variant: 'destructive' });
-      navigate('/auth');
-      return;
-    }
-    
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const yandexConnected = urlParams.get('yandex_connected');
     
     if (code) {
-      fetch(func2url['yandex-oauth'] + '?code=' + code + '&state=' + user.id)
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.id || 'anonymous';
+      
+      fetch(func2url['yandex-oauth'] + '?code=' + code + '&state=' + userId)
         .then(() => {
           window.history.replaceState({}, document.title, window.location.pathname);
           toast({ title: '✅ Яндекс подключен!', description: 'Теперь можно загружать кампании' });
@@ -127,7 +122,7 @@ export default function RSYACleaner() {
       if (savedSandbox !== null) setUseSandbox(savedSandbox === 'true');
       loadCampaigns(token);
     }
-  }, [navigate, toast]);
+  }, [toast]);
 
   const exchangeCodeForToken = async (code: string) => {
     try {
@@ -262,10 +257,10 @@ export default function RSYACleaner() {
   };
 
   const handleConnect = async () => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const userId = user.id || 'default_user';
-    
     try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.id || 'anonymous';
+      
       const response = await fetch(func2url['yandex-oauth'] + '/auth-url', {
         method: 'POST',
         headers: {
@@ -275,7 +270,8 @@ export default function RSYACleaner() {
       });
       
       if (!response.ok) {
-        toast({ title: 'Ошибка подключения', description: 'Не удалось получить ссылку авторизации', variant: 'destructive' });
+        const error = await response.json();
+        toast({ title: 'Ошибка подключения', description: error.error || 'Не удалось получить ссылку авторизации', variant: 'destructive' });
         return;
       }
       
