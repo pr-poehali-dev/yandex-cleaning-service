@@ -2,6 +2,7 @@ import json
 import os
 from typing import Dict, Any, List
 import requests
+import time
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -169,7 +170,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                     'Cost',
                                     'Conversions'
                                 ],
-                                'ReportName': f'RSYAPlatforms_{campaign_id}',
+                                'ReportName': f'RSYAPlatforms_{campaign_id}_{int(time.time())}',
                                 'ReportType': 'CUSTOM_REPORT',
                                 'DateRangeType': 'CUSTOM_DATE',
                                 'Format': 'TSV',
@@ -195,6 +196,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         )
                         
                         print(f'[DEBUG] Reports API response status: {report_response.status_code}')
+                        
+                        # Если отчет в очереди (201), ждём готовности
+                        if report_response.status_code == 201:
+                            retry_in = report_response.headers.get('retryIn', 5)
+                            print(f'[DEBUG] Report queued, waiting {retry_in}s')
+                            time.sleep(int(retry_in))
+                            
+                            # Повторный запрос с теми же параметрами
+                            report_response = requests.post(
+                                reports_url,
+                                headers=report_headers,
+                                json=report_body,
+                                timeout=60
+                            )
+                            print(f'[DEBUG] Retry response status: {report_response.status_code}')
                         
                         if report_response.status_code == 200:
                             report_text = report_response.text
