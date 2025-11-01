@@ -40,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить цели из кампаний через AdGroups API Директа
+    # GET ?action=goals - получить цели из Метрики через campaigns
     if method == 'GET' and query_params.get('action') == 'goals':
         headers_raw = event.get('headers', {})
         token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
@@ -54,18 +54,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            print(f'[DEBUG] Loading goals from Direct API with token: {token[:10]}...')
+            print(f'[DEBUG] Loading goals from campaigns with token: {token[:10]}...')
             
             is_sandbox = query_params.get('sandbox') == 'true'
             client_login = query_params.get('client_login')
             
-            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/adgroups' if is_sandbox else 'https://api.direct.yandex.com/json/v5/adgroups'
+            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns' if is_sandbox else 'https://api.direct.yandex.com/json/v5/campaigns'
             
             headers_api = {'Content-Type': 'application/json', 'Accept-Language': 'ru'}
             if client_login:
                 headers_api['Client-Login'] = client_login
             
-            # Запрос всех групп объявлений с целями
+            # Запрос кампаний с CounterIds
             response = requests.post(
                 api_url,
                 headers=headers_api,
@@ -74,14 +74,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'method': 'get',
                     'params': {
                         'SelectionCriteria': {},
-                        'FieldNames': ['Id', 'CampaignId', 'Name'],
-                        'TextAdGroupFieldNames': ['TrackingParams']
+                        'FieldNames': ['Id', 'Name'],
+                        'TextCampaignFieldNames': ['CounterIds']
                     }
                 },
                 timeout=30
             )
             
-            print(f'[DEBUG] AdGroups API response: {response.status_code}')
+            print(f'[DEBUG] Campaigns API response: {response.status_code}')
             
             if response.status_code != 200:
                 error_data = response.json()
@@ -90,12 +90,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка Direct API', 'details': error_data})
+                    'body': json.dumps({'error': 'Ошибка Campaigns API', 'details': error_data})
                 }
             
             data = response.json()
             
             if 'error' in data:
+                print(f'[ERROR] Response error: {json.dumps(data["error"])}')
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -103,60 +104,58 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': data['error'].get('error_string', 'API Error'), 'details': data['error']})
                 }
             
-            # Парсим цели из TrackingParams или ищем через campaigns
-            goals_set = set()
-            adgroups = data.get('result', {}).get('AdGroups', [])
+            campaigns = data.get('result', {}).get('Campaigns', [])
+            print(f'[DEBUG] Found {len(campaigns)} campaigns')
             
-            print(f'[DEBUG] Found {len(adgroups)} ad groups, extracting goals...')
-            
-            # Альтернативный способ - получить все кампании и их цели
-            campaigns_url = api_url.replace('/adgroups', '/campaigns')
-            campaigns_response = requests.post(
-                campaigns_url,
-                headers=headers_api,
-                params={'oauth_token': token},
-                json={
-                    'method': 'get',
-                    'params': {
-                        'SelectionCriteria': {},
-                        'FieldNames': ['Id', 'Name'],
-                        'TextCampaignFieldNames': ['CounterIds', 'Goals']
-                    }
-                },
-                timeout=30
-            )
-            
-            if campaigns_response.status_code == 200:
-                campaigns_data = campaigns_response.json()
-                campaigns = campaigns_data.get('result', {}).get('Campaigns', [])
+            # Собираем все CounterIds
+            counter_ids = set()
+            for campaign in campaigns:
+                text_campaign = campaign.get('TextCampaign', {})
+                campaign_counter_ids = text_campaign.get('CounterIds', {})
                 
-                goals_list = []
-                for campaign in campaigns:
-                    text_campaign = campaign.get('TextCampaign', {})
-                    campaign_goals = text_campaign.get('Goals', [])
+                if isinstance(campaign_counter_ids, dict):
+                    for counter_id in campaign_counter_ids.get('Items', []):
+                        counter_ids.add(counter_id)
+                elif isinstance(campaign_counter_ids, list):
+                    counter_ids.update(campaign_counter_ids)
+            
+            print(f'[DEBUG] Found {len(counter_ids)} unique counter IDs: {list(counter_ids)}')
+            
+            # Для каждого счётчика получаем цели из Метрики
+            all_goals = []
+            
+            for counter_id in counter_ids:
+                metrika_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
+                
+                metrika_response = requests.get(
+                    metrika_url,
+                    headers={'Authorization': f'OAuth {token}'},
+                    timeout=30
+                )
+                
+                if metrika_response.status_code == 200:
+                    metrika_data = metrika_response.json()
+                    goals = metrika_data.get('goals', [])
                     
-                    for goal in campaign_goals:
-                        goals_list.append({
-                            'id': goal.get('GoalId'),
-                            'value': goal.get('Value'),
-                            'campaign_id': campaign.get('Id'),
-                            'campaign_name': campaign.get('Name')
+                    for goal in goals:
+                        all_goals.append({
+                            'id': goal.get('id'),
+                            'name': goal.get('name'),
+                            'type': goal.get('type'),
+                            'counter_id': counter_id
                         })
-                
-                print(f'[DEBUG] Found {len(goals_list)} goals from campaigns')
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'isBase64Encoded': False,
-                    'body': json.dumps({'goals': goals_list})
-                }
+                    
+                    print(f'[DEBUG] Counter {counter_id}: loaded {len(goals)} goals')
+                else:
+                    print(f'[WARN] Failed to load goals for counter {counter_id}: {metrika_response.status_code}')
+            
+            print(f'[DEBUG] Total goals loaded: {len(all_goals)}')
             
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
-                'body': json.dumps({'goals': []})
+                'body': json.dumps({'goals': all_goals})
             }
         
         except Exception as e:
