@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 import AppSidebar from '@/components/layout/AppSidebar';
 import RSYAConnectionCard from '@/components/rsya/RSYAConnectionCard';
+import { useAuth } from '@/contexts/AuthContext';
 import func2url from '../../backend/func2url.json';
 
 interface Campaign {
@@ -26,8 +27,8 @@ const RSYA_PROJECTS_URL = func2url['rsya-projects'] || 'https://functions.poehal
 
 export default function RSYASettings() {
   const { id: projectId } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [projectName, setProjectName] = useState<string>('');
-  const [userId, setUserId] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -49,16 +50,13 @@ export default function RSYASettings() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const uid = localStorage.getItem('user_id') || '1';
-    setUserId(uid);
-    
-    if (!projectId) {
+    if (!user?.id || !projectId) {
       navigate('/rsya');
       return;
     }
     
-    loadProject(uid, projectId);
-  }, [projectId, navigate]);
+    loadProject(user.id.toString(), projectId);
+  }, [projectId, user, navigate]);
 
   const loadProject = async (uid: string, pid: string) => {
     try {
@@ -88,9 +86,13 @@ export default function RSYASettings() {
         
         if (accessToken) {
           await saveTokenToProject(uid, pid, accessToken);
-          window.history.replaceState({}, document.title, window.location.pathname);
-          setIsConnected(true);
-          loadCampaignsAndGoals(accessToken);
+          localStorage.setItem('rsya_yandex_token', accessToken);
+          toast({ 
+            title: '✅ Авторизация успешна', 
+            description: 'Переход к настройке кампаний...' 
+          });
+          navigate(`/rsya/${pid}/setup`);
+          return;
         }
       }
     } catch (error) {
@@ -187,14 +189,15 @@ export default function RSYASettings() {
         localStorage.removeItem('yandex_client_login');
       }
       
-      if (token.length > 10) {
+      if (token.length > 10 && user?.id) {
         localStorage.setItem('yandex_direct_token', token);
-        await saveTokenToProject(userId, projectId!, token);
-        setIsConnected(true);
-        setShowCodeInput(false);
-        setAuthCode('');
-        toast({ title: '✅ Токен сохранён', description: 'Яндекс.Директ подключён' });
-        await loadCampaignsAndGoals(token);
+        localStorage.setItem('rsya_yandex_token', token);
+        await saveTokenToProject(user.id.toString(), projectId!, token);
+        toast({ 
+          title: '✅ Токен сохранён', 
+          description: 'Переход к настройке кампаний...' 
+        });
+        navigate(`/rsya/${projectId}/setup`);
       }
     } finally {
       setLoading(false);
