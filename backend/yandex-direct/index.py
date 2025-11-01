@@ -200,20 +200,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     print(f'[DEBUG] Reports API response status: {report_response.status_code}')
                     
-                    # Если отчет в очереди (201), ждём готовности
+                    # Пропускаем retry для избежания ошибок - в следующий раз отчёт будет готов
                     if report_response.status_code == 201:
-                        retry_in = report_response.headers.get('retryIn', 5)
-                        print(f'[DEBUG] Report queued, waiting {retry_in}s')
-                        time.sleep(int(retry_in))
-                        
-                        # Повторный запрос с теми же параметрами
-                        report_response = requests.post(
-                            reports_url,
-                            headers=report_headers,
-                            json=report_body,
-                            timeout=60
-                        )
-                        print(f'[DEBUG] Retry response status: {report_response.status_code}')
+                        print(f'[DEBUG] Report queued - will be ready on next request')
                     
                     if report_response.status_code == 200:
                         report_text = report_response.text
