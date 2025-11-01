@@ -621,43 +621,41 @@ def smart_clusterize(phrases: List[Dict[str, Any]], mode: str = 'seo') -> List[D
     tfidf_vectors = calculate_tfidf(lemmatized)
     
     n = len(phrases)
-    similarity_matrix = [[0.0] * n for _ in range(n)]
-    
-    for i in range(n):
-        for j in range(i+1, n):
-            sim = cosine_similarity_simple(tfidf_vectors[i], tfidf_vectors[j])
-            similarity_matrix[i][j] = sim
-            similarity_matrix[j][i] = sim
     
     clusters = [[i] for i in range(n)]
+    cluster_centers = list(range(n))
     
     target_clusters = max(3, min(20, n // target_clusters_ratio))
+    max_iterations = min(50, n)
     
-    while len(clusters) > target_clusters:
+    for iteration in range(max_iterations):
+        if len(clusters) <= target_clusters:
+            break
+            
         max_sim = -1
         merge_pair = None
         
         for i in range(len(clusters)):
             for j in range(i+1, len(clusters)):
-                avg_sim = 0
-                count = 0
-                for idx_i in clusters[i]:
-                    for idx_j in clusters[j]:
-                        avg_sim += similarity_matrix[idx_i][idx_j]
-                        count += 1
+                center_i = cluster_centers[i]
+                center_j = cluster_centers[j]
+                sim = cosine_similarity_simple(tfidf_vectors[center_i], tfidf_vectors[center_j])
                 
-                if count > 0:
-                    avg_sim /= count
-                    if avg_sim > max_sim:
-                        max_sim = avg_sim
-                        merge_pair = (i, j)
+                if sim > max_sim:
+                    max_sim = sim
+                    merge_pair = (i, j)
         
         if max_sim < similarity_threshold or merge_pair is None:
             break
         
         i, j = merge_pair
         clusters[i].extend(clusters[j])
+        
+        max_count_idx = max(clusters[i], key=lambda idx: phrases[idx]['count'])
+        cluster_centers[i] = max_count_idx
+        
         del clusters[j]
+        del cluster_centers[j]
     
     stop_words_for_naming = {
         'купить', 'заказать', 'цена', 'стоимость', 'недорого', 
@@ -952,10 +950,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             payload = {
                 'phrase': keywords[0],
                 'regions': regions,
-                'numPhrases': 1000
+                'numPhrases': 2000
             }
             
-            print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}, numPhrases=1000')
+            print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}, numPhrases=2000')
             
             response = requests.post(api_url, json=payload, headers=headers, timeout=30)
             
