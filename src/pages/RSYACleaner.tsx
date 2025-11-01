@@ -261,12 +261,13 @@ export default function RSYACleaner() {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const userId = user.id || 'anonymous';
       
-      const response = await fetch(func2url['yandex-oauth'] + '/auth-url', {
+      const response = await fetch(func2url['yandex-oauth'], {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-User-Id': userId
-        }
+        },
+        body: JSON.stringify({ action: 'auth-url' })
       });
       
       if (!response.ok) {

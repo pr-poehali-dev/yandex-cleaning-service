@@ -149,7 +149,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        if '/auth-url' in path or path_params.get('action') == 'auth-url':
+        body = event.get('body', '{}')
+        try:
+            body_data = json.loads(body) if body else {}
+        except:
+            body_data = {}
+        
+        if body_data.get('action') == 'auth-url':
             client_id = os.environ.get('YANDEX_DIRECT_CLIENT_ID')
             
             if not client_id:
@@ -160,7 +166,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            redirect_uri = 'https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23'
+            redirect_uri = 'https://functions.poehali.dev/052a3544-14b2-4ce8-af5e-26f0e7d0c33a'
             auth_url = f'https://oauth.yandex.ru/authorize?response_type=code&client_id={client_id}&state={user_id}'
             
             return {
