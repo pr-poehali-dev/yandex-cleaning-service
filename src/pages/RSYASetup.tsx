@@ -267,15 +267,15 @@ export default function RSYASetup() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             <Card className="border-2">
               <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Icon name="Target" className="h-6 w-6 text-blue-600" />
-                    Кампании РСЯ
+                    <Icon name="Target" className="h-5 w-5 text-blue-600" />
+                    <span className="text-lg">Кампании РСЯ</span>
                   </span>
-                  <span className="text-sm font-normal text-slate-600">
+                  <span className="text-xs font-normal text-slate-600">
                     {selectedCampaigns.size} из {campaigns.length}
                   </span>
                 </CardTitle>
@@ -311,17 +311,17 @@ export default function RSYASetup() {
                     campaigns.map((campaign) => (
                       <div
                         key={campaign.id}
-                        className="flex items-start gap-3 p-3 rounded-lg border bg-white hover:bg-slate-50 cursor-pointer transition-colors"
+                        className="flex items-start gap-2 p-2.5 rounded-lg border bg-white hover:bg-slate-50 cursor-pointer transition-colors"
                         onClick={() => handleCampaignToggle(campaign.id)}
                       >
                         <Checkbox
                           checked={selectedCampaigns.has(campaign.id)}
                           onCheckedChange={() => handleCampaignToggle(campaign.id)}
-                          className="mt-1"
+                          className="mt-0.5 flex-shrink-0"
                         />
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-900">{campaign.name}</p>
-                          <p className="text-sm text-slate-500">ID: {campaign.id}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 truncate">{campaign.name}</p>
+                          <p className="text-xs text-slate-500">ID: {campaign.id}</p>
                         </div>
                       </div>
                     ))
@@ -334,10 +334,10 @@ export default function RSYASetup() {
               <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
                 <CardTitle className="flex items-center justify-between">
                   <span className="flex items-center gap-2">
-                    <Icon name="Trophy" className="h-6 w-6 text-purple-600" />
-                    Цели Метрики
+                    <Icon name="Trophy" className="h-5 w-5 text-purple-600" />
+                    <span className="text-lg">Цели Метрики</span>
                   </span>
-                  <span className="text-sm font-normal text-slate-600">
+                  <span className="text-xs font-normal text-slate-600">
                     {selectedGoals.size} из {goals.length}
                   </span>
                 </CardTitle>
@@ -354,9 +354,9 @@ export default function RSYASetup() {
                   </Button>
                 </div>
 
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   {goals.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
+                    <div className="col-span-full text-center py-8 text-slate-500">
                       <Icon name="AlertCircle" className="h-12 w-12 mx-auto mb-2 text-slate-400" />
                       <p>Цели не найдены</p>
                       <p className="text-sm">Убедитесь что в кампаниях настроены цели Метрики</p>
@@ -365,17 +365,17 @@ export default function RSYASetup() {
                     goals.map((goal) => (
                       <div
                         key={goal.id}
-                        className="flex items-start gap-3 p-3 rounded-lg border bg-white hover:bg-slate-50 cursor-pointer transition-colors"
+                        className="flex items-start gap-2 p-2.5 rounded-lg border bg-white hover:bg-slate-50 cursor-pointer transition-colors"
                         onClick={() => handleGoalToggle(goal.id)}
                       >
                         <Checkbox
                           checked={selectedGoals.has(goal.id)}
                           onCheckedChange={() => handleGoalToggle(goal.id)}
-                          className="mt-1"
+                          className="mt-0.5 flex-shrink-0"
                         />
-                        <div className="flex-1">
-                          <p className="font-medium text-slate-900">{goal.name}</p>
-                          <p className="text-sm text-slate-500">ID: {goal.id}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 line-clamp-2 leading-tight">{goal.name}</p>
+                          <p className="text-xs text-slate-500 mt-1">ID: {goal.id}</p>
                         </div>
                       </div>
                     ))

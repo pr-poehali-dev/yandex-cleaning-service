@@ -171,7 +171,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         
                         # Для каждого счётчика пытаемся найти цели
                         goal_names = {}
-                        for counter in counters[:3]:  # Берём первые 3 счётчика
+                        for counter in counters:  # Проверяем все счётчики
                             counter_id = counter['id']
                             goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
                             goals_response = requests.get(goals_url, headers=metrika_headers, timeout=10)
