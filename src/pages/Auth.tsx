@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 
 type AuthStep = 'phone' | 'code';
@@ -18,9 +17,6 @@ export default function Auth() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [sentCode, setSentCode] = useState('');
-  const [yandexClientId, setYandexClientId] = useState('');
-  const [yandexClientSecret, setYandexClientSecret] = useState('');
-  const [savingSecrets, setSavingSecrets] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -161,34 +157,6 @@ export default function Auth() {
     await handlePhoneSubmit();
   };
 
-  const handleSaveSecrets = async () => {
-    if (!yandexClientId.trim() || !yandexClientSecret.trim()) {
-      toast({ title: 'Заполните оба поля', variant: 'destructive' });
-      return;
-    }
-
-    setSavingSecrets(true);
-    try {
-      localStorage.setItem('YANDEX_DIRECT_CLIENT_ID', yandexClientId.trim());
-      localStorage.setItem('YANDEX_DIRECT_CLIENT_SECRET', yandexClientSecret.trim());
-      
-      toast({ 
-        title: '✅ Секреты сохранены локально', 
-        description: 'Client ID и Secret сохранены. Теперь можно подключить Яндекс на странице /rsya'
-      });
-      setYandexClientId('');
-      setYandexClientSecret('');
-    } catch (error) {
-      toast({ 
-        title: 'Ошибка сохранения', 
-        description: 'Не удалось сохранить секреты', 
-        variant: 'destructive' 
-      });
-    } finally {
-      setSavingSecrets(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -204,26 +172,19 @@ export default function Auth() {
           </p>
         </div>
 
-        <Tabs defaultValue="auth" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="auth">Вход</TabsTrigger>
-            <TabsTrigger value="setup">Настройка OAuth</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="auth">
-            <Card className="shadow-lg border-0">
-              <CardHeader>
-                <CardTitle className="text-2xl">
-                  {step === 'phone' ? 'Вход в систему' : 'Подтверждение'}
-                </CardTitle>
-                <CardDescription>
-                  {step === 'phone' 
-                    ? 'Введите номер телефона для входа' 
-                    : `Код отправлен на ${phone}`
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+        <Card className="shadow-lg border-0">
+          <CardHeader>
+            <CardTitle className="text-2xl">
+              {step === 'phone' ? 'Вход в систему' : 'Подтверждение'}
+            </CardTitle>
+            <CardDescription>
+              {step === 'phone' 
+                ? 'Введите номер телефона для входа' 
+                : `Код отправлен на ${phone}`
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
             {step === 'phone' ? (
               <>
                 <div className="space-y-2">
@@ -328,80 +289,8 @@ export default function Auth() {
                 </Button>
               </>
             )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="setup">
-            <Card className="shadow-lg border-0">
-              <CardHeader>
-                <CardTitle className="text-2xl">Настройка Яндекс OAuth</CardTitle>
-                <CardDescription>
-                  Добавьте Client ID и Secret для подключения к Яндекс.Директ
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-                    <p className="font-medium text-blue-900 mb-2">📋 Как получить Client ID и Secret:</p>
-                    <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                      <li>Откройте <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer" className="underline">oauth.yandex.ru/client/new</a></li>
-                      <li>Создайте приложение с правами <code className="bg-blue-100 px-1 rounded">direct:api</code></li>
-                      <li>Скопируйте Client ID и Secret сюда</li>
-                    </ol>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="clientId">Yandex Client ID</Label>
-                    <Input
-                      id="clientId"
-                      type="text"
-                      placeholder="1234567890abcdef..."
-                      value={yandexClientId}
-                      onChange={(e) => setYandexClientId(e.target.value)}
-                      className="font-mono"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="clientSecret">Yandex Client Secret</Label>
-                    <Input
-                      id="clientSecret"
-                      type="password"
-                      placeholder="abcdef1234567890..."
-                      value={yandexClientSecret}
-                      onChange={(e) => setYandexClientSecret(e.target.value)}
-                      className="font-mono"
-                    />
-                  </div>
-
-                  <Button 
-                    onClick={handleSaveSecrets} 
-                    disabled={savingSecrets}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white"
-                    size="lg"
-                  >
-                    {savingSecrets ? (
-                      <>
-                        <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
-                        Сохранение...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="Save" size={20} className="mr-2" />
-                        Сохранить секреты
-                      </>
-                    )}
-                  </Button>
-
-                  <p className="text-xs text-muted-foreground text-center">
-                    Секреты сохраняются в защищенном хранилище проекта и недоступны фронтенду
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
