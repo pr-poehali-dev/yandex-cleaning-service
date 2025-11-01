@@ -65,16 +65,14 @@ export default function RSYASettings() {
       const accessToken = hashParams.get('access_token');
       
       if (accessToken) {
-        console.log('🔑 OAuth токен получен, сохраняем...', { uid, pid, tokenLength: accessToken.length });
+        console.log('🔑 OAuth токен получен, сохраняем в БД...', { uid, pid, tokenLength: accessToken.length });
         await saveTokenToProject(uid, pid, accessToken);
-        localStorage.setItem('yandex_direct_token', accessToken);
-        localStorage.setItem('rsya_yandex_token', accessToken);
         toast({ 
-          title: '✅ Авторизация успешна', 
+          title: '✅ Токен сохранён в базу', 
           description: 'Переход к настройке кампаний...' 
         });
         window.location.hash = '';
-        navigate(`/rsya/${pid}/setup`);
+        window.location.href = `/rsya/${pid}/setup`;
         return;
       }
       

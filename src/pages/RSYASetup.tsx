@@ -6,6 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import Icon from '@/components/ui/icon';
 import AppSidebar from '@/components/layout/AppSidebar';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import func2url from '../../backend/func2url.json';
 
 interface Campaign {
   id: string;
@@ -19,8 +21,11 @@ interface Goal {
   type: string;
 }
 
+const RSYA_PROJECTS_URL = func2url['rsya-projects'] || 'https://functions.poehali.dev/08f68ba6-cbbb-4ca1-841f-185671e0757d';
+
 export default function RSYASetup() {
   const { id: projectId } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -33,21 +38,45 @@ export default function RSYASetup() {
   const [autoSelectCampaigns, setAutoSelectCampaigns] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, [projectId]);
+    if (user?.id && projectId) {
+      loadData();
+    }
+  }, [projectId, user]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       
-      const token = localStorage.getItem('rsya_yandex_token');
-      if (!token) {
+      if (!user?.id || !projectId) {
+        navigate('/rsya');
+        return;
+      }
+      
+      const projectResponse = await fetch(`${RSYA_PROJECTS_URL}?project_id=${projectId}`, {
+        method: 'GET',
+        headers: { 'X-User-Id': user.id.toString() }
+      });
+      
+      if (!projectResponse.ok) {
         toast({
           title: 'Ошибка',
-          description: 'Токен авторизации не найден',
+          description: 'Проект не найден',
           variant: 'destructive'
         });
         navigate('/rsya');
+        return;
+      }
+      
+      const projectData = await projectResponse.json();
+      const token = projectData.project.yandex_token;
+      
+      if (!token) {
+        toast({
+          title: 'Ошибка',
+          description: 'Подключите Яндекс.Директ в настройках проекта',
+          variant: 'destructive'
+        });
+        navigate(`/rsya/${projectId}`);
         return;
       }
 
