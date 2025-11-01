@@ -169,6 +169,11 @@ export default function RSYACleaner() {
       
       if (project.yandex_token) {
         setIsConnected(true);
+        
+        if (!project.is_configured) {
+          navigate(`/rsya/${pid}/setup`);
+          return;
+        }
       } else {
         const hash = window.location.hash.substring(1);
         const hashParams = new URLSearchParams(hash);

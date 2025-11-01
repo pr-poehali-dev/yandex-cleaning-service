@@ -13,6 +13,7 @@ import ClusteringProjects from "./pages/ClusteringProjects";
 import RSYAProjects from "./pages/RSYAProjects";
 import RSYACleaner from "./pages/RSYACleaner";
 import RSYASettings from "./pages/RSYASettings";
+import RSYASetup from "./pages/RSYASetup";
 import Index from "./pages/Index";
 import Wordstat from "./pages/Wordstat";
 import WordstatNew from "./pages/WordstatNew";
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/clustering" element={<ProtectedRoute><ClusteringProjects /></ProtectedRoute>} />
           <Route path="/clustering/:id" element={<ProtectedRoute><TestClustering /></ProtectedRoute>} />
           <Route path="/rsya" element={<ProtectedRoute><RSYAProjects /></ProtectedRoute>} />
+          <Route path="/rsya/:id/setup" element={<ProtectedRoute><RSYASetup /></ProtectedRoute>} />
           <Route path="/rsya/:id" element={<ProtectedRoute><RSYACleaner /></ProtectedRoute>} />
           <Route path="/rsya/:id/settings" element={<ProtectedRoute><RSYASettings /></ProtectedRoute>} />
           <Route path="/wordstat" element={<ProtectedRoute><WordstatNew /></ProtectedRoute>} />

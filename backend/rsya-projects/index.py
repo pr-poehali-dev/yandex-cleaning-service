@@ -92,7 +92,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             project_id = int(query_params['project_id'])
             
             cursor.execute(
-                "SELECT id, name, yandex_token, created_at, updated_at FROM rsya_projects WHERE id = %s AND user_id = %s",
+                "SELECT id, name, yandex_token, created_at, updated_at, is_configured, client_login FROM rsya_projects WHERE id = %s AND user_id = %s",
                 (project_id, user_id_int)
             )
             row = cursor.fetchone()
@@ -111,7 +111,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'name': row[1],
                 'yandex_token': row[2],
                 'created_at': row[3].isoformat() if row[3] else None,
-                'updated_at': row[4].isoformat() if row[4] else None
+                'updated_at': row[4].isoformat() if row[4] else None,
+                'is_configured': row[5] or False,
+                'client_login': row[6]
             }
             
             cursor.close()
@@ -191,6 +193,147 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({'success': True})
+            }
+        
+        # POST /setup - сохранить кампании и цели проекта
+        if method == 'POST' and query_params.get('action') == 'setup':
+            body_str = event.get('body', '{}')
+            body_data = json.loads(body_str)
+            
+            project_id = body_data.get('project_id')
+            campaigns = body_data.get('campaigns', [])
+            goals = body_data.get('goals', [])
+            
+            if not project_id:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'project_id required'})
+                }
+            
+            # Проверяем что проект принадлежит пользователю
+            cursor.execute(
+                "SELECT id FROM rsya_projects WHERE id = %s AND user_id = %s",
+                (project_id, user_id_int)
+            )
+            if not cursor.fetchone():
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Project not found'})
+                }
+            
+            # Удаляем старые кампании и цели
+            cursor.execute("DELETE FROM rsya_campaigns WHERE project_id = %s", (project_id,))
+            cursor.execute("DELETE FROM rsya_goals WHERE project_id = %s", (project_id,))
+            
+            # Сохраняем новые кампании
+            for campaign in campaigns:
+                cursor.execute(
+                    """INSERT INTO rsya_campaigns (project_id, campaign_id, campaign_name, campaign_status, is_enabled)
+                       VALUES (%s, %s, %s, %s, %s)
+                       ON CONFLICT (project_id, campaign_id) DO UPDATE
+                       SET campaign_name = EXCLUDED.campaign_name, campaign_status = EXCLUDED.campaign_status, updated_at = CURRENT_TIMESTAMP""",
+                    (project_id, campaign['id'], campaign['name'], campaign.get('status', 'UNKNOWN'), True)
+                )
+            
+            # Сохраняем новые цели
+            for goal in goals:
+                cursor.execute(
+                    """INSERT INTO rsya_goals (project_id, goal_id, goal_name, is_enabled)
+                       VALUES (%s, %s, %s, %s)
+                       ON CONFLICT (project_id, goal_id) DO UPDATE
+                       SET goal_name = EXCLUDED.goal_name, updated_at = CURRENT_TIMESTAMP""",
+                    (project_id, goal['id'], goal['name'], True)
+                )
+            
+            # Помечаем проект как настроенный
+            cursor.execute(
+                "UPDATE rsya_projects SET is_configured = true, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
+                (project_id,)
+            )
+            
+            cursor.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'success': True,
+                    'campaigns_saved': len(campaigns),
+                    'goals_saved': len(goals)
+                })
+            }
+        
+        # GET /campaigns - получить сохраненные кампании и цели проекта
+        if method == 'GET' and query_params.get('action') == 'campaigns':
+            project_id = int(query_params.get('project_id', 0))
+            
+            if not project_id:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'project_id required'})
+                }
+            
+            # Проверяем что проект принадлежит пользователю
+            cursor.execute(
+                "SELECT id FROM rsya_projects WHERE id = %s AND user_id = %s",
+                (project_id, user_id_int)
+            )
+            if not cursor.fetchone():
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Project not found'})
+                }
+            
+            # Получаем кампании
+            cursor.execute(
+                "SELECT campaign_id, campaign_name, campaign_status, is_enabled FROM rsya_campaigns WHERE project_id = %s ORDER BY campaign_name",
+                (project_id,)
+            )
+            campaigns = []
+            for row in cursor.fetchall():
+                campaigns.append({
+                    'id': row[0],
+                    'name': row[1],
+                    'status': row[2],
+                    'enabled': row[3]
+                })
+            
+            # Получаем цели
+            cursor.execute(
+                "SELECT goal_id, goal_name, is_enabled FROM rsya_goals WHERE project_id = %s ORDER BY goal_name",
+                (project_id,)
+            )
+            goals = []
+            for row in cursor.fetchall():
+                goals.append({
+                    'id': row[0],
+                    'name': row[1],
+                    'enabled': row[2]
+                })
+            
+            cursor.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'campaigns': campaigns,
+                    'goals': goals
+                })
             }
         
         # DELETE /projects?project_id=X - удалить проект
