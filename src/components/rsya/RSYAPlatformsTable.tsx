@@ -573,17 +573,17 @@ export default function RSYAPlatformsTable({
                 <Icon name="ChevronLeft" className="h-4 w-4" />
               </Button>
               
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+              <div className="flex items-center gap-1 flex-wrap max-w-[600px]">
+                {Array.from({ length: Math.min(40, totalPages) }, (_, i) => {
                   let pageNum;
-                  if (totalPages <= 7) {
+                  if (totalPages <= 40) {
                     pageNum = i + 1;
-                  } else if (currentPage <= 4) {
+                  } else if (currentPage <= 20) {
                     pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 3) {
-                    pageNum = totalPages - 6 + i;
+                  } else if (currentPage >= totalPages - 19) {
+                    pageNum = totalPages - 39 + i;
                   } else {
-                    pageNum = currentPage - 3 + i;
+                    pageNum = currentPage - 19 + i;
                   }
                   
                   return (
