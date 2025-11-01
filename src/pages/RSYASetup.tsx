@@ -127,6 +127,7 @@ export default function RSYASetup() {
         const goalsData = await goalsResponse.json();
         const allGoals = goalsData.goals || [];
         console.log('🎯 Загружено целей:', allGoals.length);
+        console.log('🎯 Пример цели:', allGoals[0]);
         setGoals(allGoals);
         
         // Извлекаем уникальные ID счётчиков из целей
@@ -138,6 +139,7 @@ export default function RSYASetup() {
         });
         
         console.log('📊 Найдено уникальных счётчиков в целях:', counterIds.size);
+        console.log('📊 ID счётчиков:', Array.from(counterIds));
         
         // Загружаем информацию только о счётчиках из Директа
         if (counterIds.size > 0) {
