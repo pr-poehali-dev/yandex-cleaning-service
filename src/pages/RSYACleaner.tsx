@@ -65,8 +65,12 @@ const DEFAULT_FILTERS: Filter[] = [
 ];
 
 const YANDEX_DIRECT_URL = 'https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23';
+const RSYA_PROJECTS_URL = func2url['rsya-projects'] || 'https://functions.poehali.dev/08f68ba6-cbbb-4ca1-841f-185671e0757d';
 
 export default function RSYACleaner() {
+  const { id: projectId } = useParams<{ id: string }>();
+  const [projectName, setProjectName] = useState<string>('');
+  const [userId, setUserId] = useState<string>('');
   const [filters, setFilters] = useState<Filter[]>(DEFAULT_FILTERS);
   const [newFilter, setNewFilter] = useState('');
   const [isConnected, setIsConnected] = useState(false);
@@ -87,12 +91,7 @@ export default function RSYACleaner() {
       localStorage.removeItem('yandex_client_login');
     }
   };
-  const [useSandbox, setUseSandboxState] = useState(true);
-  
-  const setUseSandbox = (value: boolean) => {
-    setUseSandboxState(value);
-    localStorage.setItem('yandex_use_sandbox', String(value));
-  };
+
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'campaigns' | 'platforms'>('campaigns');
   const [apiError, setApiError] = useState<{code: number; message: string; detail: string} | null>(null);
@@ -100,48 +99,72 @@ export default function RSYACleaner() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Проверяем токен в hash (response_type=token)
-    const hash = window.location.hash.substring(1);
-    const hashParams = new URLSearchParams(hash);
-    const accessToken = hashParams.get('access_token');
+    const uid = localStorage.getItem('user_id') || '1';
+    setUserId(uid);
     
-    if (accessToken) {
-      localStorage.setItem('yandex_direct_token', accessToken);
-      
-      // Сохраняем текущие настройки sandbox и clientLogin
-      const savedSandbox = localStorage.getItem('yandex_use_sandbox');
-      const savedLogin = localStorage.getItem('yandex_client_login');
-      if (savedSandbox !== null) setUseSandboxState(savedSandbox === 'true');
-      if (savedLogin) setClientLoginState(savedLogin);
-      
-      setIsConnected(true);
-      setShowCodeInput(false);
-      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-      toast({ title: '✅ Токен получен!', description: 'Загружаем кампании...' });
-      loadCampaigns(accessToken);
+    if (!projectId) {
+      navigate('/rsya');
       return;
     }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const yandexConnected = urlParams.get('yandex_connected');
     
-    if (yandexConnected === 'true') {
-      window.history.replaceState({}, document.title, window.location.pathname);
-      toast({ title: '✅ Яндекс подключен!', description: 'Загружаем кампании...' });
-      checkYandexConnection();
-    }
+    loadProject(uid, projectId);
+  }, [projectId, navigate]);
 
-    const token = localStorage.getItem('yandex_direct_token');
-    const savedLogin = localStorage.getItem('yandex_client_login');
-    const savedSandbox = localStorage.getItem('yandex_use_sandbox');
-    
-    if (token) {
-      setIsConnected(true);
-      if (savedLogin) setClientLoginState(savedLogin);
-      if (savedSandbox !== null) setUseSandboxState(savedSandbox === 'true');
-      loadCampaigns(token);
+  const loadProject = async (uid: string, pid: string) => {
+    try {
+      const response = await fetch(`${RSYA_PROJECTS_URL}?project_id=${pid}`, {
+        method: 'GET',
+        headers: { 'X-User-Id': uid }
+      });
+      
+      if (!response.ok) {
+        toast({ title: 'Проект не найден', variant: 'destructive' });
+        navigate('/rsya');
+        return;
+      }
+      
+      const data = await response.json();
+      const project = data.project;
+      
+      setProjectName(project.name);
+      
+      if (project.yandex_token) {
+        setIsConnected(true);
+        loadCampaigns(project.yandex_token);
+      } else {
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = hashParams.get('access_token');
+        
+        if (accessToken) {
+          await saveTokenToProject(uid, pid, accessToken);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setIsConnected(true);
+          loadCampaigns(accessToken);
+        }
+      }
+    } catch (error) {
+      toast({ title: 'Ошибка загрузки проекта', variant: 'destructive' });
     }
-  }, [toast]);
+  };
+
+  const saveTokenToProject = async (uid: string, pid: string, token: string) => {
+    try {
+      await fetch(RSYA_PROJECTS_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': uid
+        },
+        body: JSON.stringify({
+          project_id: parseInt(pid),
+          yandex_token: token
+        })
+      });
+    } catch (error) {
+      console.error('Failed to save token:', error);
+    }
+  };
 
   const exchangeCodeForToken = async (code: string) => {
     try {
@@ -173,13 +196,9 @@ export default function RSYACleaner() {
   const loadCampaigns = async (token: string) => {
     setLoading(true);
     try {
-      // ВСЕГДА берём актуальные значения из localStorage
-      const actualSandbox = localStorage.getItem('yandex_use_sandbox') === 'true';
       const actualLogin = localStorage.getItem('yandex_client_login');
       
-      const url = actualSandbox 
-        ? `${YANDEX_DIRECT_URL}?sandbox=true` 
-        : YANDEX_DIRECT_URL;
+      const url = YANDEX_DIRECT_URL;
       
       const headers: Record<string, string> = { 'X-Auth-Token': token };
       if (actualLogin) {
@@ -203,9 +222,7 @@ export default function RSYACleaner() {
       // Загружаем цели из API Директа (PriorityGoals)
       let goalsData: any[] = [];
       try {
-        const goalsUrl = actualSandbox 
-          ? `${YANDEX_DIRECT_URL}?action=goals&sandbox=true` 
-          : `${YANDEX_DIRECT_URL}?action=goals`;
+        const goalsUrl = `${YANDEX_DIRECT_URL}?action=goals`;
         
         const goalsHeaders: Record<string, string> = { 'X-Auth-Token': token };
         if (actualLogin) {
@@ -252,11 +269,7 @@ export default function RSYACleaner() {
         if (errorCode === 53) {
           toastTitle = '❌ Недействительный OAuth токен';
           toastDescription = 'Токен истёк или невалиден. Получите новый токен через OAuth';
-          localStorage.removeItem('yandex_direct_token');
           setIsConnected(false);
-        } else if (errorCode === 513 && useSandbox) {
-          toastTitle = '🧪 Песочница не активирована';
-          toastDescription = errorDetail;
         } else if (errorCode === 513) {
           toastTitle = '🔐 Аккаунт не подключен к Директу';
         } else if (errorCode === 58) {
@@ -628,9 +641,18 @@ export default function RSYACleaner() {
       <AppSidebar />
       <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-8 ml-64">
         <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Чистка РСЯ</h1>
-          <p className="text-lg text-slate-600">Автоматическое отключение нецелевых площадок в Рекламной сети Яндекса</p>
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            onClick={() => navigate('/rsya')}
+            variant="outline"
+            size="icon"
+          >
+            <Icon name="ArrowLeft" className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">{projectName || 'Чистка РСЯ'}</h1>
+            <p className="text-lg text-slate-600">Автоматическое отключение нецелевых площадок в Рекламной сети Яндекса</p>
+          </div>
         </div>
 
         <RSYAConnectionCard
@@ -638,10 +660,8 @@ export default function RSYACleaner() {
           showCodeInput={showCodeInput}
           authCode={authCode}
           clientLogin={clientLogin}
-          useSandbox={useSandbox}
           setAuthCode={setAuthCode}
           setClientLogin={setClientLogin}
-          setUseSandbox={setUseSandbox}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
           onToggleCodeInput={() => setShowCodeInput(!showCodeInput)}
@@ -650,69 +670,7 @@ export default function RSYACleaner() {
 
         {isConnected && (
           <>
-            {apiError && apiError.code === 513 && useSandbox && (
-              <Card className="bg-red-50 border-red-300 shadow-lg">
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-red-100 rounded-full">
-                      <Icon name="AlertCircle" className="h-6 w-6 text-red-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-red-900 mb-2">🧪 Песочница Директа не активирована</h3>
-                      <p className="text-sm text-red-800 mb-4">
-                        Ваш аккаунт не зарегистрирован в песочнице Яндекс.Директа. Для тестирования необходимо активировать доступ.
-                      </p>
-                      
-                      <div className="bg-white rounded-lg p-4 mb-4 border border-red-200">
-                        <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                          <Icon name="ListChecks" className="h-4 w-4 text-red-600" />
-                          Инструкция по активации:
-                        </h4>
-                        <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
-                          <li>
-                            Перейдите на{' '}
-                            <a 
-                              href="https://sandbox.direct.yandex.ru" 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline font-medium"
-                            >
-                              sandbox.direct.yandex.ru
-                            </a>
-                          </li>
-                          <li>Авторизуйтесь тем же Яндекс-аккаунтом, токен которого используете</li>
-                          <li>Примите условия использования песочницы</li>
-                          <li>Создайте хотя бы одну тестовую кампанию (РСЯ или Поиск)</li>
-                          <li>Вернитесь сюда и нажмите кнопку обновления</li>
-                        </ol>
-                      </div>
-                      
-                      <div className="flex gap-3">
-                        <Button 
-                          onClick={() => window.open('https://sandbox.direct.yandex.ru', '_blank')}
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          <Icon name="ExternalLink" className="mr-2 h-4 w-4" />
-                          Открыть песочницу Директа
-                        </Button>
-                        <Button 
-                          onClick={() => {
-                            const token = localStorage.getItem('yandex_direct_token');
-                            if (token) loadCampaigns(token);
-                          }}
-                          variant="outline"
-                        >
-                          <Icon name="RefreshCw" className="mr-2 h-4 w-4" />
-                          Проверить снова
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            
-            {apiError && apiError.code === 513 && !useSandbox && (
+            {apiError && apiError.code === 513 && (
               <Card className="bg-orange-50 border-orange-300 shadow-lg">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
@@ -780,7 +738,7 @@ export default function RSYACleaner() {
               </Card>
             )}
             
-            {apiError && apiError.code === 58 && !useSandbox && (
+            {apiError && apiError.code === 58 && (
               <Card className="bg-purple-50 border-purple-300 shadow-lg">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
@@ -870,40 +828,7 @@ export default function RSYACleaner() {
               </Card>
             )}
           
-            {useSandbox && campaigns.length === 0 && !apiError && (
-              <Card className="bg-amber-50 border-amber-200">
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-3">
-                    <Icon name="Info" className="h-5 w-5 text-amber-600 mt-0.5" />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-amber-900 mb-1">Песочница пустая</h3>
-                      <p className="text-sm text-amber-700 mb-3">
-                        В песочнице нет кампаний. Создайте тестовую РСЯ кампанию для проверки работы сервиса.
-                      </p>
-                      <Button 
-                        onClick={handleCreateTestCampaign}
-                        disabled={loading}
-                        size="sm"
-                        variant="outline"
-                        className="border-amber-300 hover:bg-amber-100"
-                      >
-                        {loading ? (
-                          <>
-                            <Icon name="Loader2" className="mr-2 h-4 w-4 animate-spin" />
-                            Создание...
-                          </>
-                        ) : (
-                          <>
-                            <Icon name="Plus" className="mr-2 h-4 w-4" />
-                            Создать тестовую кампанию
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+
           
             {viewMode === 'campaigns' && (
               <RSYAFiltersManager
