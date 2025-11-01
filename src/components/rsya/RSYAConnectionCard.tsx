@@ -230,7 +230,7 @@ export default function RSYAConnectionCard({
             
             <Button onClick={onToggleCodeInput} variant="outline" className="w-full border-blue-300 text-blue-700 hover:bg-blue-100">
               <Icon name="Terminal" className="h-5 w-5 mr-2" />
-              У меня есть код подтверждения
+              У меня уже есть токен
             </Button>
           </div>
         ) : (
@@ -252,14 +252,17 @@ export default function RSYAConnectionCard({
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-slate-700 mb-1 block">
-                  Код подтверждения
+                  Токен доступа
                 </label>
                 <Input
                   value={authCode}
                   onChange={(e) => setAuthCode(e.target.value)}
-                  placeholder="1234567"
+                  placeholder="y0_AgA..."
                   className="font-mono text-sm"
                 />
+                <p className="text-xs text-slate-500 mt-1">
+                  Скопируйте токен из адресной строки после #access_token=
+                </p>
               </div>
               
               {!useSandbox && (

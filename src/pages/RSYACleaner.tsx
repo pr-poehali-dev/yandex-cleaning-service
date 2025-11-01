@@ -86,6 +86,7 @@ export default function RSYACleaner() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Проверяем токен в hash (response_type=token)
     const hash = window.location.hash.substring(1);
     const hashParams = new URLSearchParams(hash);
     const accessToken = hashParams.get('access_token');
@@ -94,31 +95,14 @@ export default function RSYACleaner() {
       localStorage.setItem('yandex_direct_token', accessToken);
       setIsConnected(true);
       setShowCodeInput(false);
-      window.history.replaceState({}, document.title, window.location.pathname);
-      toast({ title: '✅ Яндекс подключен!', description: 'Токен получен, загружаем кампании...' });
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      toast({ title: '✅ Токен получен!', description: 'Загружаем кампании...' });
       loadCampaigns(accessToken);
       return;
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
     const yandexConnected = urlParams.get('yandex_connected');
-    
-    if (code) {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = user.id || 'anonymous';
-      
-      fetch(func2url['yandex-oauth'] + '?code=' + code + '&state=' + userId)
-        .then(() => {
-          window.history.replaceState({}, document.title, window.location.pathname);
-          toast({ title: '✅ Яндекс подключен!', description: 'Теперь можно загружать кампании' });
-          checkYandexConnection();
-        })
-        .catch(() => {
-          toast({ title: 'Ошибка OAuth', description: 'Не удалось обменять код на токен', variant: 'destructive' });
-        });
-      return;
-    }
     
     if (yandexConnected === 'true') {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -272,38 +256,18 @@ export default function RSYACleaner() {
     }
   };
 
-  const handleConnect = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = user.id || 'anonymous';
-      
-      const response = await fetch(func2url['yandex-oauth'], {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Id': userId
-        },
-        body: JSON.stringify({ action: 'auth-url' })
-      });
-      
-      if (!response.ok) {
-        toast({ title: 'Ошибка', description: 'Не удалось получить ссылку OAuth', variant: 'destructive' });
-        return;
-      }
-      
-      const data = await response.json();
-      window.open(data.auth_url, '_blank');
-      
-      setShowCodeInput(true);
-      toast({ 
-        title: 'Скопируйте код', 
-        description: 'Скопируйте код подтверждения со страницы Яндекса и вставьте ниже',
-        duration: 10000
-      });
-      
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось запустить OAuth', variant: 'destructive' });
-    }
+  const handleConnect = () => {
+    const clientId = 'fa264103fca547b7baa436de1a416fbe';
+    const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}`;
+    
+    window.open(authUrl, '_blank');
+    setShowCodeInput(true);
+    
+    toast({ 
+      title: 'Скопируйте токен', 
+      description: 'После авторизации скопируйте токен из URL (#access_token=...) и вставьте в поле ниже',
+      duration: 15000
+    });
   };
 
   const handleCodeSubmit = async () => {
