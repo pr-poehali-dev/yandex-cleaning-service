@@ -9,6 +9,7 @@ import RSYAFiltersManager from '@/components/rsya/RSYAFiltersManager';
 import RSYACampaignSelector from '@/components/rsya/RSYACampaignSelector';
 import RSYAPlatformsTable from '@/components/rsya/RSYAPlatformsTable';
 import RSYAAutomationRules from '@/components/rsya/RSYAAutomationRules';
+import func2url from '../../backend/func2url.json';
 
 interface Filter {
   id: string;
@@ -85,10 +86,30 @@ export default function RSYACleaner() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const yandexConnected = urlParams.get('yandex_connected');
     
     if (code) {
-      exchangeCodeForToken(code);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.id;
+      
+      if (userId) {
+        fetch(func2url['yandex-oauth'] + '?code=' + code + '&state=' + userId)
+          .then(() => {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            toast({ title: '✅ Яндекс подключен!', description: 'Теперь можно загружать кампании' });
+            checkYandexConnection();
+          })
+          .catch(() => {
+            toast({ title: 'Ошибка OAuth', description: 'Не удалось обменять код на токен', variant: 'destructive' });
+          });
+      }
       return;
+    }
+    
+    if (yandexConnected === 'true') {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      toast({ title: '✅ Яндекс подключен!', description: 'Загружаем кампании...' });
+      checkYandexConnection();
     }
 
     const token = localStorage.getItem('yandex_direct_token');
@@ -208,17 +229,42 @@ export default function RSYACleaner() {
     }
   };
 
-  const handleConnect = async () => {
+  const checkYandexConnection = async () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id;
+    
+    if (!userId) return;
+    
     try {
-      const response = await fetch(YANDEX_DIRECT_URL + '?action=config');
-      const { clientId } = await response.json();
-      const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}`;
-      window.open(authUrl, '_blank');
-      setShowCodeInput(true);
-      toast({ title: '📋 Скопируйте код', description: 'После авторизации Яндекс покажет код — вставьте его в поле ниже' });
+      const response = await fetch(func2url['yandex-oauth'], {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.connected) {
+          setIsConnected(true);
+          toast({ title: 'Яндекс подключен', description: `Аккаунт: ${data.yandex_login}` });
+        }
+      }
     } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось получить настройки OAuth', variant: 'destructive' });
+      console.error('Ошибка проверки подключения:', error);
     }
+  };
+
+  const handleConnect = () => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user.id || 'default_user';
+    
+    const clientId = import.meta.env.VITE_YANDEX_CLIENT_ID || 'YOUR_CLIENT_ID';
+    const redirectUri = `${window.location.origin}/rsya`;
+    const authUrl = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${userId}`;
+    
+    window.location.href = authUrl;
   };
 
   const handleCodeSubmit = async () => {

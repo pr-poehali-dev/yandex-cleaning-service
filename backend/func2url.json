@@ -1,4 +1,5 @@
 {
+  "yandex-oauth": "https://functions.poehali.dev/052a3544-14b2-4ce8-af5e-26f0e7d0c33a",
   "admin": "https://functions.poehali.dev/9ec4d5ef-88f6-4157-b697-08bf129daacf",
   "subscription": "https://functions.poehali.dev/72f69b8a-01bc-488f-a554-2105dafc6f9c",
   "cluster-names": "https://functions.poehali.dev/816f5c03-c259-4d9d-9a4b-44d96af0e858",
