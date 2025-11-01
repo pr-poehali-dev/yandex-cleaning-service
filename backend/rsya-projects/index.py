@@ -116,6 +116,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'client_login': row[6]
             }
             
+            print(f'[DEBUG] GET project {project_id}: is_configured={row[5]}, has_token={row[2] is not None}')
+            
             cursor.close()
             conn.close()
             
@@ -256,6 +258,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 "UPDATE rsya_projects SET is_configured = true, updated_at = CURRENT_TIMESTAMP WHERE id = %s",
                 (project_id,)
             )
+            
+            print(f'[DEBUG] Setup completed for project {project_id}: campaigns={len(campaigns)}, goals={len(goals)}, is_configured=true')
             
             cursor.close()
             conn.close()
