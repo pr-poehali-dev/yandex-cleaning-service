@@ -633,11 +633,11 @@ export default function RSYASetup() {
                         );
                       });
                     })()
-                      )}
-                    </div>
-                  </>
-                )}
-              </CardContent>
+                  )}
+                </div>
+              </>
+            )}
+          </CardContent>
             </Card>
           </div>
 
