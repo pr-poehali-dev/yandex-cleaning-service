@@ -141,84 +141,169 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 if campaign_type == 'TEXT_CAMPAIGN':
                     campaign_id = str(c.get('Id'))
                     
-                    # Получаем группы объявлений для кампании
-                    adgroups_url = api_url.replace('/campaigns', '/adgroups')
-                    adgroups_response = requests.post(
-                        adgroups_url,
-                        headers=request_headers,
-                        json={
-                            'method': 'get',
-                            'params': {
-                                'SelectionCriteria': {'CampaignIds': [int(campaign_id)]},
-                                'FieldNames': ['Id', 'Name', 'Status'],
-                                'TextAdGroupFieldNames': ['BiddingStrategy']
-                            }
-                        },
-                        timeout=10
-                    )
-                    
-                    platforms = []
-                    if adgroups_response.status_code == 200:
-                        adgroups_data = adgroups_response.json()
-                        print(f'[DEBUG] AdGroups response for campaign {campaign_id}: {str(adgroups_data)[:300]}')
-                        
-                        if 'result' in adgroups_data:
-                            adgroups = adgroups_data.get('result', {}).get('AdGroups', [])
-                            print(f'[DEBUG] Found {len(adgroups)} adgroups for campaign {campaign_id}')
-                            
-                            for ag in adgroups:
-                                text_adgroup = ag.get('TextAdGroup', {})
-                                bidding = text_adgroup.get('BiddingStrategy', {})
-                                network_bidding = bidding.get('Network', {})
-                                if network_bidding:
-                                    platforms.append({
-                                        'adgroup_id': str(ag.get('Id')),
-                                        'adgroup_name': ag.get('Name', 'Без названия'),
-                                        'status': ag.get('Status'),
-                                        'network_enabled': True
-                                    })
-                        else:
-                            print(f'[DEBUG] No result in adgroups response for campaign {campaign_id}')
-                    else:
-                        print(f'[DEBUG] AdGroups request failed with status {adgroups_response.status_code}')
-                    
-                    # Получаем цели через GetRetargetingGoals (Live API v4)
+                    # Получаем цели из Reports API
                     goals = []
+                    platforms = []
                     
                     try:
-                        # Live API v4 не работает в sandbox, используем только для продакшна
-                        if not is_sandbox and client_login:
-                            live_api_url = 'https://api.direct.yandex.ru/live/v4/json/'
-                            goals_body = {
-                                'method': 'GetRetargetingGoals',
-                                'param': {'Logins': [client_login]},
-                                'locale': 'ru',
-                                'token': token
-                            }
-                            
-                            goals_response = requests.post(
-                                live_api_url,
-                                json=goals_body,
-                                timeout=10
-                            )
-                            
-                            print(f'[DEBUG] GetRetargetingGoals response: {goals_response.status_code}')
-                            print(f'[DEBUG] GetRetargetingGoals body: {goals_response.text[:500]}')
-                            
-                            if goals_response.status_code == 200:
-                                goals_data = goals_response.json()
-                                if 'data' in goals_data:
-                                    goals_raw = goals_data['data']
-                                    # Берем только первые 10 целей (лимит Reports API)
-                                    goals = [
-                                        {'id': str(g.get('GoalID', g.get('id'))), 'name': g.get('Name', g.get('name', 'Без названия')), 'type': 'GOAL'} 
-                                        for g in goals_raw[:10]
+                        # Reports API работает и в sandbox, и в production
+                        reports_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
+                        
+                        # Формируем запрос для получения статистики по площадкам с целями
+                        report_body = {
+                            'params': {
+                                'SelectionCriteria': {
+                                    'Filter': [
+                                        {'Field': 'CampaignId', 'Operator': 'EQUALS', 'Values': [campaign_id]}
                                     ]
-                                    print(f'[DEBUG] Found {len(goals)} goals: {goals}')
+                                },
+                                'FieldNames': [
+                                    'Date',
+                                    'CampaignId',
+                                    'CampaignName',
+                                    'Placement',
+                                    'Impressions',
+                                    'Clicks',
+                                    'Cost',
+                                    'Ctr',
+                                    'AvgCpc',
+                                    'Conversions',
+                                    'CostPerConversion',
+                                    'ConversionRate',
+                                    'GoalId'
+                                ],
+                                'ReportName': f'RSYAPlatforms_{campaign_id}',
+                                'ReportType': 'CUSTOM_REPORT',
+                                'DateRangeType': 'LAST_30_DAYS',
+                                'Format': 'TSV',
+                                'IncludeVAT': 'NO',
+                                'IncludeDiscount': 'NO'
+                            }
+                        }
+                        
+                        report_headers = dict(request_headers)
+                        report_headers['Accept-Language'] = 'ru'
+                        report_headers['processingMode'] = 'auto'
+                        report_headers['returnMoneyInMicros'] = 'false'
+                        report_headers['skipReportHeader'] = 'true'
+                        report_headers['skipReportSummary'] = 'true'
+                        
+                        print(f'[DEBUG] Requesting Reports API for campaign {campaign_id}')
+                        
+                        report_response = requests.post(
+                            reports_url,
+                            headers=report_headers,
+                            json=report_body,
+                            timeout=60
+                        )
+                        
+                        print(f'[DEBUG] Reports API response status: {report_response.status_code}')
+                        
+                        if report_response.status_code == 200:
+                            report_text = report_response.text
+                            print(f'[DEBUG] Reports API response preview: {report_text[:500]}')
+                            
+                            # Парсим TSV
+                            lines = report_text.strip().split('\n')
+                            if len(lines) > 1:
+                                headers_line = lines[0].split('\t')
+                                
+                                # Собираем уникальные площадки и цели
+                                platforms_data = {}
+                                goals_data = {}
+                                
+                                for line in lines[1:]:
+                                    values = line.split('\t')
+                                    if len(values) < len(headers_line):
+                                        continue
+                                    
+                                    row = dict(zip(headers_line, values))
+                                    placement = row.get('Placement', '--')
+                                    
+                                    if placement and placement != '--':
+                                        impressions = int(row.get('Impressions', 0) or 0)
+                                        clicks = int(row.get('Clicks', 0) or 0)
+                                        cost = float(row.get('Cost', 0) or 0)
+                                        conversions = int(row.get('Conversions', 0) or 0)
+                                        goal_id = row.get('GoalId', '')
+                                        
+                                        # Добавляем площадку
+                                        if placement not in platforms_data:
+                                            platforms_data[placement] = {
+                                                'impressions': 0,
+                                                'clicks': 0,
+                                                'cost': 0,
+                                                'conversions': 0,
+                                                'goals': {}
+                                            }
+                                        
+                                        platforms_data[placement]['impressions'] += impressions
+                                        platforms_data[placement]['clicks'] += clicks
+                                        platforms_data[placement]['cost'] += cost
+                                        platforms_data[placement]['conversions'] += conversions
+                                        
+                                        # Добавляем статистику по целям
+                                        if goal_id and goal_id != '--':
+                                            if goal_id not in goals_data:
+                                                goals_data[goal_id] = {'name': f'Цель {goal_id}', 'id': goal_id}
+                                            
+                                            if goal_id not in platforms_data[placement]['goals']:
+                                                platforms_data[placement]['goals'][goal_id] = {
+                                                    'conversions': 0
+                                                }
+                                            platforms_data[placement]['goals'][goal_id]['conversions'] += conversions
+                                
+                                # Формируем список целей
+                                goals = [{'id': gid, 'name': gdata['name'], 'type': 'GOAL'} for gid, gdata in goals_data.items()]
+                                
+                                # Формируем список площадок
+                                for placement, pdata in platforms_data.items():
+                                    clicks = pdata['clicks']
+                                    impressions = pdata['impressions']
+                                    cost = pdata['cost']
+                                    conversions = pdata['conversions']
+                                    
+                                    # Расчёт метрик
+                                    ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
+                                    cpc = round(cost / clicks, 2) if clicks > 0 else 0
+                                    conversion_rate = round((conversions / clicks) * 100, 2) if clicks > 0 else 0
+                                    cost_per_conversion = round(cost / conversions, 2) if conversions > 0 else 0
+                                    
+                                    # Статистика по целям
+                                    goals_stats = {}
+                                    for goal_id, goal_data in pdata['goals'].items():
+                                        goal_conv = goal_data['conversions']
+                                        goals_stats[goal_id] = {
+                                            'conversions': goal_conv,
+                                            'conversion_rate': round((goal_conv / clicks) * 100, 2) if clicks > 0 else 0,
+                                            'cost_per_goal': round(cost / goal_conv, 2) if goal_conv > 0 else 0
+                                        }
+                                    
+                                    platforms.append({
+                                        'adgroup_id': placement,
+                                        'adgroup_name': placement,
+                                        'status': 'ACCEPTED',
+                                        'network_enabled': True,
+                                        'stats': {
+                                            'impressions': impressions,
+                                            'clicks': clicks,
+                                            'ctr': ctr,
+                                            'cost': cost,
+                                            'cpc': cpc,
+                                            'conversions': conversions,
+                                            'conversion_rate': conversion_rate,
+                                            'cost_per_conversion': cost_per_conversion,
+                                            'goals': goals_stats
+                                        }
+                                    })
+                                
+                                print(f'[DEBUG] Found {len(platforms)} platforms with stats from Reports API')
+                                print(f'[DEBUG] Found {len(goals)} goals from Reports API')
                         else:
-                            print(f'[DEBUG] Skipping goals fetch: is_sandbox={is_sandbox}, client_login={client_login}')
+                            print(f'[DEBUG] Reports API failed: {report_response.text[:500]}')
+                    
                     except Exception as e:
-                        print(f'[DEBUG] Failed to fetch goals: {str(e)}')
+                        print(f'[DEBUG] Failed to fetch reports: {str(e)}')
                     
                     # Если площадок нет, добавляем тестовые для демонстрации
                     if len(platforms) == 0 and is_sandbox:

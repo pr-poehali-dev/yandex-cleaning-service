@@ -130,6 +130,7 @@ export default function RSYACleaner() {
   };
 
   const loadCampaigns = async (token: string) => {
+    setLoading(true);
     try {
       const url = useSandbox 
         ? `${YANDEX_DIRECT_URL}?sandbox=true` 
@@ -140,6 +141,11 @@ export default function RSYACleaner() {
       if (savedLogin) {
         headers['X-Client-Login'] = savedLogin;
       }
+      
+      toast({ 
+        title: '⏳ Загрузка данных...', 
+        description: 'Получаем кампании, площадки и цели из Reports API'
+      });
       
       const response = await fetch(url, {
         method: 'GET',
@@ -186,9 +192,18 @@ export default function RSYACleaner() {
       setApiError(null);
       
       setCampaigns(data.campaigns || []);
-      toast({ title: '✅ Кампании загружены', description: `Найдено РСЯ кампаний: ${data.campaigns?.length || 0}` });
+      
+      const totalPlatforms = (data.campaigns || []).reduce((sum: number, c: Campaign) => sum + (c.platforms?.length || 0), 0);
+      const totalGoals = (data.campaigns || []).reduce((sum: number, c: Campaign) => sum + (c.goals?.length || 0), 0);
+      
+      toast({ 
+        title: '✅ Данные загружены', 
+        description: `Кампаний: ${data.campaigns?.length || 0} • Площадок: ${totalPlatforms} • Целей: ${totalGoals}`
+      });
     } catch (error) {
       toast({ title: 'Ошибка загрузки кампаний', description: 'Не удалось загрузить список кампаний', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
