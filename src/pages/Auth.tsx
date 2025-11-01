@@ -235,8 +235,7 @@ export default function Auth() {
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      localStorage.removeItem('user');
-                      localStorage.removeItem('sessionToken');
+                      localStorage.clear();
                       toast({ title: '✅ Вы вышли из аккаунта' });
                     }}
                     className="w-full text-slate-500 hover:text-slate-700"

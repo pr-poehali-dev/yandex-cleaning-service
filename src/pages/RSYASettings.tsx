@@ -60,6 +60,24 @@ export default function RSYASettings() {
 
   const loadProject = async (uid: string, pid: string) => {
     try {
+      const hash = window.location.hash.substring(1);
+      const hashParams = new URLSearchParams(hash);
+      const accessToken = hashParams.get('access_token');
+      
+      if (accessToken) {
+        console.log('🔑 OAuth токен получен, сохраняем...', { uid, pid, tokenLength: accessToken.length });
+        await saveTokenToProject(uid, pid, accessToken);
+        localStorage.setItem('yandex_direct_token', accessToken);
+        localStorage.setItem('rsya_yandex_token', accessToken);
+        toast({ 
+          title: '✅ Авторизация успешна', 
+          description: 'Переход к настройке кампаний...' 
+        });
+        window.location.hash = '';
+        navigate(`/rsya/${pid}/setup`);
+        return;
+      }
+      
       const response = await fetch(`${RSYA_PROJECTS_URL}?project_id=${pid}`, {
         method: 'GET',
         headers: { 'X-User-Id': uid }
@@ -79,23 +97,9 @@ export default function RSYASettings() {
       if (project.yandex_token) {
         setIsConnected(true);
         loadCampaignsAndGoals(project.yandex_token);
-      } else {
-        const hash = window.location.hash.substring(1);
-        const hashParams = new URLSearchParams(hash);
-        const accessToken = hashParams.get('access_token');
-        
-        if (accessToken) {
-          await saveTokenToProject(uid, pid, accessToken);
-          localStorage.setItem('rsya_yandex_token', accessToken);
-          toast({ 
-            title: '✅ Авторизация успешна', 
-            description: 'Переход к настройке кампаний...' 
-          });
-          navigate(`/rsya/${pid}/setup`);
-          return;
-        }
       }
     } catch (error) {
+      console.error('❌ Ошибка загрузки проекта:', error);
       toast({ title: 'Ошибка загрузки проекта', variant: 'destructive' });
     }
   };
