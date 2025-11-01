@@ -282,7 +282,7 @@ export default function RSYACleaner() {
           .filter(goal => goal.campaigns?.some((c: any) => c.id === parseInt(campaign.id)))
           .map(goal => ({
             id: goal.id,
-            name: `Цель ${goal.id}`,
+            name: goal.value ? `${goal.value}` : `Цель ${goal.id}`,
             type: 'conversion'
           }));
         
