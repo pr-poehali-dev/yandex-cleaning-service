@@ -93,8 +93,47 @@ export default function RSYACleaner() {
   };
 
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'campaigns' | 'platforms'>('campaigns');
+  const [viewMode, setViewMode] = useState<'campaigns' | 'platforms'>('platforms');
   const [apiError, setApiError] = useState<{code: number; message: string; detail: string} | null>(null);
+  
+  // Тестовые площадки для демонстрации
+  const [testPlatforms] = useState<Platform[]>([
+    {
+      adgroup_id: '1',
+      adgroup_name: 'avito.ru',
+      status: 'ACTIVE',
+      network_enabled: true,
+      stats: { impressions: 15234, clicks: 456, ctr: 2.99, cost: 12450, cpc: 27.3, conversions: 12, conversion_rate: 2.63, avg_position: 1.2 }
+    },
+    {
+      adgroup_id: '2',
+      adgroup_name: 'dzen.ru',
+      status: 'ACTIVE',
+      network_enabled: true,
+      stats: { impressions: 98765, clicks: 1234, ctr: 1.25, cost: 45600, cpc: 37.0, conversions: 5, conversion_rate: 0.41, avg_position: 2.1 }
+    },
+    {
+      adgroup_id: '3',
+      adgroup_name: 'mail.ru',
+      status: 'ACTIVE',
+      network_enabled: true,
+      stats: { impressions: 45678, clicks: 789, ctr: 1.73, cost: 28900, cpc: 36.6, conversions: 8, conversion_rate: 1.01, avg_position: 1.8 }
+    },
+    {
+      adgroup_id: '4',
+      adgroup_name: 'yandex.ru/news',
+      status: 'ACTIVE',
+      network_enabled: true,
+      stats: { impressions: 67890, clicks: 1567, ctr: 2.31, cost: 56700, cpc: 36.2, conversions: 18, conversion_rate: 1.15, avg_position: 1.5 }
+    },
+    {
+      adgroup_id: '5',
+      adgroup_name: 'vk.com',
+      status: 'ACTIVE',
+      network_enabled: true,
+      stats: { impressions: 123456, clicks: 2345, ctr: 1.90, cost: 89000, cpc: 38.0, conversions: 15, conversion_rate: 0.64, avg_position: 2.3 }
+    }
+  ]);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -130,7 +169,6 @@ export default function RSYACleaner() {
       
       if (project.yandex_token) {
         setIsConnected(true);
-        loadCampaigns(project.yandex_token);
       } else {
         const hash = window.location.hash.substring(1);
         const hashParams = new URLSearchParams(hash);
@@ -140,7 +178,6 @@ export default function RSYACleaner() {
           await saveTokenToProject(uid, pid, accessToken);
           window.history.replaceState({}, document.title, window.location.pathname);
           setIsConnected(true);
-          loadCampaigns(accessToken);
         }
       }
     } catch (error) {
@@ -186,7 +223,6 @@ export default function RSYACleaner() {
       setIsConnected(true);
       
       toast({ title: '✅ Подключено!', description: 'Яндекс.Директ успешно подключён' });
-      await loadCampaigns(token);
     } catch (error) {
       toast({ title: 'Ошибка авторизации', description: 'Не удалось получить токен доступа', variant: 'destructive' });
     } finally {
@@ -487,8 +523,7 @@ export default function RSYACleaner() {
         setIsConnected(true);
         setShowCodeInput(false);
         setAuthCode('');
-        toast({ title: '✅ Токен сохранён', description: 'Загружаем кампании...' });
-        await loadCampaigns(token);
+        toast({ title: '✅ Токен сохранён', description: 'Яндекс.Директ подключён' });
       } else {
         // OAuth коды обычно короткие
         await exchangeCodeForToken(token);
@@ -668,6 +703,51 @@ export default function RSYACleaner() {
 
         {isConnected && (
           <>
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <Icon name="Target" className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-blue-900">Загрузка кампаний</h3>
+                      <p className="text-sm text-blue-700">Загрузите кампании и цели из Яндекс.Директ для работы</p>
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      const token = localStorage.getItem('yandex_direct_token');
+                      if (token) {
+                        loadCampaigns(token);
+                        toast({ title: '⏳ Загрузка...', description: 'Получаем данные из Яндекс.Директ' });
+                      }
+                    }}
+                    disabled={loading || campaigns.length > 0}
+                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <>
+                        <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
+                        Загрузка...
+                      </>
+                    ) : campaigns.length > 0 ? (
+                      <>
+                        <Icon name="CheckCircle2" className="mr-2 h-5 w-5" />
+                        Загружено ({campaigns.length})
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="Download" className="mr-2 h-5 w-5" />
+                        Загрузить кампании
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {apiError && apiError.code === 513 && (
               <Card className="bg-orange-50 border-orange-300 shadow-lg">
                 <CardContent className="pt-6">
@@ -899,7 +979,7 @@ export default function RSYACleaner() {
               />
             )}
 
-            {campaigns.length > 0 && viewMode === 'platforms' && (
+            {viewMode === 'platforms' && (
               <>
                 <RSYAAutomationRules
                   onApplyRule={(rule) => {
@@ -943,7 +1023,7 @@ export default function RSYACleaner() {
                 />
                 
                 <RSYAPlatformsTable
-                  platforms={allPlatforms}
+                  platforms={campaigns.length > 0 ? allPlatforms : testPlatforms}
                   selectedPlatforms={selectedPlatforms}
                   onTogglePlatform={togglePlatform}
                   onSelectAll={selectAllPlatforms}
