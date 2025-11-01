@@ -46,7 +46,7 @@ export default function RSYAConnectionCard({
                 <Icon name="CheckCircle2" className="h-5 w-5 text-emerald-600" />
                 Подключено к Яндекс.Директ
               </CardTitle>
-              <CardDescription className="text-emerald-700 mt-1 flex items-center gap-2 flex-wrap">
+              <div className="text-emerald-700 mt-1 flex items-center gap-2 flex-wrap text-sm">
                 {useSandbox ? (
                   <span className="flex items-center gap-1">
                     <Badge variant="secondary" className="text-xs">Песочница</Badge>
@@ -63,7 +63,7 @@ export default function RSYAConnectionCard({
                     )}
                   </>
                 )}
-              </CardDescription>
+              </div>
             </div>
             <div className="flex gap-2">
               {!useSandbox && (
