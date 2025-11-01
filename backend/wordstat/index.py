@@ -941,24 +941,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
         
         try:
-            # Первый кластер: запросы пользователя оборачиваем в кавычки
             user_phrases = []
             for kw in keywords:
                 if kw.strip():
-                    # Добавляем кавычки для точного соответствия
-                    quoted_phrase = f'"{kw.strip()}"'
                     user_phrases.append({
-                        'phrase': quoted_phrase,
-                        'count': 0  # Частота будет получена из API
+                        'phrase': kw.strip(),
+                        'count': 0
                     })
             
             payload = {
                 'phrase': keywords[0],
                 'regions': regions,
-                'numPhrases': 500  # Ограничение для быстрой кластеризации (было 2000)
+                'numPhrases': 2000
             }
             
-            print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}, numPhrases=500')
+            print(f'[WORDSTAT] Request payload: phrase={keywords[0]}, regions={regions}, numPhrases=2000')
             
             response = requests.post(api_url, json=payload, headers=headers, timeout=30)
             
