@@ -185,16 +185,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             try:
                 print('[DEBUG] Attempting to enrich goals with Metrika data...')
                 
-                # Получаем список счётчиков
-                counters_url = 'https://api-metrika.yandex.net/management/v1/counters'
+                # Получаем ВСЕ счётчики со всех аккаунтов с пагинацией
+                all_counters = []
+                offset = 1
+                per_page = 100
                 metrika_headers = {'Authorization': f'OAuth {token}'}
-                counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
                 
-                print(f'[DEBUG] Metrika counters response: {counters_response.status_code}')
+                while True:
+                    counters_url = f'https://api-metrika.yandex.net/management/v1/counters?per_page={per_page}&offset={offset}'
+                    counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
+                    
+                    print(f'[DEBUG] Metrika counters page {offset//per_page + 1}: {counters_response.status_code}')
+                    
+                    if counters_response.status_code == 200:
+                        counters_data = counters_response.json()
+                        page_counters = counters_data.get('counters', [])
+                        all_counters.extend(page_counters)
+                        
+                        print(f'[DEBUG] Loaded {len(page_counters)} counters (total: {len(all_counters)})')
+                        
+                        # Если получили меньше чем per_page, значит это последняя страница
+                        if len(page_counters) < per_page:
+                            break
+                        offset += per_page
+                    else:
+                        break
                 
-                if counters_response.status_code == 200:
-                    counters_data = counters_response.json()
-                    counters = counters_data.get('counters', [])
+                if len(all_counters) > 0:
+                    counters = all_counters
                     
                     print(f'[DEBUG] Found {len(counters)} Metrika counters')
                     
