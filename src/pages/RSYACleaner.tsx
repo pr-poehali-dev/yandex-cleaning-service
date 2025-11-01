@@ -621,17 +621,6 @@ export default function RSYACleaner() {
                           <Icon name="RefreshCw" className="mr-2 h-4 w-4" />
                           Проверить снова
                         </Button>
-                        <Button 
-                          onClick={() => {
-                            const token = localStorage.getItem('yandex_direct_token');
-                            if (token) loadGoalsFromDirect(token);
-                          }}
-                          variant="outline"
-                          className="border-green-500 text-green-700 hover:bg-green-50"
-                        >
-                          <Icon name="Target" className="mr-2 h-4 w-4" />
-                          Получить цели
-                        </Button>
                       </div>
                     </div>
                   </div>
@@ -870,16 +859,34 @@ export default function RSYACleaner() {
                         Все площадки ({allPlatforms.length})
                       </button>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {campaigns.length > 0 && (
+              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-md">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-green-100 rounded-full">
+                        <Icon name="Target" className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-green-900">Цели конверсии</h3>
+                        <p className="text-sm text-green-700">Загрузите цели из Яндекс.Директ для анализа</p>
+                      </div>
+                    </div>
                     <Button 
                       onClick={() => {
                         const token = localStorage.getItem('yandex_direct_token');
-                        if (token) loadGoals(token);
+                        if (token) loadGoalsFromDirect(token);
                       }}
-                      variant="outline"
-                      className="border-green-500 text-green-700 hover:bg-green-50"
+                      className="bg-green-600 hover:bg-green-700 text-white shadow-md"
+                      size="lg"
                     >
-                      <Icon name="Crosshair" className="mr-2 h-4 w-4" />
-                      Загрузить цели
+                      <Icon name="Download" className="mr-2 h-5 w-5" />
+                      Получить цели
                     </Button>
                   </div>
                 </CardContent>
