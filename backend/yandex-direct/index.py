@@ -170,7 +170,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                     'Cost',
                                     'Conversions'
                                 ],
-                                'ReportName': f'RSYAPlatforms_{campaign_id}_{int(time.time())}',
+                                'ReportName': f'RSYAPlatforms_{campaign_id}_{context.request_id[:8]}',
                                 'ReportType': 'CUSTOM_REPORT',
                                 'DateRangeType': 'CUSTOM_DATE',
                                 'Format': 'TSV',
