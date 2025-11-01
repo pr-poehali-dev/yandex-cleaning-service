@@ -200,6 +200,39 @@ export default function RSYACleaner() {
 
       const data = await response.json();
       
+      // Загружаем цели из API Директа (PriorityGoals)
+      let goalsData: any[] = [];
+      try {
+        const goalsUrl = actualSandbox 
+          ? `${YANDEX_DIRECT_URL}?action=goals&sandbox=true` 
+          : `${YANDEX_DIRECT_URL}?action=goals`;
+        
+        const goalsHeaders: Record<string, string> = { 'X-Auth-Token': token };
+        if (actualLogin) {
+          goalsHeaders['X-Client-Login'] = actualLogin;
+        }
+        
+        const goalsResponse = await fetch(goalsUrl, {
+          method: 'GET',
+          headers: goalsHeaders
+        });
+        
+        if (goalsResponse.ok) {
+          const goalsResult = await goalsResponse.json();
+          goalsData = goalsResult.goals || [];
+          console.log('[DEBUG] Loaded goals from API:', goalsData);
+          
+          if (goalsData.length > 0) {
+            toast({ 
+              title: '🎯 Цели загружены', 
+              description: `Найдено целей: ${goalsData.length}`
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[WARN] Failed to load goals:', e);
+      }
+      
       if (data.error) {
         const errorCode = data.error_code;
         const errorTitle = data.error;
