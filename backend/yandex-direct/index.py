@@ -164,7 +164,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                     'Placement',
                                     'Impressions',
                                     'Clicks',
-                                    'Cost'
+                                    'Cost',
+                                    'Conversions',
+                                    'GoalId'
                                 ],
                                 'ReportName': f'RSYAPlatforms_{campaign_id}',
                                 'ReportType': 'CUSTOM_REPORT',

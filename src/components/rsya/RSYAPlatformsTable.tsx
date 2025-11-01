@@ -87,6 +87,7 @@ export default function RSYAPlatformsTable({
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<FilterConfig>({
     search: '',
     minImpressions: 0,
@@ -434,6 +435,7 @@ export default function RSYAPlatformsTable({
                 <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="conversion_rate">CR %</SortButton>
                 </th>
+                <th className="px-2 py-2 text-center text-xs font-semibold">Цели</th>
               </tr>
             </thead>
             <tbody>
@@ -507,6 +509,26 @@ export default function RSYAPlatformsTable({
                             {platform.stats.conversion_rate}%
                           </span>
                         </td>
+                        <td className="px-2 py-1.5 text-center">
+                          {platform.stats.goals && Object.keys(platform.stats.goals).length > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newExpanded = new Set(expandedRows);
+                                if (newExpanded.has(platform.adgroup_id)) {
+                                  newExpanded.delete(platform.adgroup_id);
+                                } else {
+                                  newExpanded.add(platform.adgroup_id);
+                                }
+                                setExpandedRows(newExpanded);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1 mx-auto"
+                            >
+                              <Icon name={expandedRows.has(platform.adgroup_id) ? 'ChevronDown' : 'ChevronRight'} className="h-3 w-3" />
+                              {Object.keys(platform.stats.goals).length}
+                            </button>
+                          )}
+                        </td>
                       </>
                     ) : (
                       <>
@@ -517,9 +539,34 @@ export default function RSYAPlatformsTable({
                         <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
                         <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
                         <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
+                        <td className="px-2 py-1.5 text-center text-slate-400 text-xs">—</td>
                       </>
                     )}
                   </tr>
+                  {platform.stats?.goals && expandedRows.has(platform.adgroup_id) && (
+                    <tr className="bg-blue-50 border-b">
+                      <td colSpan={12} className="px-4 py-3">
+                        <div className="text-xs space-y-2">
+                          <div className="font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                            <Icon name="Target" className="h-4 w-4 text-blue-600" />
+                            Цели по площадке:
+                          </div>
+                          <div className="grid grid-cols-1 gap-2">
+                            {Object.entries(platform.stats.goals).map(([goalId, goalStats]) => (
+                              <div key={goalId} className="flex items-center justify-between px-3 py-2 bg-white rounded border shadow-sm">
+                                <span className="font-medium text-slate-700">🎯 Цель {goalId}</span>
+                                <div className="flex gap-4 text-xs">
+                                  <span className="text-slate-600">Конверсий: <strong className="text-slate-900">{goalStats.conversions}</strong></span>
+                                  <span className="text-slate-600">CR: <strong className="text-emerald-600">{goalStats.conversion_rate.toFixed(2)}%</strong></span>
+                                  <span className="text-slate-600">Цена конв: <strong className="text-blue-600">{goalStats.cost_per_goal.toFixed(2)} ₽</strong></span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 );
               })}
             </tbody>
