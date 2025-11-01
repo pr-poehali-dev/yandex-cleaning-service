@@ -374,7 +374,7 @@ export default function RSYASetup() {
                           className="mt-0.5 flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 line-clamp-2 leading-tight">{goal.name}</p>
+                          <p className="text-sm font-medium text-slate-900 break-words leading-tight">{goal.name}</p>
                           <p className="text-xs text-slate-500 mt-1">ID: {goal.id}</p>
                         </div>
                       </div>
