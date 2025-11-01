@@ -173,14 +173,17 @@ export default function RSYACleaner() {
   const loadCampaigns = async (token: string) => {
     setLoading(true);
     try {
-      const url = useSandbox 
+      // ВСЕГДА берём актуальные значения из localStorage
+      const actualSandbox = localStorage.getItem('yandex_use_sandbox') === 'true';
+      const actualLogin = localStorage.getItem('yandex_client_login');
+      
+      const url = actualSandbox 
         ? `${YANDEX_DIRECT_URL}?sandbox=true` 
         : YANDEX_DIRECT_URL;
       
       const headers: Record<string, string> = { 'X-Auth-Token': token };
-      const savedLogin = localStorage.getItem('yandex_client_login');
-      if (savedLogin) {
-        headers['X-Client-Login'] = savedLogin;
+      if (actualLogin) {
+        headers['X-Client-Login'] = actualLogin;
       }
       
       toast({ 
