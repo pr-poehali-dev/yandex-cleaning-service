@@ -266,29 +266,14 @@ export default function RSYACleaner() {
       
       toast({ 
         title: '⏳ Загрузка целей...', 
-        description: 'Получаем цели из Яндекс.Директ API Live v4'
+        description: 'Получаем цели из Яндекс.Директ'
       });
       
-      const apiUrl = actualSandbox 
-        ? 'https://api-sandbox.direct.yandex.ru/live/v4/json/'
-        : 'https://api.direct.yandex.ru/live/v4/json/';
+      const url = `${YANDEX_DIRECT_URL}?action=goals${actualSandbox ? '&sandbox=true' : ''}${clientLogin ? `&client_login=${clientLogin}` : ''}`;
       
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-      
-      if (clientLogin) {
-        headers['Client-Login'] = clientLogin;
-      }
-      
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          method: 'GetRetargetingGoals',
-          param: {}
-        })
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { 'X-Auth-Token': token }
       });
 
       if (!response.ok) {
@@ -297,16 +282,16 @@ export default function RSYACleaner() {
 
       const data = await response.json();
       
-      if (data.error_code || data.error_str) {
+      if (data.error) {
         toast({ 
           title: '❌ Ошибка API Директ', 
-          description: data.error_detail || data.error_str || 'Неизвестная ошибка',
+          description: data.error,
           variant: 'destructive'
         });
         return;
       }
       
-      const goals = data.data || [];
+      const goals = data.goals || [];
       console.log('✅ Goals loaded from Direct:', goals);
       
       toast({ 

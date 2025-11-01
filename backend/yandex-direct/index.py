@@ -40,7 +40,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить цели из кампаний Директа
+    # GET ?action=goals - получить цели через Live API v4
     if method == 'GET' and query_params.get('action') == 'goals':
         headers_raw = event.get('headers', {})
         token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
@@ -54,110 +54,63 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            print(f'[DEBUG] Loading goals from Direct campaigns with token: {token[:10]}...')
+            print(f'[DEBUG] Loading goals via Live API v4 with token: {token[:10]}...')
             
             is_sandbox = query_params.get('sandbox') == 'true'
             client_login = query_params.get('client_login')
             
-            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns' if is_sandbox else 'https://api.direct.yandex.com/json/v5/campaigns'
+            api_url = 'https://api-sandbox.direct.yandex.ru/live/v4/json/' if is_sandbox else 'https://api.direct.yandex.ru/live/v4/json/'
             
             headers_api = {
-                'Content-Type': 'application/json', 
-                'Accept-Language': 'ru',
+                'Content-Type': 'application/json',
                 'Authorization': f'Bearer {token}'
             }
             if client_login:
                 headers_api['Client-Login'] = client_login
             
-            # Запрос кампаний с PriorityGoals
+            # Запрос целей через GetRetargetingGoals
             response = requests.post(
                 api_url,
                 headers=headers_api,
                 json={
-                    'method': 'get',
-                    'params': {
-                        'SelectionCriteria': {},
-                        'FieldNames': ['Id', 'Name', 'Type'],
-                        'TextCampaignFieldNames': ['PriorityGoals'],
-                        'DynamicTextCampaignFieldNames': ['PriorityGoals']
-                    }
+                    'method': 'GetRetargetingGoals',
+                    'param': {}
                 },
                 timeout=30
             )
             
-            print(f'[DEBUG] Direct API response: {response.status_code}')
+            print(f'[DEBUG] Live API response: {response.status_code}')
             
             if response.status_code != 200:
-                error_data = response.json()
-                print(f'[ERROR] API error: {json.dumps(error_data)}')
+                error_text = response.text
+                print(f'[ERROR] API error: {error_text}')
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка Direct API', 'details': error_data})
+                    'body': json.dumps({'error': 'Ошибка Live API', 'details': error_text})
                 }
             
             data = response.json()
             
-            if 'error' in data:
-                print(f'[ERROR] Response error: {json.dumps(data["error"])}')
+            if data.get('error_code') or data.get('error_str'):
+                error_msg = data.get('error_detail') or data.get('error_str') or 'Unknown error'
+                print(f'[ERROR] Response error: {error_msg}')
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': data['error'].get('error_string', 'API Error'), 'details': data['error']})
+                    'body': json.dumps({'error': error_msg, 'error_code': data.get('error_code')})
                 }
             
-            campaigns = data.get('result', {}).get('Campaigns', [])
-            print(f'[DEBUG] Found {len(campaigns)} campaigns')
-            
-            # Собираем все цели из PriorityGoals
-            all_goals = []
-            goals_map = {}
-            
-            for campaign in campaigns:
-                campaign_type = campaign.get('Type')
-                priority_goals = []
-                
-                if campaign_type == 'TEXT_CAMPAIGN':
-                    text_campaign = campaign.get('TextCampaign', {})
-                    priority_goals = text_campaign.get('PriorityGoals', {}).get('Items', [])
-                elif campaign_type == 'DYNAMIC_TEXT_CAMPAIGN':
-                    dynamic_campaign = campaign.get('DynamicTextCampaign', {})
-                    priority_goals = dynamic_campaign.get('PriorityGoals', {}).get('Items', [])
-                
-                for goal in priority_goals:
-                    goal_id = goal.get('GoalId')
-                    goal_value = goal.get('Value')
-                    
-                    if goal_id:
-                        if goal_id not in goals_map:
-                            goals_map[goal_id] = {
-                                'id': goal_id,
-                                'value': goal_value,
-                                'campaigns': []
-                            }
-                        
-                        goals_map[goal_id]['campaigns'].append({
-                            'id': campaign.get('Id'),
-                            'name': campaign.get('Name')
-                        })
-            
-            # Преобразуем в список
-            for goal_id, goal_data in goals_map.items():
-                all_goals.append({
-                    'id': goal_id,
-                    'value': goal_data['value'],
-                    'campaigns': goal_data['campaigns']
-                })
-            
-            print(f'[DEBUG] Total unique goals: {len(all_goals)}')
+            goals = data.get('data', [])
+            print(f'[DEBUG] Found {len(goals)} goals')
             
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
-                'body': json.dumps({'goals': all_goals})
+                'body': json.dumps({'goals': goals})
             }
         
         except Exception as e:
