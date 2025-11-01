@@ -808,19 +808,6 @@ export default function RSYACleaner() {
                           <Icon name="ExternalLink" className="mr-2 h-4 w-4" />
                           Открыть настройки API
                         </Button>
-                        <Button 
-                          onClick={() => {
-                            if (setUseSandbox) {
-                              setUseSandbox(true);
-                              const token = localStorage.getItem('yandex_direct_token');
-                              if (token) loadCampaigns(token);
-                            }
-                          }}
-                          variant="outline"
-                        >
-                          <Icon name="TestTube" className="mr-2 h-4 w-4" />
-                          Переключиться на Песочницу
-                        </Button>
                       </div>
                     </div>
                   </div>
