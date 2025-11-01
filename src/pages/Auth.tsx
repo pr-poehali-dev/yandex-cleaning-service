@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,12 +20,7 @@ export default function Auth() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      navigate('/home');
-    }
-  }, [navigate]);
+
 
   const formatPhone = (value: string) => {
     let digits = value.replace(/\D/g, '');
@@ -223,11 +218,25 @@ export default function Auth() {
                   )}
                 </Button>
 
-                <div className="text-center text-sm text-muted-foreground">
-                  Нажимая кнопку, вы соглашаетесь с{' '}
-                  <a href="#" className="text-emerald-600 hover:underline font-medium">
-                    условиями использования
-                  </a>
+                <div className="text-center text-sm text-muted-foreground space-y-2">
+                  <div>
+                    Нажимая кнопку, вы соглашаетесь с{' '}
+                    <a href="#" className="text-emerald-600 hover:underline font-medium">
+                      условиями использования
+                    </a>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      localStorage.clear();
+                      toast({ title: '✅ Вы вышли из аккаунта' });
+                    }}
+                    className="w-full text-slate-500 hover:text-slate-700"
+                  >
+                    <Icon name="LogOut" size={16} className="mr-2" />
+                    Выйти из аккаунта
+                  </Button>
                 </div>
               </>
             ) : (
