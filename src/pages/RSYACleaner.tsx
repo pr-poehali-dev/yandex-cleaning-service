@@ -297,10 +297,59 @@ export default function RSYACleaner() {
       const totalPlatforms = campaignsWithGoals.reduce((sum: number, c: Campaign) => sum + (c.platforms?.length || 0), 0);
       const totalGoals = campaignsWithGoals.reduce((sum: number, c: Campaign) => sum + (c.goals?.length || 0), 0);
       
-      toast({ 
-        title: '✅ Данные загружены', 
-        description: `Кампаний: ${data.campaigns?.length || 0} • Площадок: ${totalPlatforms} • Целей: ${totalGoals}`
-      });
+      // Если площадок нет (Reports API вернул 201 - отчёт в очереди), ждём и запрашиваем снова
+      if (totalPlatforms === 0 && campaignsWithGoals.length > 0) {
+        toast({ 
+          title: '⏳ Формирование отчёта...', 
+          description: 'Reports API готовит данные. Повторный запрос через 3 сек...'
+        });
+        
+        setTimeout(async () => {
+          try {
+            const retryResponse = await fetch(url, {
+              method: 'GET',
+              headers
+            });
+            
+            if (retryResponse.ok) {
+              const retryData = await retryResponse.json();
+              
+              if (!retryData.error) {
+                const retryCampaignsWithGoals = (retryData.campaigns || []).map((campaign: Campaign) => {
+                  const campaignGoals = goalsData
+                    .filter(goal => goal.campaigns?.some((c: any) => c.id === parseInt(campaign.id)))
+                    .map(goal => ({
+                      id: goal.id,
+                      name: goal.name || `Цель ${goal.id}`,
+                      type: 'conversion'
+                    }));
+                  
+                  return {
+                    ...campaign,
+                    goals: campaignGoals
+                  };
+                });
+                
+                setCampaigns(retryCampaignsWithGoals);
+                
+                const retryTotalPlatforms = retryCampaignsWithGoals.reduce((sum: number, c: Campaign) => sum + (c.platforms?.length || 0), 0);
+                
+                toast({ 
+                  title: '✅ Данные обновлены', 
+                  description: `Кампаний: ${retryCampaignsWithGoals.length} • Площадок: ${retryTotalPlatforms} • Целей: ${totalGoals}`
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('[WARN] Retry failed:', e);
+          }
+        }, 3000);
+      } else {
+        toast({ 
+          title: '✅ Данные загружены', 
+          description: `Кампаний: ${data.campaigns?.length || 0} • Площадок: ${totalPlatforms} • Целей: ${totalGoals}`
+        });
+      }
     } catch (error) {
       toast({ title: 'Ошибка загрузки кампаний', description: 'Не удалось загрузить список кампаний', variant: 'destructive' });
     } finally {
