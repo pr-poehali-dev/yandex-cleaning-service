@@ -259,9 +259,11 @@ export default function RSYACleaner() {
   };
 
   const loadGoals = async (token: string) => {
+    console.log('🎯 loadGoals called with token:', token?.substring(0, 10));
     try {
       const actualSandbox = localStorage.getItem('yandex_use_sandbox') === 'true';
       const url = `${YANDEX_DIRECT_URL}?action=goals${actualSandbox ? '&sandbox=true' : ''}`;
+      console.log('🎯 Request URL:', url);
       
       toast({ 
         title: '⏳ Загрузка целей...', 
