@@ -107,6 +107,13 @@ export default function RSYACleaner() {
     
     if (accessToken) {
       localStorage.setItem('yandex_direct_token', accessToken);
+      
+      // Сохраняем текущие настройки sandbox и clientLogin
+      const savedSandbox = localStorage.getItem('yandex_use_sandbox');
+      const savedLogin = localStorage.getItem('yandex_client_login');
+      if (savedSandbox !== null) setUseSandboxState(savedSandbox === 'true');
+      if (savedLogin) setClientLoginState(savedLogin);
+      
       setIsConnected(true);
       setShowCodeInput(false);
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);

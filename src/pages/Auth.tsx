@@ -12,13 +12,21 @@ type AuthStep = 'phone' | 'code';
 const API_URL = 'https://functions.poehali.dev/06df3397-13af-46f0-946a-f5d38aa6f60f';
 
 export default function Auth() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // Если пользователь уже авторизован, перенаправляем на главную
+  const user = localStorage.getItem('user');
+  if (user) {
+    navigate('/home');
+    return null;
+  }
+  
   const [step, setStep] = useState<AuthStep>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [sentCode, setSentCode] = useState('');
-  const { toast } = useToast();
-  const navigate = useNavigate();
 
 
 
