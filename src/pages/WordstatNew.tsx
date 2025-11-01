@@ -114,44 +114,78 @@ export default function WordstatNew() {
 
     setLoading(true);
     try {
-      const response = await fetch('https://functions.poehali.dev/8b141446-430c-4c0b-b347-a0a2057c0ee8', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-User-Id': user.id
-        },
-        body: JSON.stringify({
-          keywords: keywords.split('\n').filter(k => k.trim()),
-          regions: [parseInt(region)],
-          clustering_mode: mode
-        })
-      });
-
-      if (response.status === 403) {
-        toast({
-          title: 'Доступ ограничен',
-          description: 'Требуется активная подписка',
-          variant: 'destructive'
-        });
-        navigate('/subscription');
-        return;
-      }
-
-      if (!response.ok) throw new Error('Ошибка запроса');
-
-      const data = await response.json();
+      const keywordsList = keywords.split('\n').filter(k => k.trim());
+      const regionNum = parseInt(region);
       
-      const allClusters = data.clusters || [];
-      const minusCluster = allClusters.find((c: Cluster) => c.cluster_name === 'Минус-слова');
-      const regularClusters = allClusters.filter((c: Cluster) => c.cluster_name !== 'Минус-слова');
+      let collectionId = '';
+      let totalPages = 40;
+      const allPhrases: TopRequest[] = [];
+      
+      for (let page = 1; page <= totalPages; page++) {
+        const response = await fetch(func2url['wordstat-collect'], {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Id': user.id
+          },
+          body: JSON.stringify({
+            keywords: keywordsList,
+            regions: [regionNum],
+            page,
+            collection_id: collectionId || undefined,
+            mode
+          })
+        });
 
-      setClusters(regularClusters);
-      setMinusPhrases(minusCluster?.phrases || []);
+        if (response.status === 403) {
+          toast({
+            title: 'Доступ ограничен',
+            description: 'Требуется активная подписка',
+            variant: 'destructive'
+          });
+          navigate('/subscription');
+          return;
+        }
+
+        if (!response.ok) throw new Error('Ошибка запроса');
+
+        const data = await response.json();
+        
+        if (!collectionId) {
+          collectionId = data.collection_id;
+        }
+        
+        totalPages = data.total_pages;
+        allPhrases.push(...data.phrases);
+        
+        toast({ 
+          title: `Собираю страницу ${page}/${totalPages}`, 
+          description: `Собрано фраз: ${data.total_collected}` 
+        });
+        
+        if (data.status === 'completed') {
+          break;
+        }
+      }
+      
+      const singleCluster: Cluster = {
+        cluster_name: 'Все фразы',
+        total_count: allPhrases.reduce((sum, p) => sum + p.count, 0),
+        phrases_count: allPhrases.length,
+        avg_words: allPhrases.length > 0 ? Math.round(allPhrases.reduce((sum, p) => sum + p.phrase.split(' ').length, 0) / allPhrases.length * 10) / 10 : 0,
+        max_frequency: allPhrases.length > 0 ? Math.max(...allPhrases.map(p => p.count)) : 0,
+        min_frequency: allPhrases.length > 0 ? Math.min(...allPhrases.map(p => p.count)) : 0,
+        intent: 'commercial',
+        phrases: allPhrases
+      };
+
+      setClusters([singleCluster]);
+      setMinusPhrases([]);
       setStep('editing');
       
       toast({ 
         title: 'Готово!', 
-        description: `Найдено ${regularClusters.length} кластеров и ${minusCluster?.phrases.length || 0} минус-фраз` 
+        description: `Собрано ${allPhrases.length} фраз` 
       });
     } catch (error) {
       toast({ 
