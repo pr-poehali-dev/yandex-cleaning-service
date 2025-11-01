@@ -532,6 +532,96 @@ export default function RSYACleaner() {
                 </CardContent>
               </Card>
             )}
+            
+            {apiError && apiError.code === 58 && !useSandbox && (
+              <Card className="bg-purple-50 border-purple-300 shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-purple-100 rounded-full">
+                      <Icon name="FileKey" className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-purple-900 mb-2">⚙️ OAuth приложение не активировано для Production API</h3>
+                      <p className="text-sm text-purple-800 mb-4">
+                        {apiError.detail}
+                      </p>
+                      
+                      <div className="bg-white rounded-lg p-4 mb-4 border border-purple-200">
+                        <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                          <Icon name="ClipboardList" className="h-4 w-4 text-purple-600" />
+                          Как активировать приложение для Production API:
+                        </h4>
+                        <ol className="list-decimal list-inside space-y-3 text-sm text-slate-700">
+                          <li>
+                            Перейдите на{' '}
+                            <a 
+                              href="https://direct.yandex.ru/registered/main.pl?cmd=apiSettings" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline font-medium"
+                            >
+                              Настройки API в Директе
+                            </a>
+                          </li>
+                          <li>
+                            В разделе <strong>"Зарегистрированные приложения"</strong> найдите ваше приложение
+                          </li>
+                          <li>
+                            Нажмите <strong>"Подать заявку на доступ"</strong>
+                          </li>
+                          <li>
+                            Заполните форму:
+                            <ul className="ml-6 mt-1 space-y-1 text-xs">
+                              <li>• Название приложения</li>
+                              <li>• Описание (зачем нужен API)</li>
+                              <li>• URL приложения (можно указать любой)</li>
+                            </ul>
+                          </li>
+                          <li>
+                            Дождитесь подтверждения от Яндекса (обычно 1-3 рабочих дня)
+                          </li>
+                          <li>
+                            После одобрения вернитесь сюда и переподключитесь
+                          </li>
+                        </ol>
+                      </div>
+                      
+                      <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+                        <p className="text-xs text-amber-900 flex items-start gap-2">
+                          <Icon name="Lightbulb" className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+                          <span>
+                            <strong>Совет:</strong> Пока заявка на рассмотрении, можете использовать режим <strong>Песочница</strong> для тестирования работы сервиса
+                          </span>
+                        </p>
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <Button 
+                          onClick={() => window.open('https://direct.yandex.ru/registered/main.pl?cmd=apiSettings', '_blank')}
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                          <Icon name="ExternalLink" className="mr-2 h-4 w-4" />
+                          Открыть настройки API
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            if (setUseSandbox) {
+                              setUseSandbox(true);
+                              const token = localStorage.getItem('yandex_direct_token');
+                              if (token) loadCampaigns(token);
+                            }
+                          }}
+                          variant="outline"
+                        >
+                          <Icon name="TestTube" className="mr-2 h-4 w-4" />
+                          Переключиться на Песочницу
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           
             {useSandbox && campaigns.length === 0 && !apiError && (
               <Card className="bg-amber-50 border-amber-200">
