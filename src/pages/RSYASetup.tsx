@@ -99,21 +99,28 @@ export default function RSYASetup() {
         setSelectedCampaigns(campaignIds);
       }
       
+      console.log('🎯 Загружаем цели из API...');
       const goalsResponse = await fetch(`https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals`, {
         headers: {
           'X-Auth-Token': token
         }
       });
 
+      console.log('🎯 Статус загрузки целей:', goalsResponse.status);
+
       if (goalsResponse.ok) {
         const goalsData = await goalsResponse.json();
+        console.log('🎯 Данные целей:', goalsData);
         const allGoals = goalsData.goals || [];
+        console.log('🎯 Всего целей:', allGoals.length);
         setGoals(allGoals);
         
         if (allGoals.length > 0) {
           const goalIds = new Set(allGoals.map((g: Goal) => g.id));
           setSelectedGoals(goalIds);
         }
+      } else {
+        console.error('❌ Ошибка загрузки целей:', await goalsResponse.text());
       }
       
     } catch (error) {
