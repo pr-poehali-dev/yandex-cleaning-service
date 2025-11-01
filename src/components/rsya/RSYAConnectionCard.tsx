@@ -41,30 +41,49 @@ export default function RSYAConnectionCard({
       <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200 shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <CardTitle className="flex items-center gap-2 text-emerald-900">
                 <Icon name="CheckCircle2" className="h-5 w-5 text-emerald-600" />
                 Подключено к Яндекс.Директ
               </CardTitle>
-              <CardDescription className="text-emerald-700 mt-1">
+              <CardDescription className="text-emerald-700 mt-1 flex items-center gap-2 flex-wrap">
                 {useSandbox ? (
                   <span className="flex items-center gap-1">
                     <Badge variant="secondary" className="text-xs">Песочница</Badge>
                     Тестовый режим
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1">
+                  <>
                     <Badge variant="default" className="text-xs bg-emerald-600">Production</Badge>
-                    Боевой аккаунт
-                    {clientLogin && ` • ${clientLogin}`}
-                  </span>
+                    <span>Боевой аккаунт</span>
+                    {clientLogin && (
+                      <span className="text-xs bg-white px-2 py-0.5 rounded border border-emerald-300 font-mono">
+                        {clientLogin}
+                      </span>
+                    )}
+                  </>
                 )}
               </CardDescription>
             </div>
-            <Button onClick={onDisconnect} variant="outline" size="sm">
-              <Icon name="LogOut" className="h-4 w-4 mr-2" />
-              Отключить
-            </Button>
+            <div className="flex gap-2">
+              {!useSandbox && (
+                <Button 
+                  onClick={() => {
+                    onDisconnect();
+                    onToggleCodeInput();
+                  }} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  <Icon name="Settings" className="h-4 w-4 mr-2" />
+                  Изменить Client-Login
+                </Button>
+              )}
+              <Button onClick={onDisconnect} variant="outline" size="sm">
+                <Icon name="LogOut" className="h-4 w-4 mr-2" />
+                Отключить
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>

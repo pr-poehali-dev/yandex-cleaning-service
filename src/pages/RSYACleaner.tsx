@@ -91,8 +91,13 @@ export default function RSYACleaner() {
     }
 
     const token = localStorage.getItem('yandex_direct_token');
+    const savedLogin = localStorage.getItem('yandex_client_login');
+    const savedSandbox = localStorage.getItem('yandex_use_sandbox');
+    
     if (token) {
       setIsConnected(true);
+      if (savedLogin) setClientLogin(savedLogin);
+      if (savedSandbox !== null) setUseSandbox(savedSandbox === 'true');
       loadCampaigns(token);
     }
   }, []);
@@ -210,7 +215,8 @@ export default function RSYACleaner() {
     try {
       const token = authCode.trim();
       
-      // Сохраняем логин клиента если указан
+      // Сохраняем настройки
+      localStorage.setItem('yandex_use_sandbox', String(useSandbox));
       if (clientLogin.trim()) {
         localStorage.setItem('yandex_client_login', clientLogin.trim());
       } else {
@@ -451,6 +457,74 @@ export default function RSYACleaner() {
                         >
                           <Icon name="RefreshCw" className="mr-2 h-4 w-4" />
                           Проверить снова
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
+            {apiError && apiError.code === 513 && !useSandbox && (
+              <Card className="bg-orange-50 border-orange-300 shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-orange-100 rounded-full">
+                      <Icon name="UserX" className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-orange-900 mb-2">🔐 Аккаунт не подключён к Директу</h3>
+                      <p className="text-sm text-orange-800 mb-4">
+                        {apiError.detail}
+                      </p>
+                      
+                      <div className="bg-white rounded-lg p-4 mb-4 border border-orange-200">
+                        <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                          <Icon name="Lightbulb" className="h-4 w-4 text-orange-600" />
+                          Возможные причины:
+                        </h4>
+                        <ul className="space-y-3 text-sm">
+                          <li className="flex items-start gap-2">
+                            <Icon name="Circle" className="h-2 w-2 mt-1.5 text-orange-600 flex-shrink-0" />
+                            <div>
+                              <strong className="text-slate-900">Агентский аккаунт:</strong>
+                              <p className="text-slate-700">Если вы агент — укажите <code className="bg-slate-100 px-1 rounded">Client-Login</code> клиента при подключении</p>
+                            </div>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <Icon name="Circle" className="h-2 w-2 mt-1.5 text-orange-600 flex-shrink-0" />
+                            <div>
+                              <strong className="text-slate-900">Нет доступа к Директу:</strong>
+                              <p className="text-slate-700">Зайдите на <a href="https://direct.yandex.ru" target="_blank" className="text-blue-600 underline">direct.yandex.ru</a> и завершите регистрацию</p>
+                            </div>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <Icon name="Circle" className="h-2 w-2 mt-1.5 text-orange-600 flex-shrink-0" />
+                            <div>
+                              <strong className="text-slate-900">Неверный логин клиента:</strong>
+                              <p className="text-slate-700">Проверьте правильность написания Client-Login (без @yandex.ru)</p>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <Button 
+                          onClick={() => {
+                            handleDisconnect();
+                            setShowCodeInput(true);
+                          }}
+                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                        >
+                          <Icon name="Settings" className="mr-2 h-4 w-4" />
+                          Переподключить с Client-Login
+                        </Button>
+                        <Button 
+                          onClick={() => window.open('https://direct.yandex.ru', '_blank')}
+                          variant="outline"
+                        >
+                          <Icon name="ExternalLink" className="mr-2 h-4 w-4" />
+                          Открыть Директ
                         </Button>
                       </div>
                     </div>
