@@ -674,18 +674,28 @@ export default function RSYACleaner() {
       <AppSidebar />
       <div className="min-h-screen bg-gradient-to-br from-emerald-50/50 via-green-50/30 to-teal-50/50 p-8 ml-64">
         <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            onClick={() => navigate('/rsya')}
-            variant="outline"
-            size="icon"
-          >
-            <Icon name="ArrowLeft" className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">{projectName || 'Чистка РСЯ'}</h1>
-            <p className="text-lg text-slate-600">Автоматическое отключение нецелевых площадок в Рекламной сети Яндекса</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => navigate('/rsya')}
+              variant="outline"
+              size="icon"
+            >
+              <Icon name="ArrowLeft" className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-4xl font-bold text-slate-900 mb-2">{projectName || 'Чистка РСЯ'}</h1>
+              <p className="text-lg text-slate-600">Автоматическое отключение нецелевых площадок в Рекламной сети Яндекса</p>
+            </div>
           </div>
+          <Button
+            onClick={() => navigate(`/rsya/${projectId}/settings`)}
+            variant="outline"
+            size="lg"
+          >
+            <Icon name="Settings" className="mr-2 h-5 w-5" />
+            Настройки
+          </Button>
         </div>
 
         <RSYAConnectionCard
