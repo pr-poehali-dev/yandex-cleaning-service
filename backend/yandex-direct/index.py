@@ -310,7 +310,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[DEBUG] Found {len(campaigns_raw)} campaigns total')
             
-            # Фильтруем кампании - оставляем только РСЯ (Network=YES, Search=NO)
+            # Фильтруем кампании - оставляем только РСЯ (Network активна, Search отключен SERVING_OFF)
             rsya_campaigns_raw = []
             for c in campaigns_raw:
                 campaign_type = c.get('Type')
@@ -322,31 +322,38 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     bidding_strategy = text_campaign.get('BiddingStrategy', {})
                     
                     # Проверяем стратегии на поиске и в сетях
-                    search_strategy = bidding_strategy.get('Search')
-                    network_strategy = bidding_strategy.get('Network')
+                    search_strategy = bidding_strategy.get('Search', {})
+                    network_strategy = bidding_strategy.get('Network', {})
                     
-                    # РСЯ = нет стратегии на поиске И есть стратегия в сетях
-                    has_search = search_strategy is not None
-                    has_network = network_strategy is not None
+                    # Проверяем типы стратегий
+                    search_type = search_strategy.get('BiddingStrategyType', '')
+                    network_type = network_strategy.get('BiddingStrategyType', '')
                     
-                    is_rsya = (not has_search) and has_network
+                    # РСЯ = поиск SERVING_OFF И сети активны (не SERVING_OFF)
+                    search_disabled = search_type == 'SERVING_OFF'
+                    network_enabled = network_type != 'SERVING_OFF' and network_type != ''
                     
-                    print(f'[DEBUG] Campaign {c.get("Id")} "{c.get("Name")}": has_search={has_search}, has_network={has_network}, is_rsya={is_rsya}')
+                    is_rsya = search_disabled and network_enabled
+                    
+                    print(f'[DEBUG] Campaign {c.get("Id")} "{c.get("Name")}": search_type={search_type}, network_type={network_type}, is_rsya={is_rsya}')
                 
                 # Проверяем DYNAMIC_TEXT_CAMPAIGN
                 elif campaign_type == 'DYNAMIC_TEXT_CAMPAIGN':
                     dynamic_campaign = c.get('DynamicTextCampaign', {})
                     bidding_strategy = dynamic_campaign.get('BiddingStrategy', {})
                     
-                    search_strategy = bidding_strategy.get('Search')
-                    network_strategy = bidding_strategy.get('Network')
+                    search_strategy = bidding_strategy.get('Search', {})
+                    network_strategy = bidding_strategy.get('Network', {})
                     
-                    has_search = search_strategy is not None
-                    has_network = network_strategy is not None
+                    search_type = search_strategy.get('BiddingStrategyType', '')
+                    network_type = network_strategy.get('BiddingStrategyType', '')
                     
-                    is_rsya = (not has_search) and has_network
+                    search_disabled = search_type == 'SERVING_OFF'
+                    network_enabled = network_type != 'SERVING_OFF' and network_type != ''
                     
-                    print(f'[DEBUG] Dynamic Campaign {c.get("Id")} "{c.get("Name")}": has_search={has_search}, has_network={has_network}, is_rsya={is_rsya}')
+                    is_rsya = search_disabled and network_enabled
+                    
+                    print(f'[DEBUG] Dynamic Campaign {c.get("Id")} "{c.get("Name")}": search_type={search_type}, network_type={network_type}, is_rsya={is_rsya}')
                 
                 if is_rsya:
                     rsya_campaigns_raw.append(c)
