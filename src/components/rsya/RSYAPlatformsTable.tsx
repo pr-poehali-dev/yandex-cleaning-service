@@ -444,6 +444,7 @@ export default function RSYAPlatformsTable({
                 const isStrange = isStrangeDomain(platform.adgroup_name);
                 
                 return (
+                  <>
                   <tr
                     key={platform.adgroup_id}
                     className={`border-b hover:bg-emerald-50 transition-colors cursor-pointer ${
@@ -567,6 +568,7 @@ export default function RSYAPlatformsTable({
                       </td>
                     </tr>
                   )}
+                  </>
                 );
               })}
             </tbody>
