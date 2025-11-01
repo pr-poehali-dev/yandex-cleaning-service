@@ -118,7 +118,7 @@ export default function WordstatNew() {
       const regionNum = parseInt(region);
       
       let collectionId = '';
-      let totalPages = 40;
+      let totalPages = 10;
       const allPhrases: TopRequest[] = [];
       
       for (let page = 1; page <= totalPages; page++) {
