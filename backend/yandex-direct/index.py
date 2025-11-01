@@ -73,9 +73,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 page_counters = counters_data.get('counters', [])
                 
                 for counter in page_counters:
+                    counter_id = str(counter['id'])
+                    counter_name = counter.get('name')
+                    
+                    # Если имя не получено (редактор, не владелец), запросим отдельно
+                    if not counter_name:
+                        try:
+                            counter_detail_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}'
+                            counter_detail_response = requests.get(counter_detail_url, headers=metrika_headers, timeout=10)
+                            if counter_detail_response.status_code == 200:
+                                counter_detail = counter_detail_response.json()
+                                counter_info = counter_detail.get('counter', {})
+                                counter_name = counter_info.get('name', f"Счётчик {counter_id}")
+                                print(f'[DEBUG] Got name for counter {counter_id}: {counter_name}')
+                            else:
+                                counter_name = f"Счётчик {counter_id}"
+                        except:
+                            counter_name = f"Счётчик {counter_id}"
+                    
                     all_counters.append({
-                        'id': str(counter['id']),
-                        'name': counter.get('name', f"Счётчик {counter['id']}"),
+                        'id': counter_id,
+                        'name': counter_name,
                         'site': counter.get('site', ''),
                         'owner_login': counter.get('owner_login', '')
                     })
@@ -120,237 +138,66 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         try:
             # Получаем список ID счётчиков из query параметров
             counter_ids_param = query_params.get('counter_ids', '')
-            selected_counter_ids = set(counter_ids_param.split(',')) if counter_ids_param else set()
+            selected_counter_ids = [cid.strip() for cid in counter_ids_param.split(',') if cid.strip()] if counter_ids_param else []
             
-            print(f'[DEBUG] Loading goals from selected counters: {selected_counter_ids}')
-            
-            is_sandbox = query_params.get('sandbox') == 'true'
-            client_login = query_params.get('client_login')
-            
-            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns' if is_sandbox else 'https://api.direct.yandex.com/json/v5/campaigns'
-            
-            headers_api = {
-                'Content-Type': 'application/json', 
-                'Accept-Language': 'ru',
-                'Authorization': f'Bearer {token}'
-            }
-            if client_login:
-                headers_api['Client-Login'] = client_login
-            
-            # Запрос кампаний с PriorityGoals
-            response = requests.post(
-                api_url,
-                headers=headers_api,
-                json={
-                    'method': 'get',
-                    'params': {
-                        'SelectionCriteria': {},
-                        'FieldNames': ['Id', 'Name', 'Type'],
-                        'TextCampaignFieldNames': ['PriorityGoals'],
-                        'UnifiedCampaignFieldNames': ['PriorityGoals']
-                    }
-                },
-                timeout=30
-            )
-            
-            print(f'[DEBUG] Direct API response: {response.status_code}')
-            
-            if response.status_code != 200:
-                error_data = response.json()
-                print(f'[ERROR] API error: {json.dumps(error_data)}')
+            if not selected_counter_ids:
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка Direct API', 'details': error_data})
+                    'body': json.dumps({'error': 'Не указаны ID счётчиков', 'goals': []})
                 }
             
-            data = response.json()
+            print(f'[DEBUG] Loading ALL goals from selected counters: {selected_counter_ids}')
             
-            if 'error' in data:
-                print(f'[ERROR] Response error: {json.dumps(data["error"])}')
-                return {
-                    'statusCode': 400,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'isBase64Encoded': False,
-                    'body': json.dumps({'error': data['error'].get('error_string', 'API Error'), 'details': data['error']})
-                }
+            metrika_headers = {'Authorization': f'OAuth {token}'}
+            all_goals = []
             
-            campaigns = data.get('result', {}).get('Campaigns', [])
-            print(f'[DEBUG] Found {len(campaigns)} campaigns')
-            
-            # Собираем уникальные цели из всех кампаний
-            goals_map = {}
-            
-            for campaign in campaigns:
-                campaign_type = campaign.get('Type')
-                campaign_id = campaign.get('Id')
-                campaign_name = campaign.get('Name')
-                
-                # Собираем ID целей из разных мест
-                goal_ids_in_campaign = set()
-                
-                # 1. Извлекаем PriorityGoals
-                priority_goals = None
-                if campaign_type == 'TEXT_CAMPAIGN':
-                    text_campaign = campaign.get('TextCampaign')
-                    if text_campaign:
-                        priority_goals_obj = text_campaign.get('PriorityGoals')
-                        if priority_goals_obj:
-                            priority_goals = priority_goals_obj.get('Items', [])
-                        
-                        # 2. Извлекаем цели из стратегий BiddingStrategy
-                        bidding = text_campaign.get('BiddingStrategy', {})
-                        for location in ['Search', 'Network']:
-                            strategy = bidding.get(location, {})
-                            # Разные типы стратегий с целями
-                            for strategy_type in ['WbMaximumConversionRate', 'AverageCpa', 'AverageCpaMultipleGoals', 'PayForConversion']:
-                                strategy_data = strategy.get(strategy_type, {})
-                                if isinstance(strategy_data, dict):
-                                    # Одна цель
-                                    if 'GoalId' in strategy_data:
-                                        goal_ids_in_campaign.add(str(strategy_data['GoalId']))
-                                    # Несколько целей
-                                    if 'GoalIds' in strategy_data:
-                                        for gid in strategy_data['GoalIds']:
-                                            goal_ids_in_campaign.add(str(gid))
-                
-                elif campaign_type == 'UNIFIED_CAMPAIGN':
-                    unified_campaign = campaign.get('UnifiedCampaign')
-                    if unified_campaign:
-                        priority_goals_obj = unified_campaign.get('PriorityGoals')
-                        if priority_goals_obj:
-                            priority_goals = priority_goals_obj.get('Items', [])
-                
-                # Добавляем цели из PriorityGoals
-                if priority_goals:
-                    for goal in priority_goals:
-                        goal_id = str(goal.get('GoalId', ''))
-                        if goal_id:
-                            goal_ids_in_campaign.add(goal_id)
-                
-                # Добавляем все найденные цели в общий словарь
-                for goal_id in goal_ids_in_campaign:
-                    if goal_id and goal_id not in goals_map:
-                        goals_map[goal_id] = {
-                            'id': goal_id,
-                            'name': f'Цель {goal_id}',
-                            'campaigns': []
-                        }
+            # Для каждого выбранного счётчика загружаем ВСЕ цели напрямую из Метрики
+            for counter_id in selected_counter_ids:
+                try:
+                    # Сначала получаем информацию о счётчике
+                    counter_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}'
+                    counter_response = requests.get(counter_url, headers=metrika_headers, timeout=10)
                     
-                    if goal_id:
-                        goals_map[goal_id]['campaigns'].append({
-                            'id': campaign_id,
-                            'name': campaign_name
-                        })
-            
-            # Преобразуем в список
-            goals_from_campaigns = list(goals_map.values())
-            
-            print(f'[DEBUG] Total unique goals from campaigns: {len(goals_from_campaigns)}')
-            
-            # Пытаемся обогатить данные из Метрики (названия целей и счётчиков)
-            try:
-                print('[DEBUG] Attempting to enrich goals with Metrika data...')
-                
-                # Получаем ВСЕ счётчики со всех аккаунтов с пагинацией
-                all_counters = []
-                offset = 1
-                per_page = 100
-                metrika_headers = {'Authorization': f'OAuth {token}'}
-                
-                while True:
-                    counters_url = f'https://api-metrika.yandex.net/management/v1/counters?per_page={per_page}&offset={offset}'
-                    counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
-                    
-                    print(f'[DEBUG] Metrika counters page {offset//per_page + 1}: {counters_response.status_code}')
-                    
-                    if counters_response.status_code == 200:
-                        counters_data = counters_response.json()
-                        page_counters = counters_data.get('counters', [])
-                        all_counters.extend(page_counters)
-                        
-                        print(f'[DEBUG] Loaded {len(page_counters)} counters (total: {len(all_counters)})')
-                        
-                        # Если получили меньше чем per_page, значит это последняя страница
-                        if len(page_counters) < per_page:
-                            break
-                        offset += per_page
+                    counter_name = f'Счётчик {counter_id}'
+                    if counter_response.status_code == 200:
+                        counter_data = counter_response.json()
+                        counter_info = counter_data.get('counter', {})
+                        counter_name = counter_info.get('name', counter_name)
+                        print(f'[DEBUG] Counter {counter_id}: {counter_name}')
                     else:
-                        break
-                
-                if len(all_counters) > 0:
-                    # Фильтруем счётчики если заданы selected_counter_ids
-                    if selected_counter_ids:
-                        counters = [c for c in all_counters if str(c['id']) in selected_counter_ids]
-                        print(f'[DEBUG] Filtered to {len(counters)} selected counters from {len(all_counters)} total')
+                        print(f'[WARN] Cannot get counter {counter_id} info: {counter_response.status_code}')
+                    
+                    # Загружаем все цели из счётчика
+                    goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
+                    goals_response = requests.get(goals_url, headers=metrika_headers, timeout=10)
+                    
+                    if goals_response.status_code == 200:
+                        goals_data = goals_response.json()
+                        counter_goals = goals_data.get('goals', [])
+                        
+                        print(f'[DEBUG] Counter {counter_id} ({counter_name}): {len(counter_goals)} goals')
+                        
+                        for goal in counter_goals:
+                            goal_id = str(goal.get('id', ''))
+                            if goal_id:
+                                all_goals.append({
+                                    'id': goal_id,
+                                    'name': goal.get('name', f'Цель {goal_id}'),
+                                    'counter_id': str(counter_id),
+                                    'counter_name': counter_name,
+                                    'type': goal.get('type', 'unknown'),
+                                    'campaigns': []  # Пустой массив для совместимости
+                                })
                     else:
-                        counters = all_counters
-                        print(f'[DEBUG] No filter applied, using all {len(counters)} counters')
-                    
-                    # Создаём словарь счётчиков
-                    counters_map = {str(c['id']): c.get('name', f"Счётчик {c['id']}") for c in counters}
-                    
-                    # Для каждого выбранного счётчика получаем цели
-                    goals_details = {}
-                    for counter in counters:
-                        counter_id = counter['id']
-                        counter_name = counter.get('name', f'Счётчик {counter_id}')
+                        print(f'[ERROR] Cannot load goals from counter {counter_id}: {goals_response.status_code}')
                         
-                        goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
-                        goals_response = requests.get(goals_url, headers=metrika_headers, timeout=10)
-                        
-                        if goals_response.status_code == 200:
-                            goals_data = goals_response.json()
-                            counter_goals = goals_data.get('goals', [])
-                            
-                            print(f'[DEBUG] Counter {counter_id} ({counter_name}): {len(counter_goals)} goals')
-                            
-                            for goal in counter_goals:
-                                goal_id_str = str(goal.get('id', ''))
-                                if goal_id_str:
-                                    goals_details[goal_id_str] = {
-                                        'name': goal.get('name', f'Цель {goal_id_str}'),
-                                        'counter_id': str(counter_id),
-                                        'counter_name': counter_name,
-                                        'type': goal.get('type', 'unknown')
-                                    }
-                    
-                    print(f'[DEBUG] Enriched {len(goals_details)} goals from Metrika')
-                    
-                    # Обогащаем цели данными из Метрики
-                    for goal in goals_from_campaigns:
-                        goal_id = goal['id']
-                        if goal_id in goals_details:
-                            goal['name'] = goals_details[goal_id]['name']
-                            goal['counter_id'] = goals_details[goal_id]['counter_id']
-                            goal['counter_name'] = goals_details[goal_id]['counter_name']
-                            goal['type'] = goals_details[goal_id]['type']
-                        else:
-                            # Если цель не найдена в Метрике, оставляем ID
-                            goal['name'] = f"Цель {goal_id}"
-                            goal['counter_name'] = "Неизвестный счётчик"
-                    
-                    print(f'[DEBUG] Successfully enriched goals with Metrika data')
-                    
-                else:
-                    print(f'[WARN] Cannot access Metrika API (status {counters_response.status_code}). Using goal IDs only.')
-                    # Если нет доступа к Метрике, используем только ID
-                    for goal in goals_from_campaigns:
-                        goal['name'] = f"Цель {goal['id']}"
-                        goal['counter_name'] = "Требуется доступ к Метрике"
-                        
-            except Exception as metrika_error:
-                print(f'[ERROR] Failed to enrich with Metrika: {metrika_error}')
-                # В случае ошибки используем ID
-                for goal in goals_from_campaigns:
-                    if 'name' not in goal or not goal['name']:
-                        goal['name'] = f"Цель {goal['id']}"
-                    if 'counter_name' not in goal:
-                        goal['counter_name'] = "Ошибка загрузки"
+                except Exception as counter_error:
+                    print(f'[ERROR] Failed to load goals from counter {counter_id}: {counter_error}')
+                    continue
             
-            all_goals = goals_from_campaigns
-            print(f'[DEBUG] Final goals count: {len(all_goals)}')
+            print(f'[DEBUG] Total goals loaded from {len(selected_counter_ids)} counters: {len(all_goals)}')
             
             return {
                 'statusCode': 200,
