@@ -151,26 +151,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         # Reports API работает и в sandbox, и в production
                         reports_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
                         
-                        # Используем только базовые метрики без AdGroup полей
-                        # GoalId также может вызывать ошибку, пробуем без него
+                        # Используем Placement для получения площадок РСЯ  
                         report_body = {
                             'params': {
                                 'SelectionCriteria': {
                                     'Filter': [
-                                        {'Field': 'CampaignId', 'Operator': 'EQUALS', 'Values': [int(campaign_id)]}
-                                    ]
+                                        {'Field': 'CampaignId', 'Operator': 'IN', 'Values': [int(campaign_id)]}
+                                    ],
+                                    'DateFrom': '2024-10-01',
+                                    'DateTo': '2024-11-01'
                                 },
                                 'FieldNames': [
-                                    'Date',
-                                    'CampaignName',
+                                    'CampaignId',
+                                    'Placement',
                                     'Impressions',
                                     'Clicks',
                                     'Cost',
                                     'Conversions'
                                 ],
-                                'ReportName': f'RSYACampaign_{campaign_id}',
+                                'ReportName': f'RSYAPlatforms_{campaign_id}',
                                 'ReportType': 'CUSTOM_REPORT',
-                                'DateRangeType': 'LAST_30_DAYS',
+                                'DateRangeType': 'CUSTOM_DATE',
                                 'Format': 'TSV',
                                 'IncludeVAT': 'NO',
                                 'IncludeDiscount': 'NO'
@@ -214,8 +215,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                         continue
                                     
                                     row = dict(zip(headers_line, values))
-                                    # Используем AdGroupName как название площадки
-                                    platform_name = row.get('AdGroupName', '--')
+                                    # Используем Placement как название площадки
+                                    platform_name = row.get('Placement', '--')
                                     
                                     if platform_name and platform_name != '--':
                                         impressions = int(row.get('Impressions', 0) or 0)
