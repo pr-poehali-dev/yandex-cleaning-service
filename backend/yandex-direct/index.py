@@ -122,11 +122,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 # Извлекаем PriorityGoals в зависимости от типа кампании
                 if campaign_type == 'TEXT_CAMPAIGN':
-                    text_campaign = campaign.get('TextCampaign', {})
-                    priority_goals = text_campaign.get('PriorityGoals', {}).get('Items', [])
+                    text_campaign = campaign.get('TextCampaign')
+                    if text_campaign:
+                        priority_goals_obj = text_campaign.get('PriorityGoals')
+                        if priority_goals_obj:
+                            priority_goals = priority_goals_obj.get('Items', [])
                 elif campaign_type == 'UNIFIED_CAMPAIGN':
-                    unified_campaign = campaign.get('UnifiedCampaign', {})
-                    priority_goals = unified_campaign.get('PriorityGoals', {}).get('Items', [])
+                    unified_campaign = campaign.get('UnifiedCampaign')
+                    if unified_campaign:
+                        priority_goals_obj = unified_campaign.get('PriorityGoals')
+                        if priority_goals_obj:
+                            priority_goals = priority_goals_obj.get('Items', [])
                 
                 if priority_goals:
                     for goal in priority_goals:
