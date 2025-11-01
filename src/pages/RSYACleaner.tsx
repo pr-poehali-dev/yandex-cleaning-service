@@ -258,45 +258,65 @@ export default function RSYACleaner() {
     }
   };
 
-  const loadGoals = async (token: string) => {
-    console.log('🎯 loadGoals called with token:', token?.substring(0, 10));
+  const loadGoalsFromDirect = async (token: string) => {
+    console.log('🎯 loadGoalsFromDirect called');
     try {
       const actualSandbox = localStorage.getItem('yandex_use_sandbox') === 'true';
-      const url = `${YANDEX_DIRECT_URL}?action=goals${actualSandbox ? '&sandbox=true' : ''}`;
-      console.log('🎯 Request URL:', url);
+      const clientLogin = localStorage.getItem('yandex_client_login') || undefined;
       
       toast({ 
         title: '⏳ Загрузка целей...', 
-        description: 'Получаем список целей из Метрики'
+        description: 'Получаем цели из Яндекс.Директ API Live v4'
       });
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: { 'X-Auth-Token': token }
+      const apiUrl = actualSandbox 
+        ? 'https://api-sandbox.direct.yandex.ru/live/v4/json/'
+        : 'https://api.direct.yandex.ru/live/v4/json/';
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+      
+      if (clientLogin) {
+        headers['Client-Login'] = clientLogin;
+      }
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          method: 'GetRetargetingGoals',
+          param: {}
+        })
       });
 
-      if (!response.ok) throw new Error('Ошибка загрузки целей');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
       const data = await response.json();
       
-      if (data.error) {
+      if (data.error_code || data.error_str) {
         toast({ 
-          title: '❌ Ошибка загрузки целей', 
-          description: data.details?.error_detail || data.error,
+          title: '❌ Ошибка API Директ', 
+          description: data.error_detail || data.error_str || 'Неизвестная ошибка',
           variant: 'destructive'
         });
         return;
       }
       
-      console.log('Goals loaded:', data.goals);
+      const goals = data.data || [];
+      console.log('✅ Goals loaded from Direct:', goals);
       
       toast({ 
         title: '✅ Цели загружены', 
-        description: `Найдено целей: ${data.goals?.length || 0}`
+        description: `Найдено целей: ${goals.length}`
       });
+      
     } catch (error) {
       toast({ 
-        title: 'Ошибка загрузки целей', 
+        title: '❌ Ошибка загрузки целей', 
         description: String(error), 
         variant: 'destructive' 
       });
@@ -604,13 +624,13 @@ export default function RSYACleaner() {
                         <Button 
                           onClick={() => {
                             const token = localStorage.getItem('yandex_direct_token');
-                            if (token) loadGoals(token);
+                            if (token) loadGoalsFromDirect(token);
                           }}
                           variant="outline"
                           className="border-green-500 text-green-700 hover:bg-green-50"
                         >
                           <Icon name="Target" className="mr-2 h-4 w-4" />
-                          Загрузить цели
+                          Получить цели
                         </Button>
                       </div>
                     </div>
