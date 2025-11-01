@@ -78,6 +78,7 @@ export default function RSYACleaner() {
   const [useSandbox, setUseSandbox] = useState(true);
   const [selectedGoal, setSelectedGoal] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'campaigns' | 'platforms'>('campaigns');
+  const [apiError, setApiError] = useState<{code: number; message: string; detail: string} | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -145,18 +146,39 @@ export default function RSYACleaner() {
       const data = await response.json();
       
       if (data.error) {
-        const errorMsg = data.error_detail 
-          ? `${data.error}: ${data.error_detail}` 
-          : data.error;
+        const errorCode = data.error_code;
+        const errorTitle = data.error;
+        const errorDetail = data.error_detail || '';
+        
+        setApiError({
+          code: errorCode,
+          message: errorTitle,
+          detail: errorDetail
+        });
+        
+        let toastTitle = '❌ Ошибка API Яндекс.Директ';
+        let toastDescription = errorDetail || errorTitle;
+        
+        if (errorCode === 513 && useSandbox) {
+          toastTitle = '🧪 Песочница не активирована';
+          toastDescription = errorDetail;
+        } else if (errorCode === 513) {
+          toastTitle = '🔐 Аккаунт не подключен к Директу';
+        } else if (errorCode === 58) {
+          toastTitle = '⚙️ Приложение не активировано';
+        }
+        
         toast({ 
-          title: '❌ Ошибка API Яндекс.Директ', 
-          description: errorMsg,
+          title: toastTitle, 
+          description: toastDescription,
           variant: 'destructive',
-          duration: 10000
+          duration: 15000
         });
         setCampaigns([]);
         return;
       }
+      
+      setApiError(null);
       
       setCampaigns(data.campaigns || []);
       toast({ title: '✅ Кампании загружены', description: `Найдено РСЯ кампаний: ${data.campaigns?.length || 0}` });
@@ -375,7 +397,69 @@ export default function RSYACleaner() {
 
         {isConnected && (
           <>
-            {useSandbox && campaigns.length === 0 && (
+            {apiError && apiError.code === 513 && useSandbox && (
+              <Card className="bg-red-50 border-red-300 shadow-lg">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-red-100 rounded-full">
+                      <Icon name="AlertCircle" className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-red-900 mb-2">🧪 Песочница Директа не активирована</h3>
+                      <p className="text-sm text-red-800 mb-4">
+                        Ваш аккаунт не зарегистрирован в песочнице Яндекс.Директа. Для тестирования необходимо активировать доступ.
+                      </p>
+                      
+                      <div className="bg-white rounded-lg p-4 mb-4 border border-red-200">
+                        <h4 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                          <Icon name="ListChecks" className="h-4 w-4 text-red-600" />
+                          Инструкция по активации:
+                        </h4>
+                        <ol className="list-decimal list-inside space-y-2 text-sm text-slate-700">
+                          <li>
+                            Перейдите на{' '}
+                            <a 
+                              href="https://sandbox.direct.yandex.ru" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline font-medium"
+                            >
+                              sandbox.direct.yandex.ru
+                            </a>
+                          </li>
+                          <li>Авторизуйтесь тем же Яндекс-аккаунтом, токен которого используете</li>
+                          <li>Примите условия использования песочницы</li>
+                          <li>Создайте хотя бы одну тестовую кампанию (РСЯ или Поиск)</li>
+                          <li>Вернитесь сюда и нажмите кнопку обновления</li>
+                        </ol>
+                      </div>
+                      
+                      <div className="flex gap-3">
+                        <Button 
+                          onClick={() => window.open('https://sandbox.direct.yandex.ru', '_blank')}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          <Icon name="ExternalLink" className="mr-2 h-4 w-4" />
+                          Открыть песочницу Директа
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            const token = localStorage.getItem('yandex_direct_token');
+                            if (token) loadCampaigns(token);
+                          }}
+                          variant="outline"
+                        >
+                          <Icon name="RefreshCw" className="mr-2 h-4 w-4" />
+                          Проверить снова
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          
+            {useSandbox && campaigns.length === 0 && !apiError && (
               <Card className="bg-amber-50 border-amber-200">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-3">

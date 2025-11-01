@@ -104,6 +104,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 print(f'[ERROR] Yandex.Direct API error: {error_msg} (код {error_code})')
                 print(f'[ERROR] Details: {error_detail}')
                 
+                # Специальная обработка ошибки 513 (не подключен к Директу)
+                if error_code == 513 and is_sandbox:
+                    error_msg = 'Аккаунт не активирован в песочнице Директа'
+                    error_detail = 'Перейдите на sandbox.direct.yandex.ru, авторизуйтесь и создайте тестовую кампанию для активации песочницы'
+                elif error_code == 513:
+                    error_detail = 'Зайдите в Яндекс.Директ (direct.yandex.ru) и завершите регистрацию'
+                
+                # Ошибка 58 - незавершенная регистрация приложения
+                if error_code == 58:
+                    error_msg = 'Приложение не активировано'
+                    if not error_detail:
+                        error_detail = 'Необходимо активировать приложение в интерфейсе Яндекс.OAuth и подать заявку на доступ к Директу'
+                
                 return {
                     'statusCode': 200,
                     'headers': {
