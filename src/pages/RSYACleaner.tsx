@@ -272,8 +272,8 @@ export default function RSYACleaner() {
 
   const handleConnect = () => {
     const clientId = 'fa264103fca547b7baa436de1a416fbe';
-    const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-    const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}`;
+    const redirectUri = window.location.origin + window.location.pathname;
+    const authUrl = `https://oauth.yandex.ru/authorize?response_type=token&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;
     
     window.location.href = authUrl;
   };
