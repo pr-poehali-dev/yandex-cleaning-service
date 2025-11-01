@@ -40,11 +40,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'clientId': client_id})
         }
     
-    # GET ?action=goals - получить цели из Яндекс.Метрики
+    # GET ?action=goals - получить цели из кампаний через PriorityGoals (API Директа v5)
     if method == 'GET' and query_params.get('action') == 'goals':
         headers_raw = event.get('headers', {})
         token = headers_raw.get('X-Auth-Token') or headers_raw.get('x-auth-token')
-        counter_id = query_params.get('counter_id')
         
         if not token:
             return {
@@ -55,71 +54,107 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         try:
-            print(f'[DEBUG] Loading goals from Metrika with token: {token[:10]}...')
+            print(f'[DEBUG] Loading goals from campaigns PriorityGoals with token: {token[:10]}...')
             
-            # Если не указан counter_id, сначала получим список счётчиков
-            if not counter_id:
-                print('[DEBUG] No counter_id - fetching all counters first')
-                counters_url = 'https://api-metrika.yandex.net/management/v1/counters'
-                headers_api = {
-                    'Authorization': f'OAuth {token}'
-                }
-                
-                response = requests.get(counters_url, headers=headers_api, timeout=30)
-                
-                if response.status_code != 200:
-                    print(f'[ERROR] Counters API error: {response.text}')
-                    return {
-                        'statusCode': 400,
-                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'isBase64Encoded': False,
-                        'body': json.dumps({'error': 'Не удалось получить счётчики Метрики'})
-                    }
-                
-                data = response.json()
-                counters = data.get('counters', [])
-                
-                if not counters:
-                    return {
-                        'statusCode': 200,
-                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'isBase64Encoded': False,
-                        'body': json.dumps({'goals': [], 'message': 'Нет счётчиков Метрики'})
-                    }
-                
-                # Берём первый счётчик
-                counter_id = counters[0]['id']
-                print(f'[DEBUG] Using first counter: {counter_id}')
+            is_sandbox = query_params.get('sandbox') == 'true'
+            client_login = query_params.get('client_login')
             
-            # Получаем цели для счётчика
-            goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
+            api_url = 'https://api-sandbox.direct.yandex.com/json/v5/campaigns' if is_sandbox else 'https://api.direct.yandex.com/json/v5/campaigns'
+            
             headers_api = {
-                'Authorization': f'OAuth {token}'
+                'Content-Type': 'application/json', 
+                'Accept-Language': 'ru',
+                'Authorization': f'Bearer {token}'
             }
+            if client_login:
+                headers_api['Client-Login'] = client_login
             
-            response = requests.get(goals_url, headers=headers_api, timeout=30)
+            # Запрос кампаний с PriorityGoals
+            response = requests.post(
+                api_url,
+                headers=headers_api,
+                json={
+                    'method': 'get',
+                    'params': {
+                        'SelectionCriteria': {},
+                        'FieldNames': ['Id', 'Name', 'Type'],
+                        'TextCampaignFieldNames': ['PriorityGoals'],
+                        'UnifiedCampaignFieldNames': ['PriorityGoals']
+                    }
+                },
+                timeout=30
+            )
             
-            print(f'[DEBUG] Metrika API response: {response.status_code}')
+            print(f'[DEBUG] Direct API response: {response.status_code}')
             
             if response.status_code != 200:
-                error_text = response.text
-                print(f'[ERROR] API error: {error_text}')
+                error_data = response.json()
+                print(f'[ERROR] API error: {json.dumps(error_data)}')
                 return {
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'isBase64Encoded': False,
-                    'body': json.dumps({'error': 'Ошибка Metrika API', 'details': error_text})
+                    'body': json.dumps({'error': 'Ошибка Direct API', 'details': error_data})
                 }
             
             data = response.json()
-            goals = data.get('goals', [])
-            print(f'[DEBUG] Found {len(goals)} goals from counter {counter_id}')
+            
+            if 'error' in data:
+                print(f'[ERROR] Response error: {json.dumps(data["error"])}')
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'isBase64Encoded': False,
+                    'body': json.dumps({'error': data['error'].get('error_string', 'API Error'), 'details': data['error']})
+                }
+            
+            campaigns = data.get('result', {}).get('Campaigns', [])
+            print(f'[DEBUG] Found {len(campaigns)} campaigns')
+            
+            # Собираем уникальные цели из всех кампаний
+            goals_map = {}
+            
+            for campaign in campaigns:
+                campaign_type = campaign.get('Type')
+                campaign_id = campaign.get('Id')
+                campaign_name = campaign.get('Name')
+                priority_goals = None
+                
+                # Извлекаем PriorityGoals в зависимости от типа кампании
+                if campaign_type == 'TEXT_CAMPAIGN':
+                    text_campaign = campaign.get('TextCampaign', {})
+                    priority_goals = text_campaign.get('PriorityGoals', {}).get('Items', [])
+                elif campaign_type == 'UNIFIED_CAMPAIGN':
+                    unified_campaign = campaign.get('UnifiedCampaign', {})
+                    priority_goals = unified_campaign.get('PriorityGoals', {}).get('Items', [])
+                
+                if priority_goals:
+                    for goal in priority_goals:
+                        goal_id = str(goal.get('GoalId', ''))
+                        
+                        if goal_id and goal_id not in goals_map:
+                            goals_map[goal_id] = {
+                                'id': goal_id,
+                                'value': goal.get('Value'),
+                                'campaigns': []
+                            }
+                        
+                        if goal_id:
+                            goals_map[goal_id]['campaigns'].append({
+                                'id': campaign_id,
+                                'name': campaign_name
+                            })
+            
+            # Преобразуем в список
+            all_goals = list(goals_map.values())
+            
+            print(f'[DEBUG] Total unique goals from campaigns: {len(all_goals)}')
             
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'isBase64Encoded': False,
-                'body': json.dumps({'goals': goals, 'counter_id': counter_id})
+                'body': json.dumps({'goals': all_goals})
             }
         
         except Exception as e:
