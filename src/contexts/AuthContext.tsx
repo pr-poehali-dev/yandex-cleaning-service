@@ -64,23 +64,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(parsedUser);
             setSessionToken(storedToken);
           } else {
-            console.log('❌ AuthContext: Token invalid, clearing ALL storage');
-            const allKeys = Object.keys(localStorage);
-            allKeys.forEach(key => localStorage.removeItem(key));
+            console.log('❌ AuthContext: Token invalid, clearing only auth data');
+            localStorage.removeItem('user');
+            localStorage.removeItem('sessionToken');
             setUser(null);
             setSessionToken(null);
           }
         } else {
-          console.log('❌ AuthContext: Backend rejected token, clearing ALL storage');
-          const allKeys = Object.keys(localStorage);
-          allKeys.forEach(key => localStorage.removeItem(key));
+          console.log('❌ AuthContext: Backend rejected token, clearing only auth data');
+          localStorage.removeItem('user');
+          localStorage.removeItem('sessionToken');
           setUser(null);
           setSessionToken(null);
         }
       } catch (error) {
         console.error('❌ AuthContext: Token verification failed:', error);
-        const allKeys = Object.keys(localStorage);
-        allKeys.forEach(key => localStorage.removeItem(key));
+        localStorage.removeItem('user');
+        localStorage.removeItem('sessionToken');
         setUser(null);
         setSessionToken(null);
       } finally {
@@ -119,23 +119,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    console.log('🚪 AuthContext: Logging out, clearing storage...');
+    console.log('🚪 AuthContext: Logging out...');
     
-    // Принудительно удаляем ВСЕ ключи из localStorage
-    const allKeys = Object.keys(localStorage);
-    console.log('🗑️ AuthContext: Removing keys:', allKeys);
-    allKeys.forEach(key => {
-      localStorage.removeItem(key);
-      console.log(`  ✅ Removed: ${key}`);
-    });
-    
-    // Двойная проверка - полная очистка
-    localStorage.clear();
+    localStorage.removeItem('user');
+    localStorage.removeItem('sessionToken');
     
     setUser(null);
     setSessionToken(null);
     
-    console.log('✅ AuthContext: Storage cleared, redirecting to /auth');
+    console.log('✅ AuthContext: Auth data cleared, redirecting to /auth');
     window.location.href = '/auth';
   };
 
