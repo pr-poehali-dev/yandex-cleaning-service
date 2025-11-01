@@ -140,6 +140,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 campaign_type = c.get('Type', '')
                 if campaign_type == 'TEXT_CAMPAIGN':
                     campaign_id = str(c.get('Id'))
+                    campaign_name = c.get('Name', 'Без названия')
+                    campaign_status = c.get('Status', 'UNKNOWN')
                     
                     # Получаем цели из Reports API
                     goals = []
@@ -154,13 +156,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'params': {
                                 'SelectionCriteria': {
                                     'Filter': [
-                                        {'Field': 'CampaignId', 'Operator': 'EQUALS', 'Values': [campaign_id]}
+                                        {'Field': 'CampaignId', 'Operator': 'EQUALS', 'Values': [int(campaign_id)]}
                                     ]
                                 },
                                 'FieldNames': [
                                     'Date',
-                                    'CampaignId',
-                                    'CampaignName',
                                     'Placement',
                                     'Impressions',
                                     'Clicks',
@@ -168,8 +168,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                     'Ctr',
                                     'AvgCpc',
                                     'Conversions',
-                                    'CostPerConversion',
-                                    'ConversionRate',
                                     'GoalId'
                                 ],
                                 'ReportName': f'RSYAPlatforms_{campaign_id}',
