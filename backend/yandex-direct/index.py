@@ -158,10 +158,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Получаем ВСЕ цели из Метрики (не только из PriorityGoals)
             all_goals_dict = {}
+            
+            print('[DEBUG] Starting to load goals from Metrika...')
+            
             try:
                 counters_url = 'https://api-metrika.yandex.net/management/v1/counters'
                 metrika_headers = {'Authorization': f'OAuth {token}'}
+                
+                print(f'[DEBUG] Requesting counters from {counters_url}')
                 counters_response = requests.get(counters_url, headers=metrika_headers, timeout=10)
+                print(f'[DEBUG] Counters response status: {counters_response.status_code}')
                 
                 if counters_response.status_code == 200:
                     counters_data = counters_response.json()
@@ -173,6 +179,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     for counter in counters:
                         counter_id = counter['id']
                         goals_url = f'https://api-metrika.yandex.net/management/v1/counter/{counter_id}/goals'
+                        
+                        print(f'[DEBUG] Requesting goals for counter {counter_id}')
                         goals_response = requests.get(goals_url, headers=metrika_headers, timeout=10)
                         
                         if goals_response.status_code == 200:
@@ -189,11 +197,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                         'type': goal.get('type', 'unknown'),
                                         'counter_id': counter_id
                                     }
+                        else:
+                            print(f'[WARN] Failed to load goals for counter {counter_id}: {goals_response.status_code}')
                     
                     print(f'[DEBUG] Total unique goals from Metrika: {len(all_goals_dict)}')
+                else:
+                    print(f'[ERROR] Failed to load counters: {counters_response.status_code} - {counters_response.text[:200]}')
+                    
             except Exception as metrika_error:
+                import traceback
                 print(f'[ERROR] Failed to load goals from Metrika: {metrika_error}')
-                # Если не удалось получить из Метрики, используем только цели из кампаний
+                print(f'[ERROR] Traceback: {traceback.format_exc()}')
+                
+            # Если не удалось получить из Метрики, используем только цели из кампаний
+            if len(all_goals_dict) == 0:
+                print('[WARN] No goals from Metrika, using goals from campaigns')
                 for goal in goals_from_campaigns:
                     all_goals_dict[goal['id']] = {
                         'id': goal['id'],
@@ -202,6 +220,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
             
             all_goals = list(all_goals_dict.values())
+            print(f'[DEBUG] Final goals count: {len(all_goals)}')
             
             return {
                 'statusCode': 200,
