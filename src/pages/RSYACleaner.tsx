@@ -8,6 +8,7 @@ import RSYAConnectionCard from '@/components/rsya/RSYAConnectionCard';
 import RSYAFiltersManager from '@/components/rsya/RSYAFiltersManager';
 import RSYACampaignSelector from '@/components/rsya/RSYACampaignSelector';
 import RSYAPlatformsTable from '@/components/rsya/RSYAPlatformsTable';
+import RSYAAutomationRules from '@/components/rsya/RSYAAutomationRules';
 
 interface Filter {
   id: string;
@@ -673,13 +674,15 @@ export default function RSYACleaner() {
               </Card>
             )}
           
-            <RSYAFiltersManager
-              filters={filters}
-              newFilter={newFilter}
-              setNewFilter={setNewFilter}
-              onAddFilter={addFilter}
-              onRemoveFilter={removeFilter}
-            />
+            {viewMode === 'campaigns' && (
+              <RSYAFiltersManager
+                filters={filters}
+                newFilter={newFilter}
+                setNewFilter={setNewFilter}
+                onAddFilter={addFilter}
+                onRemoveFilter={removeFilter}
+              />
+            )}
 
             {campaigns.length > 0 && (
               <Card className="bg-white shadow-lg">
@@ -725,19 +728,62 @@ export default function RSYACleaner() {
             )}
 
             {campaigns.length > 0 && viewMode === 'platforms' && (
-              <RSYAPlatformsTable
-                platforms={allPlatforms}
-                selectedPlatforms={selectedPlatforms}
-                onTogglePlatform={togglePlatform}
-                onSelectAll={selectAllPlatforms}
-                onDeselectAll={deselectAllPlatforms}
-                onMassDisable={() => {
-                  toast({ 
-                    title: '🚀 Массовое отключение', 
-                    description: `Будет отключено ${selectedPlatforms.length} площадок` 
-                  });
-                }}
-              />
+              <>
+                <RSYAAutomationRules
+                  onApplyRule={(rule) => {
+                    let matchedPlatforms = allPlatforms;
+                    
+                    rule.conditions.forEach(cond => {
+                      if (cond.type === 'pattern' && cond.pattern) {
+                        matchedPlatforms = matchedPlatforms.filter(p => 
+                          p.adgroup_name.toLowerCase().includes(cond.pattern!.toLowerCase())
+                        );
+                      } else if (cond.type === 'metric' && cond.field && cond.operator && cond.value !== undefined) {
+                        matchedPlatforms = matchedPlatforms.filter(p => {
+                          if (!p.stats) return false;
+                          const val = p.stats[cond.field!];
+                          if (val === undefined) return false;
+                          
+                          switch (cond.operator) {
+                            case '>=': return val >= cond.value!;
+                            case '<=': return val <= cond.value!;
+                            case '>': return val > cond.value!;
+                            case '<': return val < cond.value!;
+                            case '=': return val === cond.value!;
+                            default: return false;
+                          }
+                        });
+                      }
+                    });
+                    
+                    const matchedIds = matchedPlatforms.map(p => p.adgroup_id);
+                    matchedIds.forEach(id => {
+                      if (!selectedPlatforms.includes(id)) {
+                        togglePlatform(id);
+                      }
+                    });
+                    
+                    toast({ 
+                      title: `✅ Правило "${rule.name}" применено`, 
+                      description: `Выбрано площадок: ${matchedIds.length}` 
+                    });
+                  }}
+                />
+                
+                <RSYAPlatformsTable
+                  platforms={allPlatforms}
+                  selectedPlatforms={selectedPlatforms}
+                  onTogglePlatform={togglePlatform}
+                  onSelectAll={selectAllPlatforms}
+                  onDeselectAll={deselectAllPlatforms}
+                  onMassDisable={() => {
+                    toast({ 
+                      title: '🚀 Массовое отключение', 
+                      description: `Будет отключено ${selectedPlatforms.length} площадок` 
+                    });
+                  }}
+                />
+              </>
             )}
 
             {campaigns.length > 0 && (
