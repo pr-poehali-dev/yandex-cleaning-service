@@ -169,9 +169,12 @@ export default function Auth() {
 
     setSavingSecrets(true);
     try {
+      localStorage.setItem('YANDEX_DIRECT_CLIENT_ID', yandexClientId.trim());
+      localStorage.setItem('YANDEX_DIRECT_CLIENT_SECRET', yandexClientSecret.trim());
+      
       toast({ 
-        title: '✅ Секреты сохранены', 
-        description: 'Client ID и Secret добавлены в проект. Теперь можно подключить Яндекс на странице /rsya'
+        title: '✅ Секреты сохранены локально', 
+        description: 'Client ID и Secret сохранены. Теперь можно подключить Яндекс на странице /rsya'
       });
       setYandexClientId('');
       setYandexClientSecret('');
