@@ -112,10 +112,46 @@ export default function RSYASetup() {
         setSelectedCampaigns(campaignIds);
       }
       
-      console.log('🎯 Загружаем цели из всех кампаний...');
+      // Загружаем все счётчики из Метрики
+      console.log('📊 Загружаем счётчики Метрики...');
+      setLoadingCounters(true);
+      const countersResponse = await fetch(
+        `https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=counters`,
+        {
+          headers: {
+            'X-Auth-Token': token
+          }
+        }
+      );
+
+      if (!countersResponse.ok) {
+        console.error('❌ Ошибка загрузки счётчиков:', countersResponse.status);
+        setLoadingCounters(false);
+        return;
+      }
+
+      const countersData = await countersResponse.json();
+      const allCounters = countersData.counters || [];
+      console.log('📊 Загружено счётчиков:', allCounters.length);
+      
+      if (allCounters.length === 0) {
+        setLoadingCounters(false);
+        return;
+      }
+
+      setCounters(allCounters);
+      setLoadingCounters(false);
+      
+      // Автоматически выбираем все счётчики
+      const allCounterIds = new Set(allCounters.map((c: Counter) => c.id));
+      setSelectedCounters(allCounterIds);
+      
+      // Загружаем цели для всех счётчиков
+      console.log('🎯 Загружаем цели из всех счётчиков...');
       setLoadingGoals(true);
+      const counterIdsParam = allCounters.map((c: Counter) => c.id).join(',');
       const goalsResponse = await fetch(
-        `https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals`,
+        `https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=goals&counter_ids=${counterIdsParam}`,
         {
           headers: {
             'X-Auth-Token': token
@@ -126,55 +162,9 @@ export default function RSYASetup() {
       console.log('🎯 Статус загрузки целей:', goalsResponse.status);
       if (goalsResponse.ok) {
         const goalsData = await goalsResponse.json();
-        console.log('🎯 Ответ от бэкенда (цели):', goalsData);
         const allGoals = goalsData.goals || [];
         console.log('🎯 Загружено целей:', allGoals.length);
-        if (allGoals.length > 0) {
-          console.log('🎯 Пример цели:', allGoals[0]);
-        }
         setGoals(allGoals);
-        
-        // Извлекаем уникальные ID счётчиков из целей
-        const counterIds = new Set<string>();
-        allGoals.forEach((goal: Goal) => {
-          if (goal.counter_id) {
-            counterIds.add(goal.counter_id);
-          }
-        });
-        
-        console.log('📊 Найдено уникальных счётчиков в целях:', counterIds.size);
-        console.log('📊 ID счётчиков:', Array.from(counterIds));
-        
-        // Загружаем информацию только о счётчиках из Директа
-        if (counterIds.size > 0) {
-          setLoadingCounters(true);
-          const counterIdsParam = Array.from(counterIds).join(',');
-          const countersResponse = await fetch(
-            `https://functions.poehali.dev/6b18ca7b-7f12-4758-a9db-4f774aaf2d23?action=counters&counter_ids=${counterIdsParam}`,
-            {
-              headers: {
-                'X-Auth-Token': token
-              }
-            }
-          );
-
-          console.log('📊 Статус загрузки счётчиков:', countersResponse.status);
-          if (countersResponse.ok) {
-            const countersData = await countersResponse.json();
-            console.log('📊 Ответ от бэкенда (счётчики):', countersData);
-            const directCounters = countersData.counters || [];
-            console.log('📊 Загружено счётчиков из Директа:', directCounters.length);
-            if (directCounters.length > 0) {
-              console.log('📊 Пример счётчика:', directCounters[0]);
-            }
-            setCounters(directCounters);
-            
-            // Автоматически выбираем все счётчики
-            const allCounterIds = new Set(directCounters.map((c: Counter) => c.id));
-            setSelectedCounters(allCounterIds);
-          }
-          setLoadingCounters(false);
-        }
         
         // Автоматически выбираем все цели
         const allGoalIds = new Set(allGoals.map((g: Goal) => g.id));
