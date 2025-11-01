@@ -241,11 +241,11 @@ export default function RSYAPlatformsTable({
   );
 
   return (
-    <Card className="shadow-xl">
-      <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-white">
-        <div className="flex items-center justify-between mb-4">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Icon name="Table" className="h-6 w-6 text-blue-600" />
+    <Card className="shadow-lg">
+      <CardHeader className="border-b py-3">
+        <div className="flex items-center justify-between mb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Icon name="Table" className="h-5 w-5 text-emerald-600" />
             Площадки РСЯ
           </CardTitle>
           <div className="flex gap-2">
@@ -261,37 +261,37 @@ export default function RSYAPlatformsTable({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xs text-slate-500 mb-1">Всего площадок</div>
-            <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+          <div className="bg-white p-2 rounded border">
+            <div className="text-xs text-slate-500">Всего</div>
+            <div className="text-xl font-bold text-emerald-600">{stats.total}</div>
           </div>
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xs text-slate-500 mb-1">Выбрано</div>
-            <div className="text-2xl font-bold text-emerald-600">{stats.selected}</div>
+          <div className="bg-white p-2 rounded border">
+            <div className="text-xs text-slate-500">Выбрано</div>
+            <div className="text-xl font-bold text-blue-600">{stats.selected}</div>
           </div>
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xs text-slate-500 mb-1">Подозрительных</div>
-            <div className="text-2xl font-bold text-orange-600">{stats.strange}</div>
+          <div className="bg-white p-2 rounded border">
+            <div className="text-xs text-slate-500">Подозр.</div>
+            <div className="text-xl font-bold text-orange-600">{stats.strange}</div>
           </div>
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xs text-slate-500 mb-1">Общий расход</div>
-            <div className="text-xl font-bold text-slate-900">{stats.totalStats.cost.toLocaleString('ru-RU')} ₽</div>
+          <div className="bg-white p-2 rounded border">
+            <div className="text-xs text-slate-500">Расход</div>
+            <div className="text-lg font-bold text-slate-900">{stats.totalStats.cost.toLocaleString('ru-RU')} ₽</div>
           </div>
-          <div className="bg-white p-3 rounded-lg border shadow-sm">
-            <div className="text-xs text-slate-500 mb-1">К отключению</div>
-            <div className="text-xl font-bold text-red-600">{stats.selectedStats.cost.toLocaleString('ru-RU')} ₽</div>
+          <div className="bg-white p-2 rounded border">
+            <div className="text-xs text-slate-500">К откл.</div>
+            <div className="text-lg font-bold text-red-600">{stats.selectedStats.cost.toLocaleString('ru-RU')} ₽</div>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <div className="flex-1 relative">
-            <Icon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Icon name="Search" className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Поиск площадок..."
+              placeholder="Поиск..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-8 h-8 text-sm"
             />
           </div>
           <Button
@@ -402,36 +402,36 @@ export default function RSYAPlatformsTable({
           <table className="w-full">
             <thead className="bg-slate-100 sticky top-0 z-10">
               <tr className="text-xs font-bold text-slate-700 uppercase">
-                <th className="px-4 py-3 text-left w-12">
+                <th className="px-2 py-2 text-left w-8">
                   <Checkbox
                     checked={allSelected}
-                    onCheckedChange={allSelected ? onDeselectAll : onSelectAll}
+                    onCheckedChange={allSelected ? handleDeselectAllVisible : handleSelectAllVisible}
                   />
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th className="px-2 py-2 text-left text-xs font-semibold">
                   <SortButton field="name">Площадка</SortButton>
                 </th>
-                <th className="px-4 py-3 text-left">Кампания</th>
-                <th className="px-4 py-3 text-center">Статус</th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-2 py-2 text-left text-xs font-semibold">Кампания</th>
+                <th className="px-2 py-2 text-center text-xs font-semibold">Статус</th>
+                <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="impressions">Показы</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="clicks">Клики</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="ctr">CTR %</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="cost">Расход ₽</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="cpc">CPC ₽</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="conversions">Конв.</SortButton>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-2 py-2 text-right text-xs font-semibold">
                   <SortButton field="conversion_rate">CR %</SortButton>
                 </th>
               </tr>
@@ -444,45 +444,45 @@ export default function RSYAPlatformsTable({
                 return (
                   <tr
                     key={platform.adgroup_id}
-                    className={`border-b hover:bg-blue-50 transition-colors cursor-pointer ${
+                    className={`border-b hover:bg-emerald-50 transition-colors cursor-pointer ${
                       idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
-                    } ${isSelected ? 'bg-blue-100 hover:bg-blue-150' : ''}`}
+                    } ${isSelected ? 'bg-emerald-100 hover:bg-emerald-150' : ''}`}
                     onClick={() => onTogglePlatform(platform.adgroup_id)}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-2 py-1.5">
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => onTogglePlatform(platform.adgroup_id)}
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium text-sm ${isStrange ? 'text-orange-700' : 'text-slate-900'}`}>
+                    <td className="px-2 py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs ${isStrange ? 'text-orange-700 font-medium' : 'text-slate-900'}`}>
                           {platform.adgroup_name}
                         </span>
                         {isStrange && (
-                          <Icon name="AlertTriangle" className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                          <Icon name="AlertTriangle" className="h-3 w-3 text-orange-500 flex-shrink-0" />
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{platform.campaign_name || '—'}</td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-2 py-1.5 text-xs text-slate-600">{platform.campaign_name || '—'}</td>
+                    <td className="px-2 py-1.5 text-center">
                       <Badge
                         variant={platform.status === 'ACTIVE' ? 'default' : 'secondary'}
-                        className="text-xs"
+                        className="text-xs h-4 px-1"
                       >
                         {platform.status}
                       </Badge>
                     </td>
                     {platform.stats ? (
                       <>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-slate-700">
+                        <td className="px-2 py-1.5 text-right text-xs text-slate-700">
                           {platform.stats.impressions.toLocaleString('ru-RU')}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-slate-700">
+                        <td className="px-2 py-1.5 text-right text-xs text-slate-700">
                           {platform.stats.clicks.toLocaleString('ru-RU')}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-semibold">
+                        <td className="px-2 py-1.5 text-right text-xs font-semibold">
                           <span className={
                             platform.stats.ctr > 2 ? 'text-emerald-600' :
                             platform.stats.ctr > 1 ? 'text-blue-600' : 'text-slate-600'
@@ -490,16 +490,16 @@ export default function RSYAPlatformsTable({
                             {platform.stats.ctr}%
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-bold text-slate-900">
+                        <td className="px-2 py-1.5 text-right text-xs font-bold text-slate-900">
                           {platform.stats.cost.toLocaleString('ru-RU')} ₽
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-medium text-slate-700">
+                        <td className="px-2 py-1.5 text-right text-xs text-slate-700">
                           {platform.stats.cpc.toLocaleString('ru-RU')} ₽
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">
+                        <td className="px-2 py-1.5 text-right text-xs font-semibold text-slate-900">
                           {platform.stats.conversions}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm font-semibold">
+                        <td className="px-2 py-1.5 text-right text-xs font-semibold">
                           <span className={
                             platform.stats.conversion_rate > 5 ? 'text-emerald-600' :
                             platform.stats.conversion_rate > 2 ? 'text-blue-600' : 'text-slate-600'
@@ -510,13 +510,13 @@ export default function RSYAPlatformsTable({
                       </>
                     ) : (
                       <>
-                        <td className="px-4 py-3 text-right text-slate-400">—</td>
-                        <td className="px-4 py-3 text-right text-slate-400">—</td>
-                        <td className="px-4 py-3 text-right text-slate-400">—</td>
-                        <td className="px-4 py-3 text-right text-slate-400">—</td>
-                        <td className="px-4 py-3 text-right text-slate-400">—</td>
-                        <td className="px-4 py-3 text-right text-slate-400">—</td>
-                        <td className="px-4 py-3 text-right text-slate-400">—</td>
+                        <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
+                        <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
+                        <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
+                        <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
+                        <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
+                        <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
+                        <td className="px-2 py-1.5 text-right text-slate-400 text-xs">—</td>
                       </>
                     )}
                   </tr>
