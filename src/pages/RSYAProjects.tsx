@@ -236,6 +236,6 @@ export default function RSYAProjects() {
             )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
