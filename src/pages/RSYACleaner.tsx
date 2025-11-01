@@ -292,59 +292,14 @@ export default function RSYACleaner() {
       }
       
       const data = await response.json();
+      window.open(data.auth_url, '_blank');
       
-      const width = 600;
-      const height = 700;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-      
-      const popup = window.open(
-        data.auth_url,
-        'yandex_oauth',
-        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-      );
-      
-      if (!popup) {
-        toast({ title: 'Ошибка', description: 'Разрешите всплывающие окна для OAuth', variant: 'destructive' });
-        return;
-      }
-      
-      const pollTimer = setInterval(() => {
-        try {
-          if (popup.closed) {
-            clearInterval(pollTimer);
-            return;
-          }
-          
-          const popupUrl = popup.location.href;
-          
-          if (popupUrl.includes('verification_code')) {
-            const codeElement = popup.document.querySelector('.verification-code__code');
-            if (codeElement) {
-              const code = codeElement.textContent?.trim();
-              if (code) {
-                clearInterval(pollTimer);
-                popup.close();
-                
-                fetch(func2url['yandex-oauth'] + '?code=' + code + '&state=' + userId)
-                  .then(() => {
-                    toast({ title: '✅ Яндекс подключен!', description: 'Токен получен, загружаем кампании...' });
-                    checkYandexConnection();
-                  })
-                  .catch(() => {
-                    toast({ title: 'Ошибка', description: 'Не удалось обменять код на токен', variant: 'destructive' });
-                  });
-              }
-            }
-          }
-        } catch (e) {
-          // Cross-origin ошибка - игнорируем
-        }
-      }, 500);
-      
-      setTimeout(() => {
-        clearInterval(pollTimer);
-      }, 300000);
+      setShowCodeInput(true);
+      toast({ 
+        title: 'Скопируйте код', 
+        description: 'Скопируйте код подтверждения со страницы Яндекса и вставьте ниже',
+        duration: 10000
+      });
       
     } catch (error) {
       toast({ title: 'Ошибка', description: 'Не удалось запустить OAuth', variant: 'destructive' });
