@@ -75,11 +75,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 headers_api['Client-Login'] = client_login
             
             # Запрос отчёта по конверсиям за последние 7 дней
+            import datetime
+            today = datetime.date.today()
+            week_ago = today - datetime.timedelta(days=7)
+            
             report_body = {
                 'params': {
                     'SelectionCriteria': {
-                        'DateFrom': (time.strftime('%Y-%m-%d', time.gmtime(time.time() - 7*86400))),
-                        'DateTo': time.strftime('%Y-%m-%d', time.gmtime())
+                        'DateFrom': week_ago.strftime('%Y-%m-%d'),
+                        'DateTo': today.strftime('%Y-%m-%d')
                     },
                     'FieldNames': ['CampaignId', 'CampaignName', 'GoalId', 'Conversions'],
                     'ReportName': 'Goals Report',
