@@ -825,29 +825,42 @@ export default function RSYACleaner() {
             {campaigns.length > 0 && (
               <Card className="bg-white shadow-lg">
                 <CardContent className="pt-6">
-                  <div className="flex items-center justify-center gap-4 mb-6">
-                    <button
-                      onClick={() => setViewMode('campaigns')}
-                      className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                        viewMode === 'campaigns'
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
+                  <div className="flex items-center justify-between gap-4 mb-6">
+                    <div className="flex items-center justify-center gap-4 flex-1">
+                      <button
+                        onClick={() => setViewMode('campaigns')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                          viewMode === 'campaigns'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        <Icon name="Target" className="h-5 w-5" />
+                        По кампаниям
+                      </button>
+                      <button
+                        onClick={() => setViewMode('platforms')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
+                          viewMode === 'platforms'
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        <Icon name="Table" className="h-5 w-5" />
+                        Все площадки ({allPlatforms.length})
+                      </button>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        const token = localStorage.getItem('yandex_direct_token');
+                        if (token) loadGoals(token);
+                      }}
+                      variant="outline"
+                      className="border-green-500 text-green-700 hover:bg-green-50"
                     >
-                      <Icon name="Target" className="h-5 w-5" />
-                      По кампаниям
-                    </button>
-                    <button
-                      onClick={() => setViewMode('platforms')}
-                      className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                        viewMode === 'platforms'
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      <Icon name="Table" className="h-5 w-5" />
-                      Все площадки ({allPlatforms.length})
-                    </button>
+                      <Icon name="Crosshair" className="mr-2 h-4 w-4" />
+                      Загрузить цели
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
