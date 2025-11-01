@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -82,27 +83,31 @@ export default function RSYACleaner() {
   const [viewMode, setViewMode] = useState<'campaigns' | 'platforms'>('campaigns');
   const [apiError, setApiError] = useState<{code: number; message: string; detail: string} | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    if (!user.id) {
+      toast({ title: 'Требуется авторизация', description: 'Сначала войдите в систему', variant: 'destructive' });
+      navigate('/auth');
+      return;
+    }
+    
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const yandexConnected = urlParams.get('yandex_connected');
     
     if (code) {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const userId = user.id;
-      
-      if (userId) {
-        fetch(func2url['yandex-oauth'] + '?code=' + code + '&state=' + userId)
-          .then(() => {
-            window.history.replaceState({}, document.title, window.location.pathname);
-            toast({ title: '✅ Яндекс подключен!', description: 'Теперь можно загружать кампании' });
-            checkYandexConnection();
-          })
-          .catch(() => {
-            toast({ title: 'Ошибка OAuth', description: 'Не удалось обменять код на токен', variant: 'destructive' });
-          });
-      }
+      fetch(func2url['yandex-oauth'] + '?code=' + code + '&state=' + user.id)
+        .then(() => {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          toast({ title: '✅ Яндекс подключен!', description: 'Теперь можно загружать кампании' });
+          checkYandexConnection();
+        })
+        .catch(() => {
+          toast({ title: 'Ошибка OAuth', description: 'Не удалось обменять код на токен', variant: 'destructive' });
+        });
       return;
     }
     
@@ -122,7 +127,7 @@ export default function RSYACleaner() {
       if (savedSandbox !== null) setUseSandbox(savedSandbox === 'true');
       loadCampaigns(token);
     }
-  }, []);
+  }, [navigate, toast]);
 
   const exchangeCodeForToken = async (code: string) => {
     try {
