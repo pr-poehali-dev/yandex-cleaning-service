@@ -256,7 +256,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'method': 'get',
                     'params': {
                         'SelectionCriteria': {},
-                        'FieldNames': ['Id', 'Name', 'Type', 'Status']
+                        'FieldNames': ['Id', 'Name', 'Type', 'Status'],
+                        'TextCampaignFieldNames': ['BiddingStrategy'],
+                        'DynamicTextCampaignFieldNames': ['BiddingStrategy']
                     }
                 },
                 timeout=10
@@ -308,10 +310,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[DEBUG] Found {len(campaigns_raw)} campaigns total')
             
-            # Собираем все TEXT_CAMPAIGN и DYNAMIC_TEXT_CAMPAIGN
-            # (API не дает возможности легко определить РСЯ-only кампании)
-            text_campaigns = []
+            # Фильтруем кампании - оставляем только РСЯ (Network=YES, Search=NO)
+            rsya_campaigns_raw = []
             for c in campaigns_raw:
+                campaign_type = c.get('Type')
+                is_rsya = False
+                
+                # Проверяем TEXT_CAMPAIGN
+                if campaign_type == 'TEXT_CAMPAIGN':
+                    text_campaign = c.get('TextCampaign', {})
+                    bidding_strategy = text_campaign.get('BiddingStrategy', {})
+                    
+                    # Проверяем стратегии на поиске и в сетях
+                    search_strategy = bidding_strategy.get('Search')
+                    network_strategy = bidding_strategy.get('Network')
+                    
+                    # РСЯ = нет стратегии на поиске И есть стратегия в сетях
+                    has_search = search_strategy is not None
+                    has_network = network_strategy is not None
+                    
+                    is_rsya = (not has_search) and has_network
+                    
+                    print(f'[DEBUG] Campaign {c.get("Id")} "{c.get("Name")}": has_search={has_search}, has_network={has_network}, is_rsya={is_rsya}')
+                
+                # Проверяем DYNAMIC_TEXT_CAMPAIGN
+                elif campaign_type == 'DYNAMIC_TEXT_CAMPAIGN':
+                    dynamic_campaign = c.get('DynamicTextCampaign', {})
+                    bidding_strategy = dynamic_campaign.get('BiddingStrategy', {})
+                    
+                    search_strategy = bidding_strategy.get('Search')
+                    network_strategy = bidding_strategy.get('Network')
+                    
+                    has_search = search_strategy is not None
+                    has_network = network_strategy is not None
+                    
+                    is_rsya = (not has_search) and has_network
+                    
+                    print(f'[DEBUG] Dynamic Campaign {c.get("Id")} "{c.get("Name")}": has_search={has_search}, has_network={has_network}, is_rsya={is_rsya}')
+                
+                if is_rsya:
+                    rsya_campaigns_raw.append(c)
+            
+            print(f'[DEBUG] Filtered to {len(rsya_campaigns_raw)} RSA campaigns')
+            
+            # Собираем ID отфильтрованных кампаний для Reports API
+            text_campaigns = []
+            for c in rsya_campaigns_raw:
                 campaign_type = c.get('Type')
                 if campaign_type in ['TEXT_CAMPAIGN', 'DYNAMIC_TEXT_CAMPAIGN']:
                     text_campaigns.append({
@@ -444,38 +488,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 except Exception as e:
                     print(f'[DEBUG] Failed to fetch reports: {str(e)}')
             
-            # Фильтруем кампании - оставляем только РСЯ (только CONTEXT, без SEARCH)
-            rsya_campaign_ids = set()
-            for campaign_id, placements in all_platforms_by_campaign.items():
-                has_search = False
-                has_context = False
-                
-                for placement_name in placements.keys():
-                    if placement_name == 'SEARCH':
-                        has_search = True
-                    elif placement_name == 'CONTEXT':
-                        has_context = True
-                
-                # РСЯ кампания = есть показы в CONTEXT И нет показов в SEARCH
-                if has_context and not has_search:
-                    rsya_campaign_ids.add(campaign_id)
-                    print(f'[DEBUG] Campaign {campaign_id} is RSA-only (CONTEXT only)')
-                else:
-                    print(f'[DEBUG] Campaign {campaign_id} is NOT RSA-only (has_search={has_search}, has_context={has_context})')
-            
-            print(f'[DEBUG] Filtered to {len(rsya_campaign_ids)} RSA campaigns from {len(all_platforms_by_campaign)} total')
-            
             # Формируем список кампаний с их площадками и целями
+            # Используем rsya_campaigns_raw (уже отфильтрованные по BiddingStrategy)
             campaigns = []
-            for c in campaigns_raw:
+            for c in rsya_campaigns_raw:
                 campaign_type = c.get('Type')
                 campaign_id = str(c.get('Id'))
                 
-                if campaign_type != 'TEXT_CAMPAIGN':
-                    continue
-                
-                # Пропускаем кампании, которые НЕ являются РСЯ-only
-                if campaign_id not in rsya_campaign_ids and all_platforms_by_campaign:
+                if campaign_type not in ['TEXT_CAMPAIGN', 'DYNAMIC_TEXT_CAMPAIGN']:
                     continue
                 
                 platforms = []
