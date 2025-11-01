@@ -204,6 +204,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
                 'connected': True,
+                'access_token': token_record['access_token'],
                 'yandex_login': token_record['yandex_login'],
                 'expires_at': token_record['expires_at'].isoformat() if token_record['expires_at'] else None
             }),

@@ -260,9 +260,11 @@ export default function RSYACleaner() {
       
       if (response.ok) {
         const data = await response.json();
-        if (data.connected) {
+        if (data.connected && data.access_token) {
+          localStorage.setItem('yandex_direct_token', data.access_token);
           setIsConnected(true);
-          toast({ title: 'Яндекс подключен', description: `Аккаунт: ${data.yandex_login}` });
+          toast({ title: '✅ Яндекс подключен', description: `Аккаунт: ${data.yandex_login}` });
+          loadCampaigns(data.access_token);
         }
       }
     } catch (error) {
