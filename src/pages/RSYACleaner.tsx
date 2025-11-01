@@ -181,6 +181,7 @@ export default function RSYACleaner() {
       const token = data.access_token;
       
       localStorage.setItem('yandex_direct_token', token);
+      await saveTokenToProject(userId, projectId!, token);
       window.history.replaceState({}, document.title, window.location.pathname);
       setIsConnected(true);
       
@@ -482,6 +483,7 @@ export default function RSYACleaner() {
       // Если длиннее 10 символов - считаем готовым токеном
       if (token.length > 10) {
         localStorage.setItem('yandex_direct_token', token);
+        await saveTokenToProject(userId, projectId!, token);
         setIsConnected(true);
         setShowCodeInput(false);
         setAuthCode('');
