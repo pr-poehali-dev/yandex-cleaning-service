@@ -256,7 +256,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'method': 'get',
                     'params': {
                         'SelectionCriteria': {},
-                        'FieldNames': ['Id', 'Name', 'Type', 'Status']
+                        'FieldNames': ['Id', 'Name', 'Type', 'Status'],
+                        'TextCampaignFieldNames': ['Settings'],
+                        'TextCampaignSearchStrategyFieldNames': ['BiddingStrategyType'],
+                        'TextCampaignNetworkStrategyFieldNames': ['BiddingStrategyType'],
+                        'DynamicTextCampaignFieldNames': ['Settings']
                     }
                 },
                 timeout=10
@@ -306,11 +310,46 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             campaigns_raw = data.get('result', {}).get('Campaigns', [])
             
-            print(f'[DEBUG] Found {len(campaigns_raw)} campaigns')
+            print(f'[DEBUG] Found {len(campaigns_raw)} campaigns total')
+            
+            # Фильтруем только кампании с показами ТОЛЬКО в РСЯ (без поиска)
+            rsya_campaigns = []
+            for c in campaigns_raw:
+                campaign_type = c.get('Type')
+                is_rsya_only = False
+                
+                # Для TEXT_CAMPAIGN проверяем стратегии показов
+                if campaign_type == 'TEXT_CAMPAIGN':
+                    text_campaign = c.get('TextCampaign', {})
+                    
+                    # Проверяем стратегию на поиске
+                    search_strategy = text_campaign.get('TextCampaignSearchStrategy')
+                    network_strategy = text_campaign.get('TextCampaignNetworkStrategy')
+                    
+                    # Если SearchStrategy отсутствует или нет BiddingStrategyType - поиск отключен
+                    # Если NetworkStrategy есть - сети включены
+                    search_enabled = search_strategy and search_strategy.get('BiddingStrategyType')
+                    network_enabled = network_strategy and network_strategy.get('BiddingStrategyType')
+                    
+                    # РСЯ кампания = поиск отключен И сети включены
+                    is_rsya_only = (not search_enabled) and network_enabled
+                    
+                    print(f'[DEBUG] Campaign {c.get("Id")} "{c.get("Name")}": search={search_enabled}, network={network_enabled}, rsya_only={is_rsya_only}')
+                
+                # Для DYNAMIC_TEXT_CAMPAIGN - обычно это тоже РСЯ
+                elif campaign_type == 'DYNAMIC_TEXT_CAMPAIGN':
+                    # Для динамических кампаний тоже можно проверить стратегии
+                    is_rsya_only = True
+                
+                # Добавляем кампании
+                if is_rsya_only:
+                    rsya_campaigns.append(c)
+            
+            print(f'[DEBUG] Filtered to {len(rsya_campaigns)} RSA campaigns')
             
             # Собираем все TEXT_CAMPAIGN ID для одного запроса Reports API
             text_campaigns = []
-            for c in campaigns_raw:
+            for c in rsya_campaigns:
                 if c.get('Type') == 'TEXT_CAMPAIGN':
                     text_campaigns.append({
                         'id': str(c.get('Id')),
