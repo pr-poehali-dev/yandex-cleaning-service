@@ -136,273 +136,298 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             print(f'[DEBUG] Found {len(campaigns_raw)} campaigns')
             
-            campaigns = []
+            # Собираем все TEXT_CAMPAIGN ID для одного запроса Reports API
+            text_campaigns = []
             for c in campaigns_raw:
-                campaign_type = c.get('Type', '')
-                if campaign_type == 'TEXT_CAMPAIGN':
-                    campaign_id = str(c.get('Id'))
-                    campaign_name = c.get('Name', 'Без названия')
-                    campaign_status = c.get('Status', 'UNKNOWN')
+                if c.get('Type') == 'TEXT_CAMPAIGN':
+                    text_campaigns.append({
+                        'id': str(c.get('Id')),
+                        'name': c.get('Name', 'Без названия'),
+                        'status': c.get('Status', 'UNKNOWN')
+                    })
+            
+            # Один запрос Reports API для ВСЕХ кампаний сразу
+            all_platforms_by_campaign = {}
+            all_goals_by_campaign = {}
+            
+            if text_campaigns:
+                campaign_ids = [int(tc['id']) for tc in text_campaigns]
+                
+                try:
+                    reports_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
                     
-                    # Получаем площадки и цели из Reports API
-                    goals = []
-                    platforms = []
-                    
-                    try:
-                        # Reports API работает и в sandbox, и в production
-                        reports_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
-                        
-                        # Используем Placement для получения площадок РСЯ  
-                        report_body = {
-                            'params': {
-                                'SelectionCriteria': {
-                                    'Filter': [
-                                        {'Field': 'CampaignId', 'Operator': 'IN', 'Values': [int(campaign_id)]}
-                                    ],
-                                    'DateFrom': '2024-10-01',
-                                    'DateTo': '2024-11-01'
-                                },
-                                'FieldNames': [
-                                    'CampaignId',
-                                    'Placement',
-                                    'Impressions',
-                                    'Clicks',
-                                    'Cost',
-                                    'Conversions'
+                    report_body = {
+                        'params': {
+                            'SelectionCriteria': {
+                                'Filter': [
+                                    {'Field': 'CampaignId', 'Operator': 'IN', 'Values': campaign_ids}
                                 ],
-                                'ReportName': f'RSYAPlatforms_{campaign_id}_{context.request_id[:8]}',
-                                'ReportType': 'CUSTOM_REPORT',
-                                'DateRangeType': 'CUSTOM_DATE',
-                                'Format': 'TSV',
-                                'IncludeVAT': 'NO',
-                                'IncludeDiscount': 'NO'
-                            }
+                                'DateFrom': '2024-10-01',
+                                'DateTo': '2024-11-01'
+                            },
+                            'FieldNames': [
+                                'CampaignId',
+                                'Placement',
+                                'Impressions',
+                                'Clicks',
+                                'Cost',
+                                'Conversions'
+                            ],
+                            'ReportName': f'RSYAPlatforms_All_{context.request_id[:8]}',
+                            'ReportType': 'CUSTOM_REPORT',
+                            'DateRangeType': 'CUSTOM_DATE',
+                            'Format': 'TSV',
+                            'IncludeVAT': 'NO',
+                            'IncludeDiscount': 'NO'
                         }
+                    }
+                    
+                    report_headers = dict(request_headers)
+                    report_headers['Accept-Language'] = 'ru'
+                    report_headers['processingMode'] = 'auto'
+                    report_headers['returnMoneyInMicros'] = 'false'
+                    report_headers['skipReportHeader'] = 'true'
+                    report_headers['skipReportSummary'] = 'true'
+                    
+                    print(f'[DEBUG] Requesting Reports API for {len(campaign_ids)} campaigns')
+                    
+                    report_response = requests.post(
+                        reports_url,
+                        headers=report_headers,
+                        json=report_body,
+                        timeout=60
+                    )
+                    
+                    print(f'[DEBUG] Reports API response status: {report_response.status_code}')
+                    
+                    # Если отчет в очереди (201), ждём готовности
+                    if report_response.status_code == 201:
+                        retry_in = report_response.headers.get('retryIn', 5)
+                        print(f'[DEBUG] Report queued, waiting {retry_in}s')
+                        time.sleep(int(retry_in))
                         
-                        report_headers = dict(request_headers)
-                        report_headers['Accept-Language'] = 'ru'
-                        report_headers['processingMode'] = 'auto'
-                        report_headers['returnMoneyInMicros'] = 'false'
-                        report_headers['skipReportHeader'] = 'true'
-                        report_headers['skipReportSummary'] = 'true'
-                        
-                        print(f'[DEBUG] Requesting Reports API for campaign {campaign_id}')
-                        
+                        # Повторный запрос с теми же параметрами
                         report_response = requests.post(
                             reports_url,
                             headers=report_headers,
                             json=report_body,
                             timeout=60
                         )
-                        
-                        print(f'[DEBUG] Reports API response status: {report_response.status_code}')
-                        
-                        # Если отчет в очереди (201), ждём готовности
-                        if report_response.status_code == 201:
-                            retry_in = report_response.headers.get('retryIn', 5)
-                            print(f'[DEBUG] Report queued, waiting {retry_in}s')
-                            time.sleep(int(retry_in))
-                            
-                            # Повторный запрос с теми же параметрами
-                            report_response = requests.post(
-                                reports_url,
-                                headers=report_headers,
-                                json=report_body,
-                                timeout=60
-                            )
-                            print(f'[DEBUG] Retry response status: {report_response.status_code}')
-                        
-                        if report_response.status_code == 200:
-                            report_text = report_response.text
-                            print(f'[DEBUG] Reports API response preview: {report_text[:500]}')
-                            
-                            # Парсим TSV
-                            lines = report_text.strip().split('\n')
-                            if len(lines) > 1:
-                                headers_line = lines[0].split('\t')
-                                
-                                # Собираем уникальные площадки и цели
-                                platforms_data = {}
-                                goals_data = {}
-                                
-                                for line in lines[1:]:
-                                    values = line.split('\t')
-                                    if len(values) < len(headers_line):
-                                        continue
-                                    
-                                    row = dict(zip(headers_line, values))
-                                    # Используем Placement как название площадки
-                                    platform_name = row.get('Placement', '--')
-                                    
-                                    if platform_name and platform_name != '--':
-                                        impressions = int(row.get('Impressions', 0) or 0)
-                                        clicks = int(row.get('Clicks', 0) or 0)
-                                        cost = float(row.get('Cost', 0) or 0)
-                                        conversions = int(row.get('Conversions', 0) or 0)
-                                        goal_id = row.get('GoalId', '')
-                                        
-                                        # Добавляем площадку
-                                        if platform_name not in platforms_data:
-                                            platforms_data[platform_name] = {
-                                                'impressions': 0,
-                                                'clicks': 0,
-                                                'cost': 0,
-                                                'conversions': 0,
-                                                'goals': {}
-                                            }
-                                        
-                                        platforms_data[platform_name]['impressions'] += impressions
-                                        platforms_data[platform_name]['clicks'] += clicks
-                                        platforms_data[platform_name]['cost'] += cost
-                                        platforms_data[platform_name]['conversions'] += conversions
-                                        
-                                        # Добавляем статистику по целям
-                                        if goal_id and goal_id != '--':
-                                            if goal_id not in goals_data:
-                                                goals_data[goal_id] = {'name': f'Цель {goal_id}', 'id': goal_id}
-                                            
-                                            if goal_id not in platforms_data[platform_name]['goals']:
-                                                platforms_data[platform_name]['goals'][goal_id] = {
-                                                    'conversions': 0
-                                                }
-                                            platforms_data[platform_name]['goals'][goal_id]['conversions'] += conversions
-                                
-                                # Формируем список целей
-                                goals = [{'id': gid, 'name': gdata['name'], 'type': 'GOAL'} for gid, gdata in goals_data.items()]
-                                
-                                # Формируем список площадок
-                                for platform_name, pdata in platforms_data.items():
-                                    clicks = pdata['clicks']
-                                    impressions = pdata['impressions']
-                                    cost = pdata['cost']
-                                    conversions = pdata['conversions']
-                                    
-                                    # Расчёт метрик
-                                    ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
-                                    cpc = round(cost / clicks, 2) if clicks > 0 else 0
-                                    conversion_rate = round((conversions / clicks) * 100, 2) if clicks > 0 else 0
-                                    
-                                    # Статистика по целям
-                                    goals_stats = {}
-                                    for goal_id, goal_data in pdata['goals'].items():
-                                        goal_conv = goal_data['conversions']
-                                        goals_stats[goal_id] = {
-                                            'conversions': goal_conv,
-                                            'conversion_rate': round((goal_conv / clicks) * 100, 2) if clicks > 0 else 0,
-                                            'cost_per_goal': round(cost / goal_conv, 2) if goal_conv > 0 else 0
-                                        }
-                                    
-                                    platforms.append({
-                                        'adgroup_id': platform_name,
-                                        'adgroup_name': platform_name,
-                                        'status': 'ACCEPTED',
-                                        'network_enabled': True,
-                                        'stats': {
-                                            'impressions': impressions,
-                                            'clicks': clicks,
-                                            'ctr': ctr,
-                                            'cost': cost,
-                                            'cpc': cpc,
-                                            'conversions': conversions,
-                                            'conversion_rate': conversion_rate,
-                                            'avg_position': 0,
-                                            'goals': goals_stats
-                                        }
-                                    })
-                                
-                                print(f'[DEBUG] Found {len(platforms)} platforms with stats from Reports API')
-                                print(f'[DEBUG] Found {len(goals)} goals from Reports API')
-                        else:
-                            print(f'[DEBUG] Reports API failed: {report_response.text[:500]}')
+                        print(f'[DEBUG] Retry response status: {report_response.status_code}')
                     
-                    except Exception as e:
-                        print(f'[DEBUG] Failed to fetch reports: {str(e)}')
+                    if report_response.status_code == 200:
+                        report_text = report_response.text
+                        print(f'[DEBUG] Reports API response preview: {report_text[:500]}')
+                        
+                        # Парсим TSV и группируем по CampaignId
+                        lines = report_text.strip().split('\n')
+                        if len(lines) > 1:
+                            headers_line = lines[0].split('\t')
+                            
+                            # Группируем данные по кампаниям
+                            for line in lines[1:]:
+                                values = line.split('\t')
+                                if len(values) < len(headers_line):
+                                    continue
+                                
+                                row = dict(zip(headers_line, values))
+                                campaign_id_str = row.get('CampaignId', '')
+                                platform_name = row.get('Placement', '--')
+                                
+                                if not campaign_id_str or platform_name == '--':
+                                    continue
+                                
+                                # Инициализируем структуры для кампании
+                                if campaign_id_str not in all_platforms_by_campaign:
+                                    all_platforms_by_campaign[campaign_id_str] = {}
+                                    all_goals_by_campaign[campaign_id_str] = {}
+                                
+                                impressions = int(row.get('Impressions', 0) or 0)
+                                clicks = int(row.get('Clicks', 0) or 0)
+                                cost = float(row.get('Cost', 0) or 0)
+                                conversions = int(row.get('Conversions', 0) or 0)
+                                goal_id = row.get('GoalId', '')
+                                
+                                # Добавляем площадку для данной кампании
+                                if platform_name not in all_platforms_by_campaign[campaign_id_str]:
+                                    all_platforms_by_campaign[campaign_id_str][platform_name] = {
+                                        'impressions': 0,
+                                        'clicks': 0,
+                                        'cost': 0,
+                                        'conversions': 0,
+                                        'goals': {}
+                                    }
+                                
+                                all_platforms_by_campaign[campaign_id_str][platform_name]['impressions'] += impressions
+                                all_platforms_by_campaign[campaign_id_str][platform_name]['clicks'] += clicks
+                                all_platforms_by_campaign[campaign_id_str][platform_name]['cost'] += cost
+                                all_platforms_by_campaign[campaign_id_str][platform_name]['conversions'] += conversions
+                                
+                                # Добавляем статистику по целям
+                                if goal_id and goal_id != '--':
+                                    if goal_id not in all_goals_by_campaign[campaign_id_str]:
+                                        all_goals_by_campaign[campaign_id_str][goal_id] = {'name': f'Цель {goal_id}', 'id': goal_id}
+                                    
+                                    if goal_id not in all_platforms_by_campaign[campaign_id_str][platform_name]['goals']:
+                                        all_platforms_by_campaign[campaign_id_str][platform_name]['goals'][goal_id] = {
+                                            'conversions': 0
+                                        }
+                                    all_platforms_by_campaign[campaign_id_str][platform_name]['goals'][goal_id]['conversions'] += conversions
+                            
+                            print(f'[DEBUG] Parsed data for {len(all_platforms_by_campaign)} campaigns from Reports API')
+                    else:
+                        print(f'[DEBUG] Reports API failed: {report_response.text[:500]}')
+                
+                except Exception as e:
+                    print(f'[DEBUG] Failed to fetch reports: {str(e)}')
+            
+            # Формируем список кампаний с их площадками и целями
+            campaigns = []
+            for c in campaigns_raw:
+                campaign_type = c.get('Type')
+                campaign_id = str(c.get('Id'))
+                
+                if campaign_type != 'TEXT_CAMPAIGN':
+                    continue
+                
+                platforms = []
+                goals = []
+                
+                # Получаем данные из сгруппированных результатов
+                if campaign_id in all_platforms_by_campaign:
+                    platforms_data = all_platforms_by_campaign[campaign_id]
+                    goals_data = all_goals_by_campaign.get(campaign_id, {})
                     
-                    # Если площадок нет, добавляем тестовые для демонстрации
-                    if len(platforms) == 0 and is_sandbox:
-                        import random
+                    # Формируем список целей для кампании
+                    goals = [{'id': gid, 'name': gdata['name'], 'type': 'GOAL'} for gid, gdata in goals_data.items()]
+                    
+                    # Формируем список площадок для кампании
+                    for platform_name, pdata in platforms_data.items():
+                        clicks = pdata['clicks']
+                        impressions = pdata['impressions']
+                        cost = pdata['cost']
+                        conversions = pdata['conversions']
                         
-                        # Если цели не получены, создаем тестовые
-                        if not goals:
-                            goals = [
-                                {'id': '1', 'name': 'Заявка', 'type': 'GOAL'},
-                                {'id': '2', 'name': 'Покупка', 'type': 'GOAL'},
-                                {'id': '3', 'name': 'Регистрация', 'type': 'GOAL'},
-                                {'id': '4', 'name': 'Добавление в корзину', 'type': 'GOAL'},
-                                {'id': '5', 'name': 'Звонок', 'type': 'GOAL'},
-                                {'id': '6', 'name': 'Подписка', 'type': 'GOAL'}
-                            ]
+                        # Расчёт метрик
+                        ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
+                        cpc = round(cost / clicks, 2) if clicks > 0 else 0
+                        conversion_rate = round((conversions / clicks) * 100, 2) if clicks > 0 else 0
                         
-                        test_domains = [
-                            # Нормальные площадки
-                            'mail.ru', 'dzen.ru', 'yandex.ru', 'vk.com', 'ok.ru',
-                            'rambler.ru', 'lenta.ru', 'ria.ru', 'gazeta.ru', 'kommersant.ru',
-                            'rbc.ru', 'vedomosti.ru', 'forbes.ru', 'tass.ru', 'interfax.ru',
-                            'sports.ru', 'championat.com', 'kp.ru', 'mk.ru', 'aif.ru',
-                            'vc.ru', 'habr.com', 'pikabu.ru', 'drive2.ru', 'avito.ru',
-                            'auto.ru', 'cian.ru', 'domofond.ru', 'youla.ru', 'wildberries.ru',
-                            'ozon.ru', 'lamoda.ru', 'citilink.ru', 'mvideo.ru', 'eldorado.ru',
-                            'dns-shop.ru', 'aliexpress.ru', 'sberbank.ru', 'tinkoff.ru', 'vtb.ru',
-                            'alfabank.ru', 'gosuslugi.ru', 'mos.ru', 'spb.ru', 'travel.ru',
-                            'aviasales.ru', 'booking.com', 'tripadvisor.ru', 'hotels.ru', 'tutu.ru',
-                            # Странные/мусорные площадки
-                            'dsp.ewer.ru', 'puzzles.yandex.ru', 'vps.com', 'cdn-tracker.net',
-                            'ad-server.xyz', 'promo.click', 'banner-exchange.io', 'rtb-network.org',
-                            'adtech.solutions', 'media-buy.pro', 'traffic-source.biz', 'click-farm.co',
-                            'bot-traffic.ru', 'fake-impressions.net', 'spam-ads.com', 'junk-traffic.org',
-                            '123-ads.ru', 'xxx-promo.net', 'casino-traffic.biz', 'adult-banner.xxx',
-                            'redirect-chain.io', 'cloaking-site.ru', 'doorway-page.com', 'parked-domain.net',
-                            'expired-ssl.org', 'malware-host.ru', 'phishing-page.net', 'scam-ads.biz'
+                        # Статистика по целям
+                        goals_stats = {}
+                        for goal_id, goal_data in pdata['goals'].items():
+                            goal_conv = goal_data['conversions']
+                            goals_stats[goal_id] = {
+                                'conversions': goal_conv,
+                                'conversion_rate': round((goal_conv / clicks) * 100, 2) if clicks > 0 else 0,
+                                'cost_per_goal': round(cost / goal_conv, 2) if goal_conv > 0 else 0
+                            }
+                        
+                        platforms.append({
+                            'adgroup_id': platform_name,
+                            'adgroup_name': platform_name,
+                            'status': 'ACCEPTED',
+                            'network_enabled': True,
+                            'stats': {
+                                'impressions': impressions,
+                                'clicks': clicks,
+                                'ctr': ctr,
+                                'cost': cost,
+                                'cpc': cpc,
+                                'conversions': conversions,
+                                'conversion_rate': conversion_rate,
+                                'avg_position': 0,
+                                'goals': goals_stats
+                            }
+                        })
+                    
+                    print(f'[DEBUG] Campaign {campaign_id}: {len(platforms)} platforms, {len(goals)} goals')
+                
+                # Если площадок нет и это sandbox, добавляем тестовые данные
+                if len(platforms) == 0 and is_sandbox:
+                    import random
+                    
+                    # Если цели не получены, создаем тестовые
+                    if not goals:
+                        goals = [
+                            {'id': '1', 'name': 'Заявка', 'type': 'GOAL'},
+                            {'id': '2', 'name': 'Покупка', 'type': 'GOAL'},
+                            {'id': '3', 'name': 'Регистрация', 'type': 'GOAL'},
+                            {'id': '4', 'name': 'Добавление в корзину', 'type': 'GOAL'},
+                            {'id': '5', 'name': 'Звонок', 'type': 'GOAL'},
+                            {'id': '6', 'name': 'Подписка', 'type': 'GOAL'}
                         ]
-                        
-                        for i in range(100):
-                            domain = random.choice(test_domains) if i >= len(test_domains) else test_domains[i % len(test_domains)]
-                            
-                            # Генерируем случайную статистику
-                            impressions = random.randint(1000, 50000)
-                            clicks = random.randint(10, int(impressions * 0.05))
-                            ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
-                            cost = random.randint(500, 50000)
-                            cpc = round(cost / clicks, 2) if clicks > 0 else 0
-                            conversions = random.randint(0, int(clicks * 0.15))
-                            conversion_rate = round((conversions / clicks) * 100, 2) if clicks > 0 else 0
-                            
-                            # Генерируем статистику по целям
-                            goals_stats = {}
-                            for goal in goals:
-                                goal_conversions = random.randint(0, conversions)
-                                goals_stats[goal['id']] = {
-                                    'conversions': goal_conversions,
-                                    'conversion_rate': round((goal_conversions / clicks) * 100, 2) if clicks > 0 else 0,
-                                    'cost_per_goal': round(cost / goal_conversions, 2) if goal_conversions > 0 else 0
-                                }
-                            
-                            platforms.append({
-                                'adgroup_id': f'{campaign_id}_{i+1}',
-                                'adgroup_name': domain,
-                                'status': random.choice(['ACTIVE', 'PAUSED', 'SUSPENDED']),
-                                'network_enabled': True,
-                                'stats': {
-                                    'impressions': impressions,
-                                    'clicks': clicks,
-                                    'ctr': ctr,
-                                    'cost': cost,
-                                    'cpc': cpc,
-                                    'conversions': conversions,
-                                    'conversion_rate': conversion_rate,
-                                    'avg_position': round(random.uniform(1, 10), 1),
-                                    'goals': goals_stats
-                                }
-                            })
                     
-                    campaigns.append({
-                        'id': campaign_id,
-                        'name': c.get('Name'),
-                        'type': campaign_type,
-                        'status': c.get('Status'),
-                        'platforms': platforms,
-                        'goals': goals
-                    })
+                    test_domains = [
+                        # Нормальные площадки
+                        'mail.ru', 'dzen.ru', 'yandex.ru', 'vk.com', 'ok.ru',
+                        'rambler.ru', 'lenta.ru', 'ria.ru', 'gazeta.ru', 'kommersant.ru',
+                        'rbc.ru', 'vedomosti.ru', 'forbes.ru', 'tass.ru', 'interfax.ru',
+                        'sports.ru', 'championat.com', 'kp.ru', 'mk.ru', 'aif.ru',
+                        'vc.ru', 'habr.com', 'pikabu.ru', 'drive2.ru', 'avito.ru',
+                        'auto.ru', 'cian.ru', 'domofond.ru', 'youla.ru', 'wildberries.ru',
+                        'ozon.ru', 'lamoda.ru', 'citilink.ru', 'mvideo.ru', 'eldorado.ru',
+                        'dns-shop.ru', 'aliexpress.ru', 'sberbank.ru', 'tinkoff.ru', 'vtb.ru',
+                        'alfabank.ru', 'gosuslugi.ru', 'mos.ru', 'spb.ru', 'travel.ru',
+                        'aviasales.ru', 'booking.com', 'tripadvisor.ru', 'hotels.ru', 'tutu.ru',
+                        # Странные/мусорные площадки
+                        'dsp.ewer.ru', 'puzzles.yandex.ru', 'vps.com', 'cdn-tracker.net',
+                        'ad-server.xyz', 'promo.click', 'banner-exchange.io', 'rtb-network.org',
+                        'adtech.solutions', 'media-buy.pro', 'traffic-source.biz', 'click-farm.co',
+                        'bot-traffic.ru', 'fake-impressions.net', 'spam-ads.com', 'junk-traffic.org',
+                        '123-ads.ru', 'xxx-promo.net', 'casino-traffic.biz', 'adult-banner.xxx',
+                        'redirect-chain.io', 'cloaking-site.ru', 'doorway-page.com', 'parked-domain.net',
+                        'expired-ssl.org', 'malware-host.ru', 'phishing-page.net', 'scam-ads.biz'
+                    ]
+                    
+                    for i in range(100):
+                        domain = random.choice(test_domains) if i >= len(test_domains) else test_domains[i % len(test_domains)]
+                        
+                        # Генерируем случайную статистику
+                        impressions = random.randint(1000, 50000)
+                        clicks = random.randint(10, int(impressions * 0.05))
+                        ctr = round((clicks / impressions) * 100, 2) if impressions > 0 else 0
+                        cost = random.randint(500, 50000)
+                        cpc = round(cost / clicks, 2) if clicks > 0 else 0
+                        conversions = random.randint(0, int(clicks * 0.15))
+                        conversion_rate = round((conversions / clicks) * 100, 2) if clicks > 0 else 0
+                        
+                        # Генерируем статистику по целям
+                        goals_stats = {}
+                        for goal in goals:
+                            goal_conversions = random.randint(0, conversions)
+                            goals_stats[goal['id']] = {
+                                'conversions': goal_conversions,
+                                'conversion_rate': round((goal_conversions / clicks) * 100, 2) if clicks > 0 else 0,
+                                'cost_per_goal': round(cost / goal_conversions, 2) if goal_conversions > 0 else 0
+                            }
+                        
+                        platforms.append({
+                            'adgroup_id': f'{campaign_id}_{i+1}',
+                            'adgroup_name': domain,
+                            'status': random.choice(['ACTIVE', 'PAUSED', 'SUSPENDED']),
+                            'network_enabled': True,
+                            'stats': {
+                                'impressions': impressions,
+                                'clicks': clicks,
+                                'ctr': ctr,
+                                'cost': cost,
+                                'cpc': cpc,
+                                'conversions': conversions,
+                                'conversion_rate': conversion_rate,
+                                'avg_position': round(random.uniform(1, 10), 1),
+                                'goals': goals_stats
+                            }
+                        })
+                
+                campaigns.append({
+                    'id': campaign_id,
+                    'name': c.get('Name'),
+                    'type': campaign_type,
+                    'status': c.get('Status'),
+                    'platforms': platforms,
+                    'goals': goals
+                })
             
             print(f'[DEBUG] Filtered {len(campaigns)} TEXT_CAMPAIGN campaigns with platforms')
             
