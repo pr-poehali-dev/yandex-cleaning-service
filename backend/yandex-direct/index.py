@@ -151,7 +151,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         # Reports API работает и в sandbox, и в production
                         reports_url = 'https://api-sandbox.direct.yandex.com/json/v5/reports' if is_sandbox else 'https://api.direct.yandex.com/json/v5/reports'
                         
-                        # Используем правильное поле: TargetUrl вместо Placement
+                        # Используем базовые поля без площадок (AdGroupId + AdGroupName)
                         report_body = {
                             'params': {
                                 'SelectionCriteria': {
@@ -161,8 +161,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                 },
                                 'FieldNames': [
                                     'Date',
-                                    'TargetUrl',
-                                    'AdGroupName',
+                                    'AdGroupId',
+                                    'AdGroupName', 
                                     'Impressions',
                                     'Clicks',
                                     'Cost',
@@ -215,8 +215,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                                         continue
                                     
                                     row = dict(zip(headers_line, values))
-                                    # Используем AdGroupName или TargetUrl как название площадки
-                                    platform_name = row.get('AdGroupName') or row.get('TargetUrl', '--')
+                                    # Используем AdGroupName как название площадки
+                                    platform_name = row.get('AdGroupName', '--')
                                     
                                     if platform_name and platform_name != '--':
                                         impressions = int(row.get('Impressions', 0) or 0)
