@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import Icon from '@/components/ui/icon';
-import { AppSidebar } from '@/components/AppSidebar';
+import AppSidebar from '@/components/layout/AppSidebar';
 import { useToast } from '@/hooks/use-toast';
 
 interface Campaign {
